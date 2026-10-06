@@ -22,6 +22,7 @@ const defaults = {
 };
 
 const nav = [
+  { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
   { label: 'Services', href: '/services' },
   { label: 'Careers', href: '/careers' },

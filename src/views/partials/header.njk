@@ -41,8 +41,9 @@
   <nav id="mobile-nav" aria-label="Mobile" class="hidden border-t border-line bg-white lg:hidden">
     <ul class="container-page flex flex-col gap-1 py-4">
       {% for item in nav %}
-        <li><a href="{{ item.href }}" class="block rounded-xl px-3 py-3 text-lg font-semibold text-ink hover:bg-surface"
-               {% if currentPath.startsWith(item.href) %}aria-current="page"{% endif %}>{{ item.label }}</a></li>
+        {% set active = currentPath == item.href or currentPath.startsWith(item.href + '/') %}
+        <li><a href="{{ item.href }}" class="block rounded-xl px-3 py-3 text-lg font-semibold hover:bg-surface {{ 'bg-brand-50 text-brand-800' if active else 'text-ink' }}"
+               {% if active %}aria-current="page"{% endif %}>{{ item.label }}</a></li>
       {% endfor %}
       <li class="pt-3"><a href="/getting-started" class="btn-primary w-full">Start intake</a></li>
       <li><a href="{{ site.phone | telHref }}" class="btn-secondary mt-2 w-full">{{ icon('phone', 'size-4') }} Call {{ site.phone }}</a></li>

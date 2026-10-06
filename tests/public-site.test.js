@@ -648,3 +648,17 @@ describe('contact page', () => {
     expect(res.text).toContain('The map loads only if you select “Show map”');
   });
 });
+
+describe('main menu', () => {
+  const current = (html) => [...html.matchAll(/<a href="([^"]+)"[^>]*\n?\s*aria-current="page">/g)].map((m) => m[1]);
+
+  it('has a Home link', async () => {
+    const res = await request(app).get('/about');
+    expect(res.text).toMatch(/<a href="\/"[^>]*>Home<\/a>/);
+  });
+
+  it('marks only the current page, in both desktop and mobile menus', async () => {
+    expect(current((await request(app).get('/')).text)).toEqual(['/', '/']);
+    expect(current((await request(app).get('/services/respite-care')).text)).toEqual(['/services', '/services']);
+  });
+});

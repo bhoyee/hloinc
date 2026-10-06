@@ -133,3 +133,4 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-06 | Added dedicated referral form (old site had one; doc §6.2 only required a section) | Developer request |
 | 2026-10-06 | Transportation and nursing intentionally not listed as services | Requirements §2 (out of scope) — HLO to confirm they want them omitted entirely |
 | 2026-10-06 | Jobs gain `pay_range` and `benefits` fields | Maryland Wage Range Transparency Act (Oct 2024) requires both in public postings |
+| 2026-10-06 | Added "Home" to the main menu (now 5 links + Start intake; doc §3 said 4) | Visitors may not know the logo links home |
