@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Cookie notice: informational, remembered per browser once dismissed.
+  const notice = document.getElementById('cookie-notice');
+  if (notice) {
+    let seen = false;
+    try { seen = localStorage.getItem('hlo-cookie-notice') === '1'; } catch { /* storage blocked */ }
+    if (!seen) notice.hidden = false;
+    notice.querySelector('[data-cookie-dismiss]').addEventListener('click', () => {
+      notice.hidden = true;
+      try { localStorage.setItem('hlo-cookie-notice', '1'); } catch { /* storage blocked */ }
+    });
+  }
+
   // Move focus to a form's error summary so screen reader users hear it first.
   const summary = document.querySelector('[data-focus-on-load]');
   if (summary) summary.focus();

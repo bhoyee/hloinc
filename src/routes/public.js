@@ -10,6 +10,7 @@ const inquiries = require('../services/inquiries');
 const services = require('../content/services');
 const areas = require('../content/areas');
 const resources = require('../content/resources');
+const legal = require('../content/legal');
 const { recipients } = require('../lib/site');
 const { contactSchema, appointmentSchema, todayInMaryland, addDays } = require('../validation/public');
 const { fieldErrors, issueForm, looksLikeSpam, setFlash } = require('../lib/forms');
@@ -172,6 +173,15 @@ router.post('/appointments/request', limiters.forms, async (req, res) => {
   res.redirect(303, '/appointments/request');
 });
 
+// --- Legal pages ---------------------------------------------------------
+
+const legalLinks = Object.values(legal).map(({ slug, title }) => ({ slug, title }));
+
+router.get(['/privacy', '/terms', '/data-protection', '/cookies'], (req, res) => {
+  const doc = legal[req.path.slice(1)];
+  res.render('pages/public/legal.njk', { title: doc.title, description: doc.summary, doc, legalLinks });
+});
+
 // --- SEO -----------------------------------------------------------------
 
 router.get('/robots.txt', (req, res) => {
@@ -191,6 +201,7 @@ router.get('/sitemap.xml', async (req, res) => {
     ...(await jobs.listPublished()).map((j) => `/careers/${j.slug}`),
     '/contact',
     '/appointments/request',
+    ...legalLinks.map((l) => `/${l.slug}`),
   ];
   const urls = paths.map((p) => `  <url><loc>${config.appUrl}${p}</loc></url>`).join('\n');
   res

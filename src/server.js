@@ -35,9 +35,14 @@ function createApp() {
         .join('')
     )
   );
-  env.addFilter('date', (value, opts = { month: 'long', day: 'numeric', year: 'numeric' }) =>
-    value ? new Date(value).toLocaleDateString('en-US', { timeZone: 'America/New_York', ...opts }) : ''
-  );
+  env.addFilter('date', (value, opts = { month: 'long', day: 'numeric', year: 'numeric' }) => {
+    if (!value) return '';
+    // A bare YYYY-MM-DD is a calendar date, not an instant: don't shift it by time zone.
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(`${value}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
+    }
+    return new Date(value).toLocaleDateString('en-US', { timeZone: 'America/New_York', ...opts });
+  });
   app.set('view engine', 'njk');
 
   app.use(securityHeaders());

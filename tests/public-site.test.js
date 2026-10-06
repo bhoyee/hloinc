@@ -278,3 +278,45 @@ describe('announcements', () => {
     expect(res.text).not.toContain('Future news');
   });
 });
+
+describe('legal pages', () => {
+  it.each([
+    ['/privacy', 'Privacy Policy', 'do not sell'],
+    ['/terms', 'Terms and Conditions', 'call 911'],
+    ['/data-protection', 'Data Protection', 'audit log'],
+    ['/cookies', 'Cookie Policy', 'hlo.sid'],
+  ])('%s renders', async (path, title, text) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain(title);
+    expect(res.text).toContain(text);
+  });
+
+  it('the cookie policy lists the session cookie the app actually sets', async () => {
+    // A form page is where a visitor first gets a cookie (for its CSRF token).
+    const res = await request(app).get('/contact');
+    const names = (res.headers['set-cookie'] || []).map((c) => c.split('=')[0]);
+    expect(names).toEqual(['hlo.sid']);
+  });
+
+  it('footer links to every legal page and credits GiddyHost', async () => {
+    const res = await request(app).get('/');
+    for (const path of ['/terms', '/privacy', '/data-protection', '/cookies']) {
+      expect(res.text).toContain(`href="${path}"`);
+    }
+    expect(res.text).toMatch(/Powered by <a href="https:\/\/giddyhost\.com"/);
+  });
+
+  it('includes legal pages in the sitemap', async () => {
+    const res = await request(app).get('/sitemap.xml');
+    expect(res.text).toContain('/privacy</loc>');
+    expect(res.text).toContain('/cookies</loc>');
+  });
+});
+
+describe('dates', () => {
+  it('shows calendar dates without a time-zone shift', async () => {
+    const res = await request(app).get('/privacy');
+    expect(res.text).toContain('October 6, 2026');
+  });
+});

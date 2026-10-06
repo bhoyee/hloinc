@@ -59,6 +59,9 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Tests: 52 passing (pages, redirects, forms, validation, careers, announcements) against `hloinc_test`
 - [x] Accessibility: axe WCAG 2.1 AA scan clean at desktop + mobile (`npm run test:a11y`)
 - [x] Redesign pass: red (actions/highlights) + green (brand/structure), real photography on every main page, hero photo first on mobile
+- [x] Legal pages: Terms & Conditions, Privacy Policy, Data Protection, Cookie Policy (`src/content/legal.js`) **(DRAFT — HLO legal review before launch; add retention periods)**
+- [x] Cookie notice (informational — only one strictly necessary cookie, `hlo.sid`; no tracking)
+- [x] Footer: legal links + "Powered by GiddyHost"; favicon from logo; "not for emergencies — call 911 / 988" notice on contact page
 - Still needed from HLO: corrected logo (current reads "Health Living", 300px JPG — ideally SVG), ZIP code, real photos of HLO staff/homes to replace the CC0 stock placeholders (see docs/photo-sources.md), recipient emails, approval of service copy + appointment types, "More inquiry" label wording
 
 ## Phase 2 — Auth, roles, accounts, audit
@@ -94,6 +97,7 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [ ] Accessibility audit (axe + manual keyboard/screen reader)
 - [ ] Cross-browser/device testing
 - [ ] Security review: CSP, headers, rate limits, session settings, dependency audit
+- [ ] Re-check legal pages match the final build (cookies, MFA, retention, session revocation)
 - [ ] Backups + data-retention job **(CONFIRM retention period — Q8)**
 - [ ] Production deploy on cPanel, HTTPS, SMTP credentials, DNS cutover from WordPress
 - [ ] Remove old WordPress (it currently has injected spam links — treat as compromised)
@@ -121,3 +125,4 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-06 | Five services drafted (Personal Supports, Community Residential, Supported Living, Respite Care, Community Development) | Live site listed only two; HLO to approve |
 | 2026-10-06 | Contact recipient "More inquiry" shown as "General inquiry" | Clearer wording; HLO to confirm |
 | 2026-10-06 | Phase 1 public website complete | — |
+| 2026-10-06 | Added legal pages, cookie notice, "Powered by GiddyHost" | Developer request |

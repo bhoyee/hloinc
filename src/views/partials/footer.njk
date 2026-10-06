@@ -41,9 +41,18 @@
   </div>
 
   <div class="border-t border-white/10">
-    <div class="container-page flex flex-col gap-3 py-6 text-sm text-brand-300 sm:flex-row sm:items-center sm:justify-between">
+    <div class="container-page flex flex-col gap-4 py-6 text-sm text-brand-300 lg:flex-row lg:items-center lg:justify-between">
       <p>&copy; {{ currentYear }} {{ site.legalName }} All rights reserved.</p>
-      <a href="/portal" class="hover:text-white">Staff login</a>
+      <nav aria-label="Legal">
+        <ul class="flex flex-wrap gap-x-5 gap-y-2">
+          <li><a href="/terms" class="hover:text-white">Terms &amp; Conditions</a></li>
+          <li><a href="/privacy" class="hover:text-white">Privacy Policy</a></li>
+          <li><a href="/data-protection" class="hover:text-white">Data Protection</a></li>
+          <li><a href="/cookies" class="hover:text-white">Cookie Policy</a></li>
+          <li><a href="/portal" class="hover:text-white">Staff login</a></li>
+        </ul>
+      </nav>
+      <p>Powered by <a href="https://giddyhost.com" target="_blank" rel="noopener" class="font-semibold text-white hover:text-accent-100">GiddyHost</a><span class="sr-only"> (opens in a new tab)</span></p>
     </div>
   </div>
 </footer>

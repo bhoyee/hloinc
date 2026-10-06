@@ -10,9 +10,13 @@
     <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr]">
       <div>
         {{ ui.flash(flash) }}
+        <p class="mb-6 flex gap-3 rounded-2xl border border-accent-100 bg-accent-50 p-4 text-[15px] text-accent-800">
+          {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }}
+          <span><strong>Not for emergencies.</strong> This form is not monitored around the clock. In an emergency, call 911. For a mental health crisis, call or text 988.</span>
+        </p>
         <div class="card">
           <h2 class="text-2xl font-bold">Send us a message</h2>
-          <p class="mt-2 text-[15px] text-muted">Fields marked as optional can be left blank. Please don’t include diagnoses or medication details.</p>
+          <p class="mt-2 text-[15px] text-muted">Fields marked as optional can be left blank. Please don’t include diagnoses or medication details. See our <a href="/privacy" class="link">Privacy Policy</a>.</p>
 
           <form method="post" action="/contact" class="relative mt-8 space-y-6" novalidate data-once>
             {{ ui.errorSummary(errors) }}

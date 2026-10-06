@@ -1,0 +1,80 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {% call ui.pageHero('Legal', doc.title, doc.summary, [{ label: doc.title }]) %}
+    <p class="mt-6 text-sm text-muted">Last updated: <time datetime="{{ doc.lastUpdated }}">{{ doc.lastUpdated | date }}</time></p>
+  {% endcall %}
+
+  <section class="section">
+    <div class="container-page grid gap-12 lg:grid-cols-[16rem_1fr] lg:gap-16">
+      <aside class="lg:sticky lg:top-28 lg:self-start">
+        <nav aria-label="On this page" class="rounded-3xl bg-surface p-6 ring-1 ring-line">
+          <h2 class="text-sm font-bold tracking-wider text-muted uppercase">On this page</h2>
+          <ol class="mt-4 space-y-2 text-[15px]">
+            {% for s in doc.sections %}
+              <li><a href="#{{ s.id }}" class="text-ink hover:text-accent-600">{{ s.heading }}</a></li>
+            {% endfor %}
+            <li><a href="#contact-us" class="text-ink hover:text-accent-600">Contact us</a></li>
+          </ol>
+        </nav>
+        <nav aria-label="Legal pages" class="mt-6">
+          <ul class="space-y-1 text-[15px]">
+            {% for l in legalLinks %}
+              <li>
+                <a href="/{{ l.slug }}" class="flex items-center justify-between rounded-xl px-3 py-2 font-medium {{ 'bg-brand-50 text-brand-800' if l.slug == doc.slug else 'text-muted hover:bg-surface hover:text-ink' }}"
+                   {% if l.slug == doc.slug %}aria-current="page"{% endif %}>{{ l.title }} {{ icon('chevron-right', 'size-4') }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </aside>
+
+      <article class="min-w-0 max-w-3xl">
+        {% for s in doc.sections %}
+          <section id="{{ s.id }}" class="{{ 'mt-12' if not loop.first }}">
+            <h2 class="text-2xl font-bold">{{ s.heading }}</h2>
+            <div class="prose-hlo mt-4 text-[17px]">
+              {% for p in s.paragraphs %}<p>{{ p }}</p>{% endfor %}
+              {% if s.list %}
+                <ul class="marker:text-accent-600">
+                  {% for item in s.list %}<li>{{ item }}</li>{% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+            {% if s.table %}
+              <div class="mt-6 overflow-x-auto rounded-2xl ring-1 ring-line">
+                <table class="w-full min-w-[560px] text-left text-[15px]">
+                  <caption class="sr-only">{{ s.table.caption }}</caption>
+                  <thead class="bg-surface text-sm text-muted">
+                    <tr>{% for h in s.table.head %}<th scope="col" class="px-4 py-3 font-semibold">{{ h }}</th>{% endfor %}</tr>
+                  </thead>
+                  <tbody class="divide-y divide-line">
+                    {% for row in s.table.rows %}
+                      <tr class="align-top">
+                        {% for cell in row %}
+                          {% if loop.first %}<th scope="row" class="px-4 py-3 font-mono text-sm font-semibold text-ink">{{ cell }}</th>
+                          {% else %}<td class="px-4 py-3 text-muted">{{ cell }}</td>{% endif %}
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% endif %}
+          </section>
+        {% endfor %}
+
+        <section id="contact-us" class="mt-12 rounded-3xl bg-cream p-6 ring-1 ring-line sm:p-8">
+          <h2 class="text-2xl font-bold">Contact us</h2>
+          <p class="mt-3 text-muted">Questions about this page or your information? Contact {{ site.legalName }}:</p>
+          <ul class="mt-4 space-y-2 text-ink">
+            <li class="flex gap-3">{{ icon('mail', 'mt-1 size-5 shrink-0 text-brand-600') }} <a href="mailto:{{ site.email }}" class="link">{{ site.email }}</a></li>
+            <li class="flex gap-3">{{ icon('phone', 'mt-1 size-5 shrink-0 text-brand-600') }} <a href="{{ site.phone | telHref }}" class="link">{{ site.phone }}</a></li>
+            <li class="flex gap-3">{{ icon('map-pin', 'mt-1 size-5 shrink-0 text-brand-600') }} <span>{{ site.address.street }}, {{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</span></li>
+          </ul>
+        </section>
+      </article>
+    </div>
+  </section>
+{% endblock %}

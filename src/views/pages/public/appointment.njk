@@ -77,7 +77,7 @@
                 <input id="f-consent" type="checkbox" name="consent" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" required
                   {% if values.consent == 'yes' %}checked{% endif %}
                   {% if errors.consent %}aria-invalid="true" aria-describedby="f-consent-error"{% endif %}>
-                <span>I understand HLO will use these details only to arrange this appointment, and that this is a request, not a confirmed booking.</span>
+                <span>I understand HLO will use these details only to arrange this appointment, as described in the <a href="/privacy" class="link">Privacy Policy</a>, and that this is a request, not a confirmed booking.</span>
               </label>
               {{ ui.fieldError('consent', errors) }}
             </div>
