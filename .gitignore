@@ -6,3 +6,7 @@ storage/logs/*
 tmp/
 coverage/
 *.log
+
+# Client documents (never publish)
+*.docx
+*.pdf
