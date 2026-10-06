@@ -1,59 +1,193 @@
 'use strict';
 
 /**
- * Staff roles and permissions — Section 4 of the requirements document.
- * Marked CONFIRM by the client: change the matrix here and every route
- * guard and nav item follows.
+ * Permission catalog. Each portal area (module) lists the actions a role can
+ * be given. Roles themselves live in the database and are managed by the
+ * CEO/COO under Administration → Roles & permissions.
+ *
+ * Permission keys are "<module>.<action>", e.g. "jobs.edit".
  */
 
-const ROLES = Object.freeze({
-  ADMIN: 'admin',
-  PROGRAM_DIRECTOR: 'program_director',
-  PROGRAM_COORDINATOR: 'program_coordinator',
-  INTAKE_SPECIALIST: 'intake_specialist',
-  RECEPTION: 'reception',
-});
+const ADMIN_ROLE = 'admin';
 
-const ROLE_LABELS = Object.freeze({
-  [ROLES.ADMIN]: 'Admin (CEO/COO)',
-  [ROLES.PROGRAM_DIRECTOR]: 'Program Director',
-  [ROLES.PROGRAM_COORDINATOR]: 'Program Coordinator',
-  [ROLES.INTAKE_SPECIALIST]: 'Intake Specialist',
-  [ROLES.RECEPTION]: 'Reception',
-});
+// Standard actions, in the order they appear as columns in the role editor.
+const STANDARD_ACTIONS = {
+  view: { label: 'View', help: 'Read-only access.' },
+  edit: { label: 'Create & edit', help: 'Add new items and change existing ones.' },
+  archive: { label: 'Archive', help: 'Temporarily remove (can be restored).' },
+  delete: { label: 'Delete permanently', help: 'Remove for good. Cannot be undone.' },
+};
 
-const { ADMIN, PROGRAM_DIRECTOR, PROGRAM_COORDINATOR, INTAKE_SPECIALIST, RECEPTION } = ROLES;
-const ALL = Object.values(ROLES);
+const MODULES = [
+  {
+    key: 'appointments',
+    label: 'Appointments',
+    description: 'Website appointment requests, walk-ins and phone bookings.',
+    actions: ['view', 'edit', 'archive', 'delete'],
+    extras: { log: 'Log walk-in and phone appointments' },
+    labels: { edit: 'Confirm & update', archive: 'Cancel' },
+  },
+  {
+    key: 'schedule',
+    label: 'Staff schedule',
+    description: 'Shifts and availability.',
+    actions: ['view', 'edit'],
+  },
+  {
+    key: 'messages',
+    label: 'Messages & referrals',
+    description: 'The contact form inbox and website referrals.',
+    actions: ['view', 'edit', 'archive', 'delete'],
+    extras: { view_intake: 'See intake and referral messages only' },
+    labels: { view: 'View all', edit: 'Reply & update status' },
+  },
+  {
+    key: 'jobs',
+    label: 'Jobs & careers',
+    description: 'Job postings on the careers page.',
+    actions: ['view', 'edit', 'archive', 'delete'],
+  },
+  {
+    key: 'announcements',
+    label: 'Announcements',
+    description: 'Public and internal announcements.',
+    actions: ['view', 'edit', 'archive', 'delete'],
+  },
+  {
+    key: 'site_content',
+    label: 'Website content',
+    description: 'Page text, office hours and contact details.',
+    actions: ['view', 'edit'],
+    extras: { edit_limited: 'Edit announcements text, careers text and office hours only' },
+    labels: { edit: 'Edit all content' },
+  },
+  {
+    key: 'accounts',
+    label: 'Staff accounts',
+    description: 'Invite staff, change details and roles, reset access.',
+    actions: ['view', 'edit', 'archive', 'delete'],
+    // Without this, people can only manage staff whose role has no more access than their own.
+    extras: { manage_all: 'Manage everyone’s account except Admins (password resets, two-step resets, deactivation)' },
+    labels: { archive: 'Deactivate' },
+  },
+  {
+    key: 'roles',
+    label: 'Roles & permissions',
+    description: 'This screen: create roles and choose what each can do.',
+    actions: ['view', 'edit', 'delete'],
+  },
+  {
+    key: 'audit',
+    label: 'Audit log',
+    description: 'The record of sign-ins and important changes.',
+    actions: ['view'],
+  },
+];
 
-const PERMISSIONS = Object.freeze({
-  'accounts.manage': [ADMIN],
-  'accounts.assign_role': [ADMIN],
-  'content.edit': [ADMIN],
-  // "Limited" editing: announcements, careers text and office hours only.
-  'content.edit_limited': [ADMIN, PROGRAM_DIRECTOR],
-  'audit.view': [ADMIN],
-  'jobs.manage': [ADMIN, PROGRAM_DIRECTOR],
-  'announcements.post': [ADMIN, PROGRAM_DIRECTOR, PROGRAM_COORDINATOR],
-  'schedule.manage': [ADMIN, PROGRAM_DIRECTOR, PROGRAM_COORDINATOR],
-  'schedule.view': ALL,
-  'appointments.view': ALL,
-  'appointments.update_status': [ADMIN, PROGRAM_DIRECTOR, PROGRAM_COORDINATOR, INTAKE_SPECIALIST],
-  'appointments.log_walkin': ALL,
-  'contacts.view_all': [ADMIN, PROGRAM_DIRECTOR, PROGRAM_COORDINATOR, RECEPTION],
-  'contacts.view_intake': [INTAKE_SPECIALIST],
-  'contacts.manage': [ADMIN, PROGRAM_DIRECTOR, PROGRAM_COORDINATOR, INTAKE_SPECIALIST],
-  'profile.edit_own': ALL,
-});
+/** Every valid permission key, in catalog order. */
+const ALL_PERMISSIONS = MODULES.flatMap((m) => [
+  ...m.actions.map((a) => `${m.key}.${a}`),
+  ...Object.keys(m.extras || {}).map((a) => `${m.key}.${a}`),
+]);
+const VALID = new Set(ALL_PERMISSIONS);
 
+/**
+ * Tidy a set of permission keys: drop unknown keys, and give "view" to any
+ * module where the role can do more (you can't edit what you can't see).
+ * "View all messages" makes "intake only" redundant.
+ */
+function normalize(keys) {
+  const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
+  for (const m of MODULES) {
+    const has = (a) => set.has(`${m.key}.${a}`);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited'].some(has);
+    if (needsView && m.actions.includes('view') && !(m.key === 'messages' && has('view_intake') && !has('view'))) {
+      set.add(`${m.key}.view`);
+    }
+  }
+  if (set.has('messages.view')) set.delete('messages.view_intake');
+  return ALL_PERMISSIONS.filter((k) => set.has(k));
+}
+
+/** Starting roles (requirements §4). Loaded into the database by migration. */
+const DEFAULT_ROLES = [
+  {
+    key: ADMIN_ROLE,
+    name: 'Admin (CEO/COO)',
+    description: 'Full access to everything, including staff accounts, roles and the audit log.',
+    is_system: true,
+    require_mfa: true,
+    permissions: ALL_PERMISSIONS,
+  },
+  {
+    key: 'it_admin',
+    name: 'IT Administrator',
+    description: 'Keeps staff able to sign in: invites, password and two-step resets, deactivation. No access to client information.',
+    require_mfa: true,
+    permissions: ['accounts.view', 'accounts.edit', 'accounts.archive', 'accounts.manage_all', 'roles.view', 'audit.view'],
+  },
+  {
+    key: 'program_director',
+    name: 'Program Director',
+    description: 'Runs programs: jobs, announcements, schedules, appointments and limited site content.',
+    require_mfa: true,
+    permissions: [
+      'appointments.view', 'appointments.edit', 'appointments.log',
+      'schedule.view', 'schedule.edit',
+      'messages.view', 'messages.edit',
+      'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
+      'announcements.view', 'announcements.edit', 'announcements.archive', 'announcements.delete',
+      'site_content.edit_limited',
+    ],
+  },
+  {
+    key: 'program_coordinator',
+    name: 'Program Coordinator',
+    description: 'Day-to-day coordination: announcements, schedules and appointments.',
+    permissions: [
+      'appointments.view', 'appointments.edit', 'appointments.log',
+      'schedule.view', 'schedule.edit',
+      'messages.view', 'messages.edit',
+      'announcements.view', 'announcements.edit', 'announcements.archive',
+    ],
+  },
+  {
+    key: 'intake_specialist',
+    name: 'Intake Specialist',
+    description: 'Appointments and the intake / referral inbox.',
+    permissions: ['appointments.view', 'appointments.edit', 'appointments.log', 'messages.view_intake', 'messages.edit'],
+  },
+  {
+    key: 'reception',
+    name: 'Reception',
+    description: 'Front desk: logs walk-in and phone appointments; read-only schedules and messages.',
+    permissions: ['appointments.view', 'appointments.log', 'schedule.view', 'messages.view'],
+  },
+];
+
+/**
+ * Does the signed-in user have this permission? `user.permissions` is loaded
+ * from the database for their role on every request (see middleware/auth.js).
+ */
 function can(user, permission) {
-  if (!user || user.status !== 'active') return false;
-  const allowed = PERMISSIONS[permission];
-  if (!allowed) throw new Error(`Unknown permission: ${permission}`);
-  return allowed.includes(user.role);
+  if (!VALID.has(permission)) throw new Error(`Unknown permission: ${permission}`);
+  if (!user || user.status !== 'active' || !user.permissions) return false;
+  return user.permissions.has(permission);
 }
 
-function isValidRole(role) {
-  return ALL.includes(role);
+/** True if `user` holds every permission in `keys` (used to stop privilege escalation). */
+function hasAll(user, keys) {
+  return keys.every((k) => user.permissions && user.permissions.has(k));
 }
 
-module.exports = { ROLES, ROLE_LABELS, PERMISSIONS, can, isValidRole };
+/** Labels for each action of a module, for the role editor and summaries. */
+function actionColumns(module) {
+  return module.actions.map((a) => ({
+    key: a,
+    permission: `${module.key}.${a}`,
+    label: (module.labels && module.labels[a]) || STANDARD_ACTIONS[a].label,
+    help: STANDARD_ACTIONS[a].help,
+  }));
+}
+
+module.exports = { ADMIN_ROLE, MODULES, STANDARD_ACTIONS, ALL_PERMISSIONS, DEFAULT_ROLES, normalize, can, hasAll, actionColumns };

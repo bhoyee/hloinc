@@ -1,0 +1,34 @@
+{% extends "layouts/portal-auth.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block card %}
+  <h1 class="text-2xl font-extrabold">Staff sign in</h1>
+  <p class="mt-1.5 text-[15px] text-muted">Sign in to the HLO Staff Portal.</p>
+
+  {% if notice %}
+    <p class="mt-6 flex gap-3 rounded-2xl border border-line bg-surface p-4 text-[15px] text-ink" role="status">
+      {{ icon('info', 'mt-0.5 size-5 shrink-0 text-brand-700') }} {{ notice }}
+    </p>
+  {% endif %}
+  {% if errors.form %}
+    <p class="mt-6 flex gap-3 rounded-2xl border border-accent-200 bg-accent-50 p-4 text-[15px] text-accent-800" role="alert" tabindex="-1" data-focus-on-load>
+      {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }} {{ errors.form }}
+    </p>
+  {% endif %}
+
+  <form method="post" action="/portal/login" class="mt-6 space-y-5" novalidate data-once>
+    <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    {{ ui.input('email', 'Email address', values, errors, type='email', autocomplete='username', attrs='autofocus') }}
+    <div>
+      <div class="mb-1.5 flex items-center justify-between">
+        <label for="f-password" class="form-label !mb-0">Password</label>
+        <a href="/portal/forgot-password" class="text-sm font-semibold text-brand-700 hover:text-brand-800">Forgot password?</a>
+      </div>
+      <input id="f-password" type="password" name="password" class="form-control" autocomplete="current-password" required aria-required="true"
+        {% if errors.password %}aria-invalid="true" aria-describedby="f-password-error"{% endif %}>
+      {{ ui.fieldError('password', errors) }}
+    </div>
+    <button type="submit" class="btn-primary w-full">{{ icon('lock', 'size-4') }} Sign in</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% set columns = [
+  { key: 'view', label: 'View', help: 'Read only' },
+  { key: 'edit', label: 'Create & edit', help: 'Write' },
+  { key: 'archive', label: 'Archive', help: 'Temporary delete' },
+  { key: 'delete', label: 'Delete permanently', help: 'Cannot be undone' }
+] %}
+
+{% block content %}
+  {% if readOnly %}
+    <p class="mb-6 flex gap-3 rounded-2xl border border-line bg-white p-4 text-[15px] text-ink shadow-soft" role="status">
+      {{ icon('lock', 'mt-0.5 size-5 shrink-0 text-muted') }} {{ readOnlyReason }}
+    </p>
+  {% endif %}
+
+  <form method="post" action="{{ '/portal/roles/' + role.key if role else '/portal/roles' }}" novalidate data-once data-role-editor>
+    {{ ui.errorSummary(errors) }}
+    <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+    <fieldset {% if readOnly %}disabled{% endif %} class="space-y-6">
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="about-h">
+        <h2 id="about-h" class="text-lg font-bold">About this role</h2>
+        <div class="mt-5 grid gap-5 lg:grid-cols-2">
+          {{ ui.input('name', 'Role name', values, errors, autocomplete='off', attrs='maxlength="80"') }}
+          {{ ui.input('description', 'Short description', values, errors, required=false, autocomplete='off', attrs='maxlength="255"') }}
+        </div>
+        <label class="mt-5 flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line">
+          <input type="checkbox" name="require_mfa" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" {% if values.require_mfa == 'yes' %}checked{% endif %}>
+          <span>
+            <span class="block font-semibold text-ink">Require two-step sign-in</span>
+            <span class="block text-sm text-muted">People with this role must use an authenticator app to sign in. Recommended for roles that can see personal information or change accounts.</span>
+          </span>
+        </label>
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="perm-h">
+        <div class="flex flex-col gap-3 border-b border-line p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
+          <div>
+            <h2 id="perm-h" class="text-lg font-bold">Permissions</h2>
+            <p class="mt-1 text-[15px] text-muted">Tick what this role can do in each area. Giving any action also gives View.</p>
+            {% if errors.permissions %}<p id="f-permissions" class="form-error">{{ icon('exclamation', 'size-4') }} {{ errors.permissions }}</p>{% endif %}
+          </div>
+          {% if not readOnly %}
+            <div class="flex shrink-0 gap-2">
+              <button type="button" class="btn-secondary !px-4 !py-2 text-sm" data-perm-all>Select all</button>
+              <button type="button" class="btn-secondary !px-4 !py-2 text-sm" data-perm-none>Clear all</button>
+            </div>
+          {% endif %}
+        </div>
+
+        {# Column headings (wide screens). On phones each area shows its own labels. #}
+        <div class="hidden grid-cols-[minmax(14rem,2fr)_repeat(4,minmax(6.5rem,1fr))_minmax(12rem,1.6fr)] gap-4 border-b border-line bg-surface px-8 py-3 text-xs font-semibold tracking-wide text-muted uppercase lg:grid" aria-hidden="true">
+          <span>Area</span>
+          {% for c in columns %}<span class="text-center">{{ c.label }}<span class="block text-[11px] font-medium tracking-normal normal-case">{{ c.help }}</span></span>{% endfor %}
+          <span>Other options</span>
+        </div>
+
+        <ul class="divide-y divide-line">
+          {% for m in matrix %}
+            <li class="grid gap-4 px-6 py-5 sm:px-8 lg:grid-cols-[minmax(14rem,2fr)_repeat(4,minmax(6.5rem,1fr))_minmax(12rem,1.6fr)] lg:items-center" data-perm-row="{{ m.key }}">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="font-semibold text-ink">{{ m.label }}</p>
+                  <p class="text-sm text-muted">{{ m.description }}</p>
+                </div>
+                {% if not readOnly %}<button type="button" class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50 lg:hidden" data-row-all="{{ m.key }}">All</button>{% endif %}
+              </div>
+
+              {% for col in m.cells %}
+                {% set c = columns[loop.index0] %}
+                <div class="{{ 'hidden lg:block' if not col }} lg:text-center">
+                  {% if col %}
+                    <label class="inline-flex cursor-pointer items-center gap-2.5 rounded-xl px-1 py-1 lg:flex-col lg:gap-1">
+                      <input type="checkbox" name="permissions" value="{{ col.permission }}" class="size-5 accent-brand-700"
+                        data-module="{{ m.key }}" data-action="{{ c.key }}"
+                        aria-label="{{ m.label }}: {{ col.label }}"
+                        {% if col.permission in values.permissions %}checked{% endif %}>
+                      <span class="text-sm text-ink lg:text-xs lg:text-muted {{ 'lg:sr-only' if col.label == c.label }}">{{ col.label }}</span>
+                    </label>
+                  {% else %}
+                    <span class="hidden text-muted lg:inline" aria-hidden="true">—</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+
+              <div class="space-y-2 {{ 'hidden lg:block' if not m.extraList.length }}">
+                {% for x in m.extraList %}
+                  <label class="flex cursor-pointer items-start gap-2.5">
+                    <input type="checkbox" name="permissions" value="{{ x.permission }}" class="mt-0.5 size-5 shrink-0 accent-brand-700"
+                      data-module="{{ m.key }}" data-action="extra"
+                      {% if x.permission in values.permissions %}checked{% endif %}>
+                    <span class="text-sm text-ink">{{ x.label }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      {% if not readOnly %}
+        <div class="flex flex-wrap gap-3">
+          <button type="submit" class="btn-primary">{{ 'Save role' if role else 'Create role' }}</button>
+          <a href="/portal/roles" class="btn-secondary">Cancel</a>
+        </div>
+      {% endif %}
+    </fieldset>
+  </form>
+
+  {% if role and not role.is_system and role.key != actorRole and can('roles.delete') %}
+    <section class="mt-6 rounded-3xl border border-accent-200 bg-white p-6 shadow-soft" aria-labelledby="del-h">
+      <h2 id="del-h" class="text-lg font-bold text-accent-700">Delete this role</h2>
+      <p class="mt-1 text-[15px] text-muted">Only possible when nobody has this role. Staff keep their accounts; give them another role first.</p>
+      <form method="post" action="/portal/roles/{{ role.key }}/delete" class="mt-4">
+        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+        <button type="submit" class="btn bg-accent-600 text-white hover:bg-accent-700">{{ icon('trash', 'size-4') }} Delete role</button>
+      </form>
+    </section>
+  {% endif %}
+{% endblock %}

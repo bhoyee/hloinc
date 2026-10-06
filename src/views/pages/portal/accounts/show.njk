@@ -1,0 +1,117 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{# Macros can't see the page's variables, so the account id and CSRF token are passed in. #}
+{% macro action(id, csrf, path, label, iconName, style='btn-secondary', note='') %}
+  <form method="post" action="/portal/accounts/{{ id }}/{{ path }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button type="submit" class="{{ style }} w-full justify-start !rounded-2xl !px-4">{{ icon(iconName, 'size-4') }} {{ label }}</button>
+    {% if note %}<p class="mt-1.5 px-1 text-xs text-muted">{{ note }}</p>{% endif %}
+  </form>
+{% endmacro %}
+
+{% block content %}
+  {% if account.status != 'active' %}
+    <p class="mb-6 flex gap-3 rounded-2xl border border-line bg-white p-4 text-[15px] text-ink shadow-soft" role="status">
+      {{ icon('lock', 'mt-0.5 size-5 shrink-0 text-muted') }} This account is deactivated{% if account.deactivated_at %} (since {{ account.deactivated_at | date }}){% endif %}. The person can’t sign in, and their history is kept.
+    </p>
+  {% elif invitePending %}
+    <p class="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900" role="status">
+      {{ icon('mail', 'mt-0.5 size-5 shrink-0') }} Invitation sent. Waiting for {{ account.name }} to set a password.
+    </p>
+  {% endif %}
+
+  <div class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="details-h">
+      <h2 id="details-h" class="text-lg font-bold">Details and role</h2>
+      {% set editable = can('accounts.edit') and canManage %}
+      {% if not editable %}
+        <p class="mt-4 flex gap-3 rounded-2xl bg-surface p-4 text-[15px] text-muted ring-1 ring-line">{{ icon('lock', 'mt-0.5 size-5 shrink-0') }}
+          {% if not canManage %}This person has more access than you, so you can view but not change their account.{% else %}Your role can view staff accounts but not change them.{% endif %}</p>
+      {% endif %}
+      <form method="post" action="/portal/accounts/{{ account.id }}" class="mt-6 space-y-5" novalidate data-once>
+        <fieldset class="space-y-5" {% if not editable %}disabled{% endif %}>
+        {{ ui.errorSummary(errors) }}
+        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+        <div class="grid gap-5 sm:grid-cols-2">
+          {{ ui.input('name', 'Full name', values, errors, autocomplete='off') }}
+          {{ ui.input('email', 'Work email', values, errors, type='email', autocomplete='off') }}
+        </div>
+        {{ ui.input('phone', 'Phone', values, errors, type='tel', required=false, autocomplete='off') }}
+        {% if isSelf %}
+          <input type="hidden" name="role" value="{{ account.role }}">
+          {% set disabled = true %}
+        {% endif %}
+        {% include "partials/portal-role-select.njk" %}
+        {% if isSelf %}<p class="text-sm text-muted">You can’t change your own role. Ask another administrator.</p>{% endif %}
+        {% if editable %}
+          <p class="text-sm text-muted">Changing the email or role signs the person out, so the change applies straight away.</p>
+          <button type="submit" class="btn-green">Save changes</button>
+        {% endif %}
+        </fieldset>
+      </form>
+    </section>
+
+    <div class="space-y-6">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="access-h">
+        <h2 id="access-h" class="text-lg font-bold">Access</h2>
+        <dl class="mt-4 space-y-2 text-[15px]">
+          <div class="flex justify-between gap-4"><dt class="text-muted">Two-step sign-in</dt><dd class="font-medium">{{ 'On' if account.mfa_enabled else ('Off · required' if mfaRequired else 'Off') }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Last sign-in</dt><dd class="font-medium">{{ account.last_login_at | date({ month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) if account.last_login_at else 'Never' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Account created</dt><dd class="font-medium">{{ account.created_at | date }}</dd></div>
+        </dl>
+
+        {% if account.status == 'active' and can('accounts.edit') and canManage %}
+          <div class="mt-5 space-y-3">
+            {% if invitePending %}
+              {{ action(account.id, csrfToken(), 'resend-invite', 'Resend invitation', 'mail') }}
+            {% else %}
+              {{ action(account.id, csrfToken(), 'send-reset', 'Send password reset link', 'key', note='Signs them out everywhere and emails a one-time link.') }}
+            {% endif %}
+            {% if account.mfa_enabled %}
+              {{ action(account.id, csrfToken(), 'reset-two-step', 'Reset two-step sign-in', 'device', note='For a lost or replaced phone.') }}
+            {% endif %}
+            {{ action(account.id, csrfToken(), 'sign-out', 'Sign out everywhere', 'logout') }}
+          </div>
+        {% endif %}
+      </section>
+
+      {% if not isSelf and canManage and (can('accounts.archive') or can('accounts.delete')) %}
+        <section class="rounded-3xl border border-accent-200 bg-white p-6 shadow-soft" aria-labelledby="danger-h">
+          <h2 id="danger-h" class="text-lg font-bold text-accent-700">Deactivate or delete</h2>
+          {% if account.status == 'active' and can('accounts.archive') %}
+            <p class="mt-2 text-[15px] text-muted">Deactivating stops sign-in straight away and keeps all history. You can reactivate later.</p>
+            <div class="mt-4">{{ action(account.id, csrfToken(), 'deactivate', 'Deactivate account', 'lock', 'btn-secondary !text-accent-700 !ring-accent-200') }}</div>
+          {% elif account.status != 'active' %}
+            {% if can('accounts.archive') %}<div class="mt-4">{{ action(account.id, csrfToken(), 'reactivate', 'Reactivate account', 'refresh', 'btn-green') }}</div>{% endif %}
+            {% if can('accounts.delete') %}
+            <form method="post" action="/portal/accounts/{{ account.id }}/delete" class="mt-6 border-t border-line pt-5">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <p class="text-[15px] text-muted">Permanent deletion removes the account. The audit log keeps their name. This can’t be undone.</p>
+              <label for="f-confirm-delete" class="form-label mt-4">Type <strong class="font-mono">{{ account.email }}</strong> to confirm</label>
+              <input id="f-confirm-delete" name="confirm" class="form-control" autocomplete="off" required>
+              <button type="submit" class="btn mt-3 w-full bg-accent-600 text-white hover:bg-accent-700">{{ icon('trash', 'size-4') }} Delete permanently</button>
+            </form>
+            {% endif %}
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="mt-6 rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="activity-h">
+    <h2 id="activity-h" class="text-lg font-bold">Recent activity</h2>
+    {% if activity.length %}
+      <ul class="mt-4 divide-y divide-line">
+        {% for e in activity %}
+          <li class="flex flex-col gap-1 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <p class="text-[15px] text-ink">{{ e.summary or e.action }}</p>
+            <time class="shrink-0 text-sm text-muted">{{ e.created_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</time>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-2 text-[15px] text-muted">No activity yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

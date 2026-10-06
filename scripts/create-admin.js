@@ -8,7 +8,7 @@ const readline = require('readline');
 const bcrypt = require('bcryptjs');
 const { z } = require('zod');
 const db = require('../src/db/knex');
-const { ROLES } = require('../src/auth/permissions');
+const { ADMIN_ROLE } = require('../src/auth/permissions');
 const { audit } = require('../src/services/audit');
 
 function arg(name) {
@@ -50,7 +50,7 @@ async function main() {
     name: input.name,
     email: input.email,
     password_hash: await bcrypt.hash(password, 12),
-    role: ROLES.ADMIN,
+    role: ADMIN_ROLE,
     password_changed_at: db.fn.now(),
   });
 

@@ -4,6 +4,7 @@ const db = require('../db/knex');
 const { notify } = require('./notify');
 const content = require('./content');
 const { recipients } = require('../lib/site');
+const notifications = require('./notifications');
 
 const WINDOW_LABELS = { morning: 'Morning (9 a.m. – 12 p.m.)', afternoon: 'Afternoon (12 p.m. – 5 p.m.)' };
 
@@ -40,6 +41,11 @@ async function submitContact(data, { ip }) {
   });
 
   await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
+  await notifications.notifyPermission(data.recipient === 'intake' ? ['messages.view', 'messages.view_intake'] : ['messages.view'], {
+    type: 'message',
+    title: `New message from ${data.name}`,
+    body: `Sent to ${recipient.label} from the website.`,
+  });
   return { id, emailed: result.ok };
 }
 
@@ -97,6 +103,11 @@ async function submitReferral(data, { ip, roleLabel, serviceNames }) {
   });
 
   await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
+  await notifications.notifyPermission(['messages.view', 'messages.view_intake'], {
+    type: 'referral',
+    title: `New referral for ${data.person_name}`,
+    body: `From ${data.referrer_name} (${roleLabel}) · ${data.county}`,
+  });
   return { id, emailed: result.ok };
 }
 
@@ -157,6 +168,11 @@ async function submitAppointmentRequest(data, { ip }) {
     }),
   ]);
 
+  await notifications.notifyPermission('appointments.view', {
+    type: 'appointment',
+    title: `Appointment request: ${type.name}`,
+    body: `${data.name} · ${when}`,
+  });
   return { id, acknowledged: toVisitor.ok, staffNotified: toStaff.ok };
 }
 

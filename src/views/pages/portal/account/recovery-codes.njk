@@ -1,0 +1,23 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <section class="max-w-2xl rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+    {% if firstTime %}
+      <p class="mb-6 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-[15px] text-brand-900" role="status">
+        {{ icon('check', 'mt-0.5 size-5 shrink-0') }} Two-step sign-in is now on.
+      </p>
+    {% endif %}
+    <h2 class="text-lg font-bold">Save these recovery codes now</h2>
+    <p class="mt-2 text-[15px] text-muted">If you lose your phone, each code lets you sign in once. <strong class="text-ink">This is the only time they’ll be shown.</strong> Print them or keep them somewhere safe, away from your phone.{% if not firstTime %} Your old codes no longer work.{% endif %}</p>
+
+    <ol class="mt-6 grid grid-cols-2 gap-3 rounded-2xl bg-surface p-5 font-mono text-lg tracking-wider text-ink ring-1 ring-line sm:grid-cols-2" aria-label="Recovery codes">
+      {% for code in codes %}<li class="rounded-xl bg-white px-3 py-2 text-center ring-1 ring-line">{{ code }}</li>{% endfor %}
+    </ol>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <button type="button" class="btn-secondary" data-print>{{ icon('document', 'size-4') }} Print codes</button>
+      <a href="/portal" class="btn-primary">I’ve saved my codes</a>
+    </div>
+  </section>
+{% endblock %}

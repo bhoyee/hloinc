@@ -1,0 +1,42 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <form method="get" action="/portal/search" role="search" aria-label="Search the portal" class="mb-6 flex max-w-2xl gap-3">
+    <label for="f-q" class="sr-only">Search</label>
+    <input id="f-q" type="search" name="q" value="{{ q }}" maxlength="100" placeholder="Search staff, roles, pages…" class="form-control" autofocus>
+    <button type="submit" class="btn-green shrink-0">{{ icon('search', 'size-4') }} Search</button>
+  </form>
+
+  {% if q.length < 2 %}
+    <p class="text-muted">Type at least two characters.</p>
+  {% elif not groups.length %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+      <span class="icon-tile mx-auto">{{ icon('search', 'size-6') }}</span>
+      <p class="mt-4 text-lg font-semibold text-ink">Nothing found for “{{ q }}”</p>
+      <p class="mt-1 text-muted">Search covers what your role can see. Appointments and messages will be searchable once those areas are added.</p>
+    </div>
+  {% else %}
+    <p class="mb-4 text-sm text-muted">{{ total }} {{ 'result' if total == 1 else 'results' }} for “{{ q }}”</p>
+    <div class="grid gap-6 xl:grid-cols-2">
+      {% for g in groups %}
+        <section class="rounded-3xl border border-line bg-white p-5 shadow-soft" aria-labelledby="g-{{ loop.index }}">
+          <h2 id="g-{{ loop.index }}" class="px-2 text-sm font-semibold tracking-wide text-muted uppercase">{{ g.label }}</h2>
+          <ul class="mt-2">
+            {% for it in g.items %}
+              <li>
+                {% if it.href %}<a href="{{ it.href }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-surface">{% else %}<div class="flex items-center gap-3 px-2 py-2.5">{% endif %}
+                  <span class="icon-tile size-10">{{ icon(it.icon or 'search', 'size-5') }}</span>
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold text-ink">{{ it.title | highlight(q) }}</span>
+                    <span class="block truncate text-sm text-muted">{{ it.subtitle }}</span>
+                  </span>
+                {% if it.href %}</a>{% else %}</div>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

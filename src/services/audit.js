@@ -19,7 +19,8 @@ async function audit(req, entry) {
       entity_type: entry.entityType || null,
       entity_id: entry.entityId != null ? String(entry.entityId) : null,
       summary: entry.summary ? entry.summary.slice(0, 500) : null,
-      ip: req ? req.ip : null,
+      // "::ffff:1.2.3.4" is how Node reports IPv4 on a dual-stack socket; store the plain form.
+      ip: req && req.ip ? req.ip.replace(/^::ffff:/, '') : null,
       user_agent: req ? (req.get('user-agent') || '').slice(0, 255) : null,
       metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
     });

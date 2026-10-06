@@ -1,0 +1,192 @@
+{% extends "layouts/base.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block meta %}
+  <meta name="robots" content="noindex, nofollow">
+  {# Lets the page's scripts send the CSRF token with background requests (notifications). #}
+  <meta name="csrf-token" content="{{ csrfToken() }}">
+{% endblock %}
+{% block bodyClass %}bg-surface{% endblock %}
+
+{% macro navLink(item) %}
+  <li>
+    <a href="{{ item.href }}" {% if item.active %}aria-current="page"{% endif %}
+       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition {{ 'bg-white/10 text-white' if item.active else 'hover:bg-white/5 hover:text-white' }}">
+      {{ icon(item.icon, 'size-5 ' + ('text-accent-500' if item.active else 'text-brand-300')) }} {{ item.label }}
+    </a>
+  </li>
+{% endmacro %}
+
+{% block body %}
+<div class="min-h-screen lg:grid lg:grid-cols-[16.5rem_1fr]">
+
+  {# ── Sidebar: fixed column on large screens, slide-in drawer on smaller ones ── #}
+  <aside id="portal-nav" aria-label="Portal menu" class="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col bg-brand-950 text-brand-100 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-auto" data-portal-nav>
+    <div class="flex h-16 items-center justify-between gap-3 border-b border-white/10 px-4 lg:h-[4.5rem]">
+      <a href="/portal" class="flex min-w-0 items-center gap-3">
+        <span class="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
+          <img src="/apple-touch-icon.png" alt="" width="40" height="40" class="size-full object-contain">
+        </span>
+        <span class="min-w-0 leading-tight">
+          <span class="block font-display text-base font-bold text-white">Healthy Living Option</span>
+          <span class="block text-xs font-medium text-brand-300">Staff Portal</span>
+        </span>
+      </a>
+      <button type="button" class="grid size-10 shrink-0 place-items-center rounded-lg hover:bg-white/10 lg:hidden" data-portal-nav-close>
+        {{ icon('close', 'size-5') }}<span class="sr-only">Close menu</span>
+      </button>
+    </div>
+
+    <nav aria-label="Portal" class="flex-1 overflow-y-auto px-3 py-5">
+      <ul class="space-y-1">
+        {% for item in portalNav %}{% if not item.soon and item.group != 'admin' %}{{ navLink(item) }}{% endif %}{% endfor %}
+      </ul>
+
+      {% set adminItems = portalNav | selectattr('group') %}
+      {% if adminItems.length %}
+        <p class="mt-7 px-3 text-xs font-semibold tracking-wider text-brand-400 uppercase">Administration</p>
+        <ul class="mt-2 space-y-1">{% for item in adminItems %}{{ navLink(item) }}{% endfor %}</ul>
+      {% endif %}
+
+      {% set soonItems = portalNav | selectattr('soon') %}
+      {% if soonItems.length %}
+        <p class="mt-7 px-3 text-xs font-semibold tracking-wider text-brand-400 uppercase">Coming soon</p>
+        <ul class="mt-2 space-y-1">
+          {% for item in soonItems %}
+            <li class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-brand-300">
+              {{ icon(item.icon, 'size-5 text-brand-400') }} {{ item.label }}
+              <span class="ml-auto rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-brand-200">{{ item.soon }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </nav>
+
+    <div class="border-t border-white/10 p-3">
+      <a href="/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/5 hover:text-white">
+        {{ icon('external', 'size-5 text-brand-300') }} View the website
+      </a>
+    </div>
+  </aside>
+  <div class="fixed inset-0 z-40 hidden bg-ink/40 lg:hidden" data-portal-nav-backdrop></div>
+
+  {# ── Main column ── #}
+  <div class="flex min-h-screen min-w-0 flex-col">
+    <header class="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+      <div class="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:h-[4.5rem] lg:px-8">
+        <button type="button" class="grid size-10 shrink-0 place-items-center rounded-lg text-ink hover:bg-surface lg:hidden" aria-controls="portal-nav" aria-expanded="false" data-portal-nav-open>
+          {{ icon('menu', 'size-6') }}<span class="sr-only">Open menu</span>
+        </button>
+        <a href="/portal" class="flex items-center gap-2 lg:hidden" aria-label="Staff portal home">
+          <img src="/apple-touch-icon.png" alt="" width="32" height="32" class="size-8 rounded-lg">
+          <span class="hidden font-display font-bold text-ink min-[400px]:inline">HLO</span>
+        </a>
+
+        {# Global search — a normal GET form; live results added by site.js #}
+        <form method="get" action="/portal/search" role="search" aria-label="Search the portal"
+              class="relative hidden max-w-xl flex-1 md:block" data-global-search>
+          <label for="portal-search" class="sr-only">Search the portal</label>
+          <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+          <input id="portal-search" type="search" name="q" autocomplete="off" maxlength="100" placeholder="Search staff, roles, pages…"
+                 class="h-11 w-full rounded-xl border border-line bg-surface pr-16 pl-11 text-[15px] text-ink transition placeholder:text-[#6b7c73] focus:border-brand-600 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:outline-none"
+                 data-search-input>
+          <kbd class="pointer-events-none absolute inset-y-0 right-3 my-auto hidden h-6 items-center rounded-md border border-line bg-white px-1.5 font-sans text-xs text-muted lg:flex" aria-hidden="true">Ctrl K</kbd>
+          <div id="search-results" class="absolute inset-x-0 top-full mt-2 hidden max-h-[70vh] overflow-y-auto rounded-2xl border border-line bg-white p-2 shadow-lift" data-search-results></div>
+          <p class="sr-only" aria-live="polite" data-search-status></p>
+        </form>
+
+        <div class="ml-auto flex items-center gap-1 sm:gap-2">
+          <button type="button" class="grid size-10 place-items-center rounded-lg text-ink hover:bg-surface md:hidden" aria-controls="mobile-search" aria-expanded="false" data-mobile-search-toggle>
+            {{ icon('search', 'size-5') }}<span class="sr-only">Search</span>
+          </button>
+
+          {# Notifications #}
+          <div class="relative" data-dropdown>
+            <button type="button" class="relative grid size-10 place-items-center rounded-lg text-ink hover:bg-surface" aria-haspopup="true" aria-expanded="false" aria-controls="notif-panel" data-dropdown-button data-notif-button>
+              <svg class="size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+              <span class="sr-only" data-notif-label>Notifications{% if unreadCount %}, {{ unreadCount }} unread{% endif %}</span>
+              <span class="absolute top-1 right-1 min-w-[1.15rem] rounded-full bg-accent-600 px-1 text-center text-[11px] leading-[1.15rem] font-bold text-white {{ '' if unreadCount else 'hidden' }}" data-notif-count aria-hidden="true">{{ unreadCount if unreadCount < 100 else '99+' }}</span>
+            </button>
+            <div id="notif-panel" class="fixed inset-x-3 top-[4.25rem] hidden rounded-2xl border border-line bg-white shadow-lift sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96" data-dropdown-panel>
+              <div class="flex items-center justify-between border-b border-line px-4 py-3">
+                <p class="font-display font-bold text-ink">Notifications</p>
+                <button type="button" class="text-sm font-semibold text-brand-700 hover:text-brand-800" data-notif-read-all>Mark all read</button>
+              </div>
+              <ul class="max-h-[60vh] divide-y divide-line overflow-y-auto" data-notif-list>
+                <li class="px-4 py-6 text-center text-sm text-muted">Loading…</li>
+              </ul>
+              <a href="/portal/notifications" class="block border-t border-line px-4 py-3 text-center text-sm font-semibold text-brand-700 hover:bg-surface">See all notifications</a>
+            </div>
+          </div>
+
+          {# Profile menu #}
+          <div class="relative" data-dropdown>
+            <button type="button" class="flex items-center gap-2.5 rounded-xl p-1 pr-1.5 hover:bg-surface sm:pr-3" aria-haspopup="true" aria-expanded="false" aria-controls="user-panel" data-dropdown-button>
+              <span class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white" aria-hidden="true">{{ user.name | first | upper }}</span>
+              <span class="hidden min-w-0 text-left sm:block">
+                <span class="block max-w-[10rem] truncate text-sm font-semibold text-ink">{{ user.name }}</span>
+                <span class="block max-w-[10rem] truncate text-xs text-muted">{{ user.roleLabel }}</span>
+              </span>
+              {{ icon('chevron-right', 'hidden size-4 rotate-90 text-muted sm:block') }}
+              <span class="sr-only">Account menu for {{ user.name }}</span>
+            </button>
+            <div id="user-panel" class="absolute top-full right-0 mt-2 hidden w-64 rounded-2xl border border-line bg-white p-2 shadow-lift" data-dropdown-panel>
+              <div class="border-b border-line px-3 pt-2 pb-3">
+                <p class="truncate font-semibold text-ink">{{ user.name }}</p>
+                <p class="truncate text-sm text-muted">{{ user.email }}</p>
+              </div>
+              <a href="/portal/account" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('users', 'size-5 text-muted') }} My account</a>
+              <a href="/portal/account/two-step" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('device', 'size-5 text-muted') }} Two-step sign-in</a>
+              <a href="/portal/notifications" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('megaphone', 'size-5 text-muted') }} Notifications</a>
+              <form method="post" action="/portal/logout" class="mt-1 border-t border-line pt-1">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-accent-700 hover:bg-accent-50">{{ icon('logout', 'size-5') }} Sign out</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Phones: search opens as its own bar under the header. #}
+      <form id="mobile-search" method="get" action="/portal/search" role="search" aria-label="Search the portal" class="relative hidden border-t border-line px-3 py-3 md:hidden" data-global-search>
+        <label for="portal-search-m" class="sr-only">Search the portal</label>
+        <span class="pointer-events-none absolute inset-y-0 left-6 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+        <input id="portal-search-m" type="search" name="q" autocomplete="off" maxlength="100" placeholder="Search staff, roles, pages…"
+               class="h-11 w-full rounded-xl border border-line bg-surface pl-11 text-base text-ink focus:border-brand-600 focus:bg-white focus:ring-4 focus:ring-brand-100 focus:outline-none"
+               data-search-input>
+        <div id="search-results-m" class="absolute inset-x-3 top-full z-40 mt-1 hidden max-h-[70vh] overflow-y-auto rounded-2xl border border-line bg-white p-2 shadow-lift" data-search-results></div>
+        <p class="sr-only" aria-live="polite" data-search-status></p>
+      </form>
+    </header>
+
+    <main id="main" class="w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
+      <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+          {% if crumbs %}
+            <nav aria-label="Breadcrumb" class="mb-2 flex flex-wrap gap-1.5 text-sm text-muted">
+              {% for c in crumbs %}<a href="{{ c.href }}" class="hover:text-brand-700">{{ c.label }}</a><span aria-hidden="true">/</span>{% endfor %}
+            </nav>
+          {% endif %}
+          <h1 class="text-2xl font-extrabold sm:text-3xl">{{ heading or title }}</h1>
+          {% if subheading %}<p class="mt-1 text-muted">{{ subheading }}</p>{% endif %}
+        </div>
+        {% block actions %}{% endblock %}
+      </div>
+      {{ ui.flash(flash) }}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-line bg-white px-4 py-5 text-sm text-muted sm:px-6 lg:px-8 xl:px-10">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p>&copy; {{ currentYear }} {{ site.legalName }} · Staff Portal</p>
+        <p class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <a href="/privacy" class="hover:text-ink">Privacy</a>
+          <a href="/data-protection" class="hover:text-ink">Data protection</a>
+          <span>Need help? Contact your administrator.</span>
+          <span>Powered by <a href="https://giddyhost.com" target="_blank" rel="noopener" class="font-semibold text-ink hover:text-brand-700">GiddyHost</a></span>
+        </p>
+      </div>
+    </footer>
+  </div>
+</div>
+{% endblock %}

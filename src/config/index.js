@@ -16,6 +16,10 @@ const schema = z.object({
   APP_URL: z.string().url().default('http://localhost:3000'),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
   SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(60),
+  // Staff are signed out this many hours after signing in, even if active.
+  SESSION_MAX_HOURS: z.coerce.number().int().positive().default(12),
+  // Encrypts MFA secrets at rest. Changing it makes staff set up MFA again.
+  APP_KEY: z.string().min(32, 'APP_KEY must be at least 32 characters'),
 
   DB_HOST: z.string().default('127.0.0.1'),
   DB_PORT: z.coerce.number().int().positive().default(3306),
@@ -42,6 +46,7 @@ const parsed = schema.safeParse({
   SESSION_SECRET:
     process.env.SESSION_SECRET ||
     (process.env.NODE_ENV === 'test' ? 'test-secret-test-secret-test-secret-123' : undefined),
+  APP_KEY: process.env.APP_KEY || (process.env.NODE_ENV === 'test' ? 'test-app-key-test-app-key-test-app-key-1' : undefined),
 });
 
 if (!parsed.success) {
@@ -60,6 +65,16 @@ module.exports = {
   session: {
     secret: env.SESSION_SECRET,
     idleMinutes: env.SESSION_IDLE_MINUTES,
+    maxHours: env.SESSION_MAX_HOURS,
+  },
+  auth: {
+    appKey: env.APP_KEY,
+    maxFailedLogins: 5,
+    lockMinutes: 15,
+    resetTokenMinutes: 60,
+    inviteTokenHours: 72,
+    // Fewer bcrypt rounds in tests keep the suite fast; production uses 12.
+    bcryptRounds: env.NODE_ENV === 'test' ? 4 : 12,
   },
   db: {
     host: env.DB_HOST,

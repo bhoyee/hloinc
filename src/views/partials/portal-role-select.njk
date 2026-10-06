@@ -1,0 +1,20 @@
+{% import "partials/ui.njk" as ui %}
+{# Role picker. Roles the current user can't give out (more access than their own) are disabled.
+   Expects values, errors, roleOptions; optional `disabled` for the whole group. #}
+<fieldset id="f-role" tabindex="-1" {% if errors.role %}aria-describedby="f-role-error"{% endif %} {% if disabled %}disabled{% endif %}>
+  <legend class="form-label">Role</legend>
+  <div class="mt-2 grid gap-2.5">
+    {% for r in roleOptions %}
+      {% set locked = not r.assignable and values.role != r.value %}
+      <label class="flex cursor-pointer gap-3 rounded-2xl border border-line p-3.5 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+        <input type="radio" name="role" value="{{ r.value }}" class="mt-1 size-5 shrink-0 accent-brand-700" {% if values.role == r.value %}checked{% endif %} {% if locked %}disabled{% endif %} required>
+        <span>
+          <span class="block font-semibold text-ink">{{ r.label }}{% if locked %} <span class="text-xs font-normal text-muted">· more access than yours</span>{% endif %}</span>
+          {% if r.description %}<span class="block text-sm text-muted">{{ r.description }}</span>{% endif %}
+        </span>
+      </label>
+    {% endfor %}
+  </div>
+  {{ ui.fieldError('role', errors) }}
+  {% if can('roles.view') %}<p class="mt-2 text-sm"><a href="/portal/roles" class="link">See what each role can do</a></p>{% endif %}
+</fieldset>

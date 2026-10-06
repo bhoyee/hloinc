@@ -68,16 +68,23 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Careers redesign: job cards with pay/location/schedule chips, "How to apply" card, job detail page with summary + sticky Apply (fixed bar on phones), Google JobPosting structured data; demo DSP jobs seeded in development only
 - Still needed from HLO: corrected logo (current reads "Health Living", 300px JPG — ideally SVG), ZIP code, real photos of HLO staff/homes to replace the CC0 stock placeholders (see docs/photo-sources.md), recipient emails, approval of service copy + appointment types, "More inquiry" label wording
 
-## Phase 2 — Auth, roles, accounts, audit
-- [ ] Staff login/logout, session expiry + revocation, login rate limiting, lockout
-- [ ] Password reset by Admin; "forgot password" email flow
-- [ ] Permissions map (Section 4) enforced by middleware on every route/action
-  - Roles: Admin (CEO/COO), Program Director, Program Coordinator, Intake Specialist, Reception **(CONFIRM)**
-- [ ] MFA (TOTP) for Admin + Program Director **(CONFIRM)**
-- [ ] Accounts module: create, edit, assign role, deactivate (soft delete), permanent delete (Admin only), reset access
-- [ ] My Account: edit name/contact/password
-- [ ] Audit log: who/what/when for create/change/delete/view-sensitive; Admin-only viewer with filters
-- [ ] Portal shell: dashboard, sidebar nav filtered by role
+## Phase 2 — Auth, roles, accounts, audit ✅ done
+- [x] Staff sign-in/out: new session ID on sign-in, 60-min idle + 12-hour absolute timeout, per-IP rate limit, 5-strike 15-minute lockout, identical error for every failure
+- [x] Sessions revocable: deactivating, role/email change, password change and "sign out everywhere" end sessions immediately
+- [x] Forgot password (same reply whether or not the email exists) and admin-sent reset links; one-time, hashed, expiring tokens; security-notice emails
+- [x] Invitations: admins never see or set passwords — staff choose their own from a 72-hour one-time link
+- [x] Permissions map (Section 4) enforced by middleware on every route; menu and dashboard tiles filtered by role **(roles still CONFIRM)**
+- [x] Two-step sign-in (TOTP + 10 single-use recovery codes), secrets encrypted with APP_KEY, codes can't be replayed; required for Admin + Program Director **(CONFIRM — Q7)**
+- [x] Accounts: list/search/filter, create + invite, edit, change role, resend invite, reset password, reset two-step, sign out, deactivate/reactivate, permanent delete (deactivated only, typed confirmation); can't change own role or lock out the last Admin
+- [x] My Account: name/phone, change password, two-step set-up/manage, sign out other devices
+- [x] Audit log: sign-ins (incl. failures/locks), all account and security changes; Admin viewer with search, person/action/date filters, details
+- [x] Portal shell: sidebar (drawer on phones), dashboard with role-based counts, "Coming soon" list of later modules
+- [x] Tests: 31 portal tests (152 total); axe clean on portal pages
+- [x] **Roles & permissions (admin settings):** CEO/COO creates and edits roles; per-area View / Create & edit / Archive (temporary delete) / Delete permanently, plus area-specific options; per-role "require two-step sign-in"; Admin role locked; can't grant or assign more than you hold, edit your own role, or delete a role in use
+- [x] Portal layout: full width, HLO logo, header with global search (live, Ctrl+K, permission-aware) and in-app notifications (bell, unread count, mark read, full page), profile menu, footer; mobile header, search bar and drawer
+- [x] Notifications: new messages / referrals / appointment requests to roles that can see them; security alerts to the account owner
+- [x] Idle timeout enforced server-side so background refreshes don't keep sessions alive
+- [ ] Audit "viewed sensitive record" events — added with the modules that show sensitive records (Phases 3–4)
 
 ## Phase 3 — Appointments & schedules
 - [ ] Appointment types table (approved types only, no "General appointment") **(CONFIRM types, durations, capacity)**
@@ -134,3 +141,6 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-06 | Transportation and nursing intentionally not listed as services | Requirements §2 (out of scope) — HLO to confirm they want them omitted entirely |
 | 2026-10-06 | Jobs gain `pay_range` and `benefits` fields | Maryland Wage Range Transparency Act (Oct 2024) requires both in public postings |
 | 2026-10-06 | Added "Home" to the main menu (now 5 links + Start intake; doc §3 said 4) | Visitors may not know the logo links home |
+| 2026-10-06 | Phase 2 complete; staff invited by email link instead of admin-set passwords | Admins never handle staff passwords |
+| 2026-10-06 | Roles and permissions became editable data (roles, role_permissions tables); MFA requirement moved from .env to each role | Client request: CEO/COO manages roles |
+| 2026-10-06 | Added IT Administrator role (accounts incl. "manage everyone except Admins", roles view, audit view; two-step required; no client data) | Client request |

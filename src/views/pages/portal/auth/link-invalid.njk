@@ -1,0 +1,16 @@
+{% extends "layouts/portal-auth.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block card %}
+  <span class="icon-tile-red">{{ icon('exclamation', 'size-6') }}</span>
+  <h1 class="mt-5 text-2xl font-extrabold">This link has expired</h1>
+  <p class="mt-2 text-[15px] text-muted">
+    {% if purpose == 'invite' %}
+      Invitation links work once and expire after a few days. Ask your HLO administrator to send a new invitation.
+    {% else %}
+      Password reset links work once and expire after 60 minutes. You can request a new one.
+    {% endif %}
+  </p>
+  {% if purpose != 'invite' %}<a href="/portal/forgot-password" class="btn-primary mt-6 w-full">Request a new link</a>{% endif %}
+  <a href="/portal/login" class="btn-secondary mt-3 w-full">Go to sign in</a>
+{% endblock %}

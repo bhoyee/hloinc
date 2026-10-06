@@ -47,4 +47,14 @@ function officeStatus(schedule, now = new Date()) {
   return { open: false, label: 'Closed' };
 }
 
-module.exports = { officeStatus, formatHour };
+/** Midnight at the start of a Maryland calendar day (YYYY-MM-DD) as a Date, allowing for EST/EDT. */
+function marylandDayStart(isoDate) {
+  const offset = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date(`${isoDate}T05:00:00Z`))
+    .find((p) => p.type === 'timeZoneName').value; // e.g. "GMT-4"
+  const hours = Number(offset.replace('GMT', '') || 0);
+  const sign = hours <= 0 ? '-' : '+';
+  return new Date(`${isoDate}T00:00:00${sign}${String(Math.abs(hours)).padStart(2, '0')}:00`);
+}
+
+module.exports = { officeStatus, formatHour, marylandDayStart };

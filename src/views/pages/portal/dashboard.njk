@@ -1,0 +1,66 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {% if tiles.length %}
+    <ul class="grid grid-cols-[repeat(auto-fit,minmax(12.5rem,1fr))] gap-4">
+      {% for t in tiles %}
+        {% set red = loop.index is odd %}
+        <li class="rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-muted">{{ t.label }}</p>
+            <span class="{{ 'icon-tile-red' if red else 'icon-tile' }} size-10">{{ icon(t.icon, 'size-5') }}</span>
+          </div>
+          <p class="mt-3 font-display text-4xl font-extrabold text-ink">{{ t.value }}</p>
+          <p class="mt-1 text-sm text-muted">
+            {% if t.href %}<a href="{{ t.href }}" class="font-semibold text-brand-700 hover:text-brand-800">{{ t.note }} &rarr;</a>{% else %}{{ t.note }}{% endif %}
+          </p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+    {% if recentActivity.length %}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold">Recent activity</h2>
+          <a href="/portal/audit" class="text-sm font-semibold text-brand-700 hover:text-brand-800">Full audit log &rarr;</a>
+        </div>
+        <ul class="mt-4 divide-y divide-line">
+          {% for e in recentActivity %}
+            <li class="flex items-start justify-between gap-4 py-3">
+              <p class="text-[15px] text-ink">{{ e.summary or e.action }}</p>
+              <time class="shrink-0 text-sm text-muted">{{ e.created_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</time>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% else %}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+        <h2 class="text-lg font-bold">Welcome to the new staff portal</h2>
+        <p class="mt-2 text-muted">More tools are on the way: appointments, schedules, messages, jobs and announcements will appear in the menu as each one is ready.</p>
+      </section>
+    {% endif %}
+
+    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+      <h2 class="text-lg font-bold">Your account security</h2>
+      <ul class="mt-4 space-y-3 text-[15px]">
+        <li class="flex items-center gap-3">
+          {% if security.mfaEnabled %}
+            <span class="grid size-8 place-items-center rounded-full bg-brand-100 text-brand-800">{{ icon('check', 'size-4') }}</span>
+            <span>Two-step sign-in is on{% if security.mfaEnabled %} · {{ security.recoveryLeft }} recovery codes left{% endif %}</span>
+          {% else %}
+            <span class="grid size-8 place-items-center rounded-full bg-amber-100 text-amber-900">{{ icon('exclamation', 'size-4') }}</span>
+            <span>Two-step sign-in is off. <a href="/portal/account/two-step" class="link">Turn it on</a></span>
+          {% endif %}
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="grid size-8 place-items-center rounded-full bg-surface text-muted ring-1 ring-line">{{ icon('clock', 'size-4') }}</span>
+          <span>Previous sign-in: {{ previousLogin | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) if previousLogin else 'this is your first' }}</span>
+        </li>
+      </ul>
+      <a href="/portal/account" class="btn-secondary mt-5 w-full">Manage my account</a>
+    </section>
+  </div>
+{% endblock %}

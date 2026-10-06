@@ -191,6 +191,216 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Portal: sidebar drawer on small screens.
+  const portalNav = document.querySelector('[data-portal-nav]');
+  if (portalNav) {
+    const openBtn = document.querySelector('[data-portal-nav-open]');
+    const backdrop = document.querySelector('[data-portal-nav-backdrop]');
+    const setOpen = (open) => {
+      portalNav.classList.toggle('hidden', !open);
+      portalNav.classList.toggle('flex', open);
+      backdrop.classList.toggle('hidden', !open);
+      openBtn.setAttribute('aria-expanded', String(open));
+      if (open) portalNav.querySelector('a, button').focus();
+      else openBtn.focus();
+    };
+    openBtn.addEventListener('click', () => setOpen(true));
+    document.querySelector('[data-portal-nav-close]').addEventListener('click', () => setOpen(false));
+    backdrop.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && openBtn.getAttribute('aria-expanded') === 'true') setOpen(false);
+    });
+  }
+
+  // Role editor: giving an action ticks View; removing View clears the row.
+  const roleEditor = document.querySelector('form[data-role-editor]');
+  if (roleEditor) {
+    const boxes = (module) => roleEditor.querySelectorAll(`input[name="permissions"]${module ? `[data-module="${module}"]` : ''}`);
+    roleEditor.addEventListener('change', (e) => {
+      const box = e.target;
+      if (box.name !== 'permissions') return;
+      const view = roleEditor.querySelector(`input[data-module="${box.dataset.module}"][data-action="view"]`);
+      if (box.checked && box.dataset.action !== 'view' && view && box.value !== 'messages.view_intake') view.checked = true;
+      if (!box.checked && box.dataset.action === 'view') {
+        boxes(box.dataset.module).forEach((b) => {
+          if (b.dataset.action !== 'extra' || b.value.endsWith('.log') || b.value.endsWith('.edit_limited')) b.checked = false;
+        });
+      }
+      // "View all messages" and "intake only" are alternatives.
+      if (box.checked && box.value === 'messages.view') roleEditor.querySelector('input[value="messages.view_intake"]').checked = false;
+      if (box.checked && box.value === 'messages.view_intake' && view) view.checked = false;
+    });
+    roleEditor.querySelectorAll('[data-row-all]').forEach((btn) => btn.addEventListener('click', () => {
+      boxes(btn.dataset.rowAll).forEach((b) => { b.checked = b.value !== 'messages.view_intake'; });
+    }));
+    const all = roleEditor.querySelector('[data-perm-all]');
+    if (all) all.addEventListener('click', () => boxes().forEach((b) => { b.checked = b.value !== 'messages.view_intake'; }));
+    const none = roleEditor.querySelector('[data-perm-none]');
+    if (none) none.addEventListener('click', () => boxes().forEach((b) => { b.checked = false; }));
+  }
+
+  // ── Portal header ────────────────────────────────────────────────────
+
+  const csrf = document.querySelector('meta[name="csrf-token"]');
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text; // textContent: never parsed as HTML
+    return node;
+  };
+
+  // Dropdowns (notifications, profile): one open at a time; Escape / outside click closes.
+  const dropdowns = [...document.querySelectorAll('[data-dropdown]')];
+  const closeAll = (except) => dropdowns.forEach((d) => {
+    if (d === except) return;
+    d.querySelector('[data-dropdown-panel]').classList.add('hidden');
+    d.querySelector('[data-dropdown-button]').setAttribute('aria-expanded', 'false');
+  });
+  dropdowns.forEach((d) => {
+    const btn = d.querySelector('[data-dropdown-button]');
+    const panel = d.querySelector('[data-dropdown-panel]');
+    btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') !== 'true';
+      closeAll(d);
+      panel.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      if (open && btn.hasAttribute('data-notif-button')) loadNotifications();
+    });
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('[data-dropdown]')) closeAll(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = dropdowns.find((d) => d.querySelector('[data-dropdown-button]').getAttribute('aria-expanded') === 'true');
+    if (open) { closeAll(); open.querySelector('[data-dropdown-button]').focus(); }
+  });
+
+  // Phones: search bar under the header.
+  const mobileToggle = document.querySelector('[data-mobile-search-toggle]');
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', () => {
+      const bar = document.getElementById('mobile-search');
+      const open = bar.classList.toggle('hidden') === false;
+      mobileToggle.setAttribute('aria-expanded', String(open));
+      if (open) bar.querySelector('input').focus();
+    });
+  }
+
+  // Global search: live results as you type; Enter still opens the full results page.
+  document.querySelectorAll('form[data-global-search]').forEach((form) => {
+    const input = form.querySelector('[data-search-input]');
+    const panel = form.querySelector('[data-search-results]');
+    const status = form.querySelector('[data-search-status]');
+    let timer;
+    let controller;
+
+    const hide = () => panel.classList.add('hidden');
+    const render = (data) => {
+      panel.replaceChildren();
+      const total = data.groups.reduce((n, g) => n + g.items.length, 0);
+      if (!total) {
+        panel.append(el('p', 'px-3 py-4 text-sm text-muted', `No results for “${data.q}”.`));
+      }
+      data.groups.forEach((g) => {
+        panel.append(el('p', 'px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted uppercase', g.label));
+        g.items.forEach((it) => {
+          const row = el(it.href ? 'a' : 'div', 'flex flex-col rounded-xl px-3 py-2 hover:bg-surface focus:bg-surface focus:outline-none');
+          if (it.href) row.href = it.href;
+          row.append(el('span', 'truncate font-semibold text-ink', it.title), el('span', 'truncate text-sm text-muted', it.subtitle || ''));
+          panel.append(row);
+        });
+      });
+      const all = el('a', 'mt-1 block rounded-xl border-t border-line px-3 py-2.5 text-sm font-semibold text-brand-700 hover:bg-surface', 'See all results');
+      all.href = `/portal/search?q=${encodeURIComponent(data.q)}`;
+      panel.append(all);
+      panel.classList.remove('hidden');
+      // Results count is announced through the live region.
+      status.textContent = total ? `${total} result${total === 1 ? '' : 's'}` : 'No results';
+    };
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (q.length < 2) { hide(); return; }
+      timer = setTimeout(async () => {
+        if (controller) controller.abort();
+        controller = new AbortController();
+        try {
+          const res = await fetch(`/portal/search?format=json&q=${encodeURIComponent(q)}`, { signal: controller.signal, headers: { Accept: 'application/json' } });
+          if (res.ok) render(await res.json());
+        } catch { /* aborted or offline: the form still works on Enter */ }
+      }, 250);
+    });
+    input.addEventListener('focus', () => { if (input.value.trim().length >= 2 && panel.childElementCount) panel.classList.remove('hidden'); });
+    form.addEventListener('focusout', () => setTimeout(() => { if (!form.contains(document.activeElement)) hide(); }, 0));
+
+    // Arrow keys move through results; Escape closes.
+    form.addEventListener('keydown', (e) => {
+      const links = [...panel.querySelectorAll('a')];
+      const i = links.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' && links.length) { e.preventDefault(); links[Math.min(i + 1, links.length - 1)].focus(); }
+      if (e.key === 'ArrowUp' && links.length) { e.preventDefault(); if (i <= 0) input.focus(); else links[i - 1].focus(); }
+      if (e.key === 'Escape') { hide(); input.focus(); }
+    });
+  });
+
+  // Ctrl+K / Cmd+K jumps to search.
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      const desktop = document.getElementById('portal-search');
+      if (!desktop) return;
+      e.preventDefault();
+      if (desktop.offsetParent) desktop.focus();
+      else if (mobileToggle) mobileToggle.click();
+    }
+  });
+
+  // Notifications bell: refreshes every minute while the tab is visible.
+  const notifBtn = document.querySelector('[data-notif-button]');
+  async function loadNotifications() {
+    if (!notifBtn) return;
+    try {
+      const res = await fetch('/portal/notifications/summary', { headers: { Accept: 'application/json' } });
+      if (!res.ok) return;
+      const data = await res.json();
+      const count = document.querySelector('[data-notif-count]');
+      count.textContent = data.unread > 99 ? '99+' : String(data.unread);
+      count.classList.toggle('hidden', !data.unread);
+      document.querySelector('[data-notif-label]').textContent = `Notifications${data.unread ? `, ${data.unread} unread` : ''}`;
+
+      const list = document.querySelector('[data-notif-list]');
+      list.replaceChildren();
+      if (!data.items.length) list.append(el('li', 'px-4 py-6 text-center text-sm text-muted', 'You’re all caught up.'));
+      data.items.forEach((n) => {
+        const li = el('li', n.read ? '' : 'bg-brand-50/50');
+        const btn = el('button', 'flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface');
+        btn.type = 'button';
+        btn.append(el('span', `mt-1.5 size-2 shrink-0 rounded-full ${n.read ? 'bg-transparent' : 'bg-accent-500'}`));
+        const text = el('span', 'min-w-0 flex-1');
+        text.append(el('span', 'block text-sm font-semibold text-ink', n.title));
+        if (n.body) text.append(el('span', 'block text-sm text-muted', n.body));
+        text.append(el('span', 'mt-0.5 block text-xs text-muted', new Date(n.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })));
+        btn.append(text);
+        btn.addEventListener('click', async () => {
+          await fetch(`/portal/notifications/${n.id}/read`, { method: 'POST', headers: { Accept: 'application/json', 'x-csrf-token': csrf ? csrf.content : '' } });
+          window.location.href = n.link || '/portal/notifications';
+        });
+        li.append(btn);
+        list.append(li);
+      });
+    } catch { /* offline: try again next time */ }
+  }
+  if (notifBtn) {
+    setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 60000);
+    const readAll = document.querySelector('[data-notif-read-all]');
+    readAll.addEventListener('click', async () => {
+      await fetch('/portal/notifications/read-all', { method: 'POST', headers: { Accept: 'application/json', 'x-csrf-token': csrf ? csrf.content : '' } });
+      loadNotifications();
+    });
+  }
+
+  // "Print" buttons (e.g. recovery codes).
+  document.querySelectorAll('[data-print]').forEach((btn) => btn.addEventListener('click', () => window.print()));
+
   // Move focus to a form's error summary so screen reader users hear it first.
   const summary = document.querySelector('[data-focus-on-load]');
   if (summary) summary.focus();

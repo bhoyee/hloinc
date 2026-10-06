@@ -1,0 +1,22 @@
+{% extends "layouts/base.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block bodyClass %}bg-surface{% endblock %}
+
+{% block body %}
+  <main id="main" class="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+    <a href="/" class="mb-8" aria-label="{{ site.legalName }} website">
+      <img src="/img/logo.jpg" alt="{{ site.legalName }}" width="192" height="60" class="h-14 w-auto">
+    </a>
+    <div class="w-full max-w-md rounded-3xl border border-line bg-white p-7 shadow-lift sm:p-9">
+      {{ ui.flash(flash) }}
+      {% block card %}{% endblock %}
+    </div>
+    <p class="mt-8 text-center text-sm text-muted">
+      <a href="/" class="hover:text-brand-700">&larr; Back to the website</a>
+      <span class="mx-2" aria-hidden="true">·</span>
+      Authorized HLO staff only
+    </p>
+  </main>
+{% endblock %}

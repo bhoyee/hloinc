@@ -1,0 +1,79 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block actions %}
+  {% if can('accounts.edit') %}<a href="/portal/accounts/new" class="btn-primary shrink-0">{{ icon('plus', 'size-4') }} Add staff account</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+  <form method="get" action="/portal/accounts" role="search" aria-label="Find staff accounts" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-[2fr_1fr_1fr_auto]">
+    <div class="relative">
+      <label for="f-q" class="sr-only">Search by name or email</label>
+      <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Name or email" class="form-control !pl-12" maxlength="100">
+    </div>
+    <div>
+      <label for="f-role" class="sr-only">Role</label>
+      <select id="f-role" name="role" class="form-control">
+        <option value="">All roles</option>
+        {% for r in roleOptions %}<option value="{{ r.value }}" {% if filters.role == r.value %}selected{% endif %}>{{ r.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="f-status" class="sr-only">Status</label>
+      <select id="f-status" name="status" class="form-control">
+        <option value="">Any status</option>
+        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="deactivated" {% if filters.status == 'deactivated' %}selected{% endif %}>Deactivated</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-green">Filter</button>
+  </form>
+
+  <p class="mb-3 text-sm text-muted">{{ total }} {{ 'account' if total == 1 else 'accounts' }}</p>
+
+  {% if users.length %}
+    <div class="overflow-x-auto rounded-3xl border border-line bg-white shadow-soft" tabindex="0" role="region" aria-label="Staff accounts">
+      <table class="w-full min-w-[720px] text-left text-[15px]">
+        <caption class="sr-only">Staff accounts</caption>
+        <thead class="border-b border-line bg-surface text-sm text-muted">
+          <tr>
+            <th scope="col" class="px-5 py-3 font-semibold">Name</th>
+            <th scope="col" class="px-5 py-3 font-semibold">Role</th>
+            <th scope="col" class="px-5 py-3 font-semibold">Status</th>
+            <th scope="col" class="px-5 py-3 font-semibold">Two-step</th>
+            <th scope="col" class="px-5 py-3 font-semibold">Last sign-in</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          {% for u in users %}
+            <tr class="transition-colors hover:bg-surface">
+              <th scope="row" class="px-5 py-4 font-normal">
+                <a href="/portal/accounts/{{ u.id }}" class="font-semibold text-ink hover:text-brand-700">{{ u.name }}</a>
+                {% if u.id == user.id %}<span class="ml-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800">You</span>{% endif %}
+                <span class="block text-sm text-muted">{{ u.email }}</span>
+              </th>
+              <td class="px-5 py-4">{{ roleLabels[u.role] }}</td>
+              <td class="px-5 py-4">
+                {% if u.status != 'active' %}<span class="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted ring-1 ring-line">Deactivated</span>
+                {% elif u.must_change_password %}<span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">Invited</span>
+                {% else %}<span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 ring-brand-100">Active</span>{% endif %}
+              </td>
+              <td class="px-5 py-4">{{ 'On' if u.mfa_enabled else 'Off' }}</td>
+              <td class="px-5 py-4 text-muted">{{ u.last_login_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) if u.last_login_at else 'Never' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pages > 1 %}
+      <nav aria-label="Account pages" class="mt-6 flex items-center justify-between">
+        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
+        <span class="text-sm text-muted">Page {{ page }} of {{ pages }}</span>
+        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center text-muted">No accounts match these filters.</div>
+  {% endif %}
+{% endblock %}

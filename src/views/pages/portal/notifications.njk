@@ -1,0 +1,46 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block actions %}
+  {% if unread %}
+    <form method="post" action="/portal/notifications/read-all">
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <button type="submit" class="btn-secondary">{{ icon('check', 'size-4') }} Mark all as read</button>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {% if items.length %}
+    <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+      {% for n in items %}
+        <li class="{{ 'bg-brand-50/40' if not n.read_at }}">
+          <form method="post" action="/portal/notifications/{{ n.id }}/read">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <button type="submit" class="flex w-full items-start gap-4 px-5 py-4 text-left hover:bg-surface sm:px-6">
+              <span class="mt-2 size-2.5 shrink-0 rounded-full {{ 'bg-accent-500' if not n.read_at else 'bg-transparent' }}" aria-hidden="true"></span>
+              <span class="min-w-0 flex-1">
+                <span class="block font-semibold text-ink">{{ n.title }}{% if not n.read_at %}<span class="sr-only"> (unread)</span>{% endif %}</span>
+                {% if n.body %}<span class="mt-0.5 block text-[15px] text-muted">{{ n.body }}</span>{% endif %}
+              </span>
+              <time class="shrink-0 text-sm text-muted">{{ n.created_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</time>
+            </button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if pages > 1 %}
+      <nav aria-label="Notification pages" class="mt-6 flex items-center justify-between">
+        {% if page > 1 %}<a href="/portal/notifications?page={{ page - 1 }}" class="btn-secondary !py-2">&larr; Newer</a>{% else %}<span></span>{% endif %}
+        <span class="text-sm text-muted">Page {{ page }} of {{ pages }}</span>
+        {% if page < pages %}<a href="/portal/notifications?page={{ page + 1 }}" class="btn-secondary !py-2">Older &rarr;</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+      <span class="icon-tile mx-auto">{{ icon('megaphone', 'size-6') }}</span>
+      <p class="mt-4 text-lg font-semibold text-ink">No notifications yet</p>
+      <p class="mt-1 text-muted">You’ll be told here about new website messages, referrals and appointment requests your role can see, and about changes to your account.</p>
+    </div>
+  {% endif %}
+{% endblock %}

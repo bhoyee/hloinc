@@ -1,0 +1,74 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <div class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+    <div class="space-y-6">
+      {# Profile #}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="profile-h">
+        <h2 id="profile-h" class="text-lg font-bold">Your details</h2>
+        <form method="post" action="/portal/account/profile" class="mt-6 space-y-5" novalidate data-once>
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <div class="grid gap-5 sm:grid-cols-2">
+            {{ ui.input('name', 'Full name', values, errors, autocomplete='name') }}
+            {{ ui.input('phone', 'Phone', values, errors, type='tel', required=false, autocomplete='tel') }}
+          </div>
+          <dl class="grid gap-5 rounded-2xl bg-surface p-4 text-[15px] ring-1 ring-line sm:grid-cols-2">
+            <div><dt class="text-sm font-semibold text-muted">Email (sign-in)</dt><dd class="mt-0.5 font-medium text-ink">{{ user.email }}</dd></div>
+            <div><dt class="text-sm font-semibold text-muted">Role</dt><dd class="mt-0.5 font-medium text-ink">{{ user.roleLabel }}</dd></div>
+          </dl>
+          <p class="text-sm text-muted">To change your email or role, ask an administrator.</p>
+          <button type="submit" class="btn-green">Save details</button>
+        </form>
+      </section>
+
+      {# Password #}
+      <section id="password" class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="password-h">
+        <h2 id="password-h" class="text-lg font-bold">Change password</h2>
+        <p class="mt-1 text-[15px] text-muted">Changing your password signs you out on every other device.</p>
+        <form method="post" action="/portal/account/password" class="mt-6 space-y-5" novalidate data-once>
+          {{ ui.errorSummary(passwordErrors) }}
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <input type="email" name="username" value="{{ user.email }}" autocomplete="username" class="sr-only" tabindex="-1" aria-hidden="true" readonly>
+          <div>
+            <label for="f-current" class="form-label">Current password</label>
+            <input id="f-current" type="password" name="current" class="form-control" autocomplete="current-password" required aria-required="true"
+              {% if passwordErrors.current %}aria-invalid="true" aria-describedby="f-current-error"{% endif %}>
+            {{ ui.fieldError('current', passwordErrors) }}
+          </div>
+          {% set errors = passwordErrors %}
+          {% include "partials/portal-new-password.njk" %}
+          <button type="submit" class="btn-green">Change password</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="space-y-6">
+      {# Two-step sign-in #}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="mfa-h">
+        <div class="flex items-start gap-4">
+          <span class="{{ 'icon-tile' if user.mfa_enabled else 'icon-tile-red' }}">{{ icon('device', 'size-6') }}</span>
+          <div>
+            <h2 id="mfa-h" class="text-lg font-bold">Two-step sign-in</h2>
+            {% if user.mfa_enabled %}
+              <p class="mt-1 text-[15px] text-muted"><strong class="text-brand-800">On.</strong> {{ recoveryLeft }} recovery codes left.</p>
+            {% else %}
+              <p class="mt-1 text-[15px] text-muted"><strong class="text-accent-700">Off.</strong> {% if mfaRequired %}Your role requires it.{% else %}Recommended for everyone.{% endif %}</p>
+            {% endif %}
+          </div>
+        </div>
+        <a href="/portal/account/two-step" class="btn-secondary mt-5 w-full">{{ 'Manage' if user.mfa_enabled else 'Set up' }} two-step sign-in</a>
+      </section>
+
+      {# Sessions #}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="sessions-h">
+        <h2 id="sessions-h" class="text-lg font-bold">Signed-in devices</h2>
+        <p class="mt-1 text-[15px] text-muted">Left the portal open on a shared computer? Sign out everywhere except here.</p>
+        <form method="post" action="/portal/account/sign-out-others" class="mt-5">
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <button type="submit" class="btn-secondary w-full">{{ icon('logout', 'size-4') }} Sign out other devices</button>
+        </form>
+      </section>
+    </div>
+  </div>
+{% endblock %}

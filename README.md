@@ -21,6 +21,13 @@ npm run dev                   # terminal 2
 > On this dev machine WAMP runs MySQL 8.4 on port **3308** (MariaDB is on 3306), and the app runs on
 > port **4310** because 3000/3100 are used by other projects.
 
+## Staff portal
+
+`/portal` — staff sign in. Development seeds one demo account per role (password `Portal-Demo-2026!`):
+`admin@hloinc.test`, `it@hloinc.test`, `director@hloinc.test`, `coordinator@hloinc.test`, `intake@hloinc.test`, `reception@hloinc.test`.
+Roles requiring two-step sign-in (Admin and Program Director by default) must set it up on first sign-in with any
+authenticator app. This is a per-role setting under **Roles & permissions**. Emails (invites, resets) print to the server console when SMTP isn't set.
+
 ## Scripts
 
 | Script | What it does |

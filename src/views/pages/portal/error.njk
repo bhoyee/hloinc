@@ -1,0 +1,12 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <section class="max-w-2xl rounded-3xl border border-line bg-white p-8 shadow-soft">
+    <span class="icon-tile-red">{{ icon('lock' if status == 403 else 'exclamation', 'size-6') }}</span>
+    <p class="mt-5 text-sm font-semibold text-accent-600">Error {{ status }}</p>
+    <p class="mt-1 text-lg text-ink">{{ message }}</p>
+    <a href="/portal" class="btn-green mt-6">Back to the dashboard</a>
+    {% if stack %}<pre class="mt-8 overflow-x-auto rounded-xl bg-ink p-4 text-xs text-white">{{ stack }}</pre>{% endif %}
+  </section>
+{% endblock %}

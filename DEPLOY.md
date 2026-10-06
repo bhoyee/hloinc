@@ -18,6 +18,8 @@
    - `NODE_ENV=production`
    - `APP_URL=https://www.hloinc.com`
    - `SESSION_SECRET=` (48+ random bytes: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`)
+   - `APP_KEY=` (a *different* value made the same way; encrypts two-step sign-in secrets — keep a safe copy,
+     changing it makes every staff member set up two-step sign-in again)
    - `DB_HOST=localhost`, `DB_PORT=3306`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
    - `SMTP_*` and `MAIL_FROM` from HLO's email account
    Do **not** set `PORT` — Passenger provides it.
@@ -31,6 +33,8 @@
    npm run create-admin -- --name "Full Name" --email admin@hloinc.com
    ```
    (`create-admin` lives in `scripts/` and only needs production dependencies.)
+   The first Admin signs in at `/portal`, sets up two-step sign-in, then invites everyone else from
+   **Accounts** (staff choose their own passwords from the emailed link).
 6. **Restart** the app from the Node.js App screen and open `/healthz` and `/healthz/db`.
 7. **HTTPS** — enable AutoSSL / Let's Encrypt for the domain. Secure cookies and HSTS
    are on automatically when `NODE_ENV=production`.

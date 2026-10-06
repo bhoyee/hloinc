@@ -33,6 +33,7 @@
     "nodemailer": "^10.0.15",
     "nunjucks": "^3.2.4",
     "otplib": "^13.5.0",
+    "qrcode": "^1.5.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {

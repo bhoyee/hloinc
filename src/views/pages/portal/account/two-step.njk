@@ -1,0 +1,78 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {% if setup %}
+    {% if required %}
+      <p class="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900" role="status">
+        {{ icon('lock', 'mt-0.5 size-5 shrink-0') }}
+        <span><strong>Your role requires two-step sign-in.</strong> Set it up to continue using the portal. It takes about two minutes.</span>
+      </p>
+    {% endif %}
+
+    <div class="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+        <h2 class="text-lg font-bold">1. Add HLO to your authenticator app</h2>
+        <p class="mt-2 text-[15px] text-muted">Use an app such as Google Authenticator, Microsoft Authenticator or 1Password. In the app, choose to add an account and scan this code.</p>
+        <div class="mx-auto mt-6 w-56 rounded-2xl bg-white p-3 ring-1 ring-line" role="img" aria-label="QR code to add the HLO Staff Portal to your authenticator app">
+          {{ setup.qrSvg | safe }}
+        </div>
+        <details class="mt-6 rounded-2xl bg-surface p-4 text-[15px] ring-1 ring-line">
+          <summary class="cursor-pointer font-semibold text-ink">Can’t scan? Type this key instead</summary>
+          <p class="mt-3 font-mono text-base tracking-wider break-all text-ink select-all">{{ setup.manualKey }}</p>
+          <p class="mt-2 text-sm text-muted">Choose “time-based” if your app asks.</p>
+        </details>
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+        <h2 class="text-lg font-bold">2. Enter the code from your app</h2>
+        <p class="mt-2 text-[15px] text-muted">Your app shows a 6-digit code that changes every 30 seconds.</p>
+        <form method="post" action="/portal/account/two-step/enable" class="mt-6 space-y-5" novalidate data-once>
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <div>
+            <label for="f-code" class="form-label">6-digit code</label>
+            <input id="f-code" name="code" class="form-control text-center font-mono text-2xl tracking-[0.4em]" inputmode="numeric" autocomplete="one-time-code" maxlength="20" required aria-required="true"
+              {% if errors.code %}aria-invalid="true" aria-describedby="f-code-error"{% endif %}>
+            {{ ui.fieldError('code', errors) }}
+          </div>
+          <button type="submit" class="btn-primary w-full">Turn on two-step sign-in</button>
+        </form>
+        <p class="mt-5 text-sm text-muted">Next, you’ll get recovery codes to use if you ever lose your phone.</p>
+      </section>
+    </div>
+  {% else %}
+    <div class="grid gap-6 lg:grid-cols-2">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+        <div class="flex items-center gap-4">
+          <span class="icon-tile">{{ icon('check', 'size-6') }}</span>
+          <div>
+            <h2 class="text-lg font-bold">Two-step sign-in is on</h2>
+            <p class="text-[15px] text-muted">{{ recoveryLeft }} of 10 recovery codes left.</p>
+          </div>
+        </div>
+        <p class="mt-5 text-[15px] text-muted">Each time you sign in, you’ll enter a code from your authenticator app after your password.</p>
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+        <h2 class="text-lg font-bold">Manage</h2>
+        <form method="post" class="mt-5 space-y-4" novalidate>
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <input type="email" name="username" value="{{ user.email }}" autocomplete="username" class="sr-only" tabindex="-1" aria-hidden="true" readonly>
+          <div>
+            <label for="f-password" class="form-label">Confirm with your password</label>
+            <input id="f-password" type="password" name="password" class="form-control" autocomplete="current-password" required aria-required="true"
+              {% if errors.password %}aria-invalid="true" aria-describedby="f-password-error"{% endif %}>
+            {{ ui.fieldError('password', errors) }}
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" formaction="/portal/account/two-step/recovery-codes" class="btn-green">{{ icon('refresh', 'size-4') }} New recovery codes</button>
+            {% if not required %}
+              <button type="submit" formaction="/portal/account/two-step/disable" class="btn-secondary !text-accent-700">Turn off</button>
+            {% endif %}
+          </div>
+          {% if required %}<p class="text-sm text-muted">Your role requires two-step sign-in, so it can’t be turned off. Lost your phone? An administrator can reset it for you.</p>{% endif %}
+        </form>
+      </section>
+    </div>
+  {% endif %}
+{% endblock %}

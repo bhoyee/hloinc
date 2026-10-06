@@ -17,8 +17,11 @@ function errorHandler(err, req, res, next) {
   const message = status < 500 ? err.message : 'Something went wrong on our side. Please try again shortly.';
   if (req.accepts(['html', 'json']) === 'json') return res.json({ error: message });
 
-  res.render('pages/errors/error.njk', {
-    title: status === 403 ? 'Not allowed' : 'Something went wrong',
+  const titles = { 401: 'Please sign in again', 403: 'Not allowed', 404: 'Page not found' };
+  // Signed-in staff see errors inside the portal layout, with its menu.
+  const view = req.user && req.originalUrl.startsWith('/portal') ? 'pages/portal/error.njk' : 'pages/errors/error.njk';
+  res.render(view, {
+    title: titles[status] || 'Something went wrong',
     status,
     message,
     stack: config.isProd ? null : err.stack,

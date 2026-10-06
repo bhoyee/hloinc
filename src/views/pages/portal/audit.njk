@@ -1,0 +1,73 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <form method="get" action="/portal/audit" role="search" aria-label="Filter the audit log" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto]">
+    <div class="relative sm:col-span-2 xl:col-span-1">
+      <label for="f-q" class="sr-only">Search</label>
+      <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Search the log" class="form-control !pl-12" maxlength="100">
+    </div>
+    <div>
+      <label for="f-user" class="sr-only">Person</label>
+      <select id="f-user" name="user" class="form-control">
+        <option value="">Everyone</option>
+        {% for p in people %}<option value="{{ p.user_id }}" {% if filters.user == p.user_id | string %}selected{% endif %}>{{ p.user_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="f-action" class="sr-only">Action</label>
+      <select id="f-action" name="action" class="form-control">
+        <option value="">All actions</option>
+        {% for a in actionOptions %}<option value="{{ a.value }}" {% if filters.action == a.value %}selected{% endif %}>{{ a.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="f-from" class="sr-only">From date</label>
+      <input id="f-from" type="date" name="from" value="{{ filters.from }}" class="form-control" title="From">
+    </div>
+    <div>
+      <label for="f-to" class="sr-only">To date</label>
+      <input id="f-to" type="date" name="to" value="{{ filters.to }}" class="form-control" title="To">
+    </div>
+    <button type="submit" class="btn-green">Filter</button>
+  </form>
+
+  <p class="mb-3 text-sm text-muted">{{ total }} {{ 'entry' if total == 1 else 'entries' }}{% if filters.q or filters.action or filters.user or filters.from or filters.to %} · <a href="/portal/audit" class="font-semibold text-accent-600 hover:text-accent-700">Clear filters</a>{% endif %}</p>
+
+  {% if entries.length %}
+    <ol class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+      {% for e in entries %}
+        {% if e.tone == 'red' %}{% set dot = 'bg-accent-500' %}{% elif e.tone == 'grey' %}{% set dot = 'bg-[#93a49b]' %}{% else %}{% set dot = 'bg-brand-500' %}{% endif %}
+        <li class="px-5 py-4 sm:px-6">
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div class="flex min-w-0 gap-3">
+              <span class="mt-2 size-2.5 shrink-0 rounded-full {{ dot }}" aria-hidden="true"></span>
+              <div class="min-w-0">
+                <p class="text-[15px] text-ink">{{ e.summary or e.label }}</p>
+                <p class="mt-0.5 text-sm text-muted">{{ e.label }}{% if e.ip %} · IP {{ e.ip }}{% endif %}</p>
+              </div>
+            </div>
+            <time class="shrink-0 pl-5 text-sm text-muted sm:pl-0">{{ e.created_at | date({ month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }) }}</time>
+          </div>
+          {% if e.details or e.user_agent %}
+            <details class="mt-2 ml-5">
+              <summary class="cursor-pointer text-sm font-semibold text-brand-700">Details</summary>
+              {% if e.user_agent %}<p class="mt-2 text-xs break-all text-muted">Browser: {{ e.user_agent }}</p>{% endif %}
+              {% if e.details %}<pre class="mt-2 overflow-x-auto rounded-xl bg-surface p-3 text-xs text-ink ring-1 ring-line">{{ e.details }}</pre>{% endif %}
+            </details>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+    {% if pages > 1 %}
+      <nav aria-label="Audit log pages" class="mt-6 flex items-center justify-between">
+        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Newer</a>{% else %}<span></span>{% endif %}
+        <span class="text-sm text-muted">Page {{ page }} of {{ pages }}</span>
+        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Older &rarr;</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center text-muted">No entries match these filters.</div>
+  {% endif %}
+{% endblock %}
