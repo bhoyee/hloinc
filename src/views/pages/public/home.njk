@@ -1,0 +1,20 @@
+{% extends "layouts/public.njk" %}
+
+{% block content %}
+  {# Phase 1 replaces this with the full home page design. #}
+  <section class="bg-surface">
+    <div class="container-page py-20 sm:py-28">
+      <p class="text-sm font-semibold uppercase tracking-wide text-brand-600">Central &amp; Southern Maryland</p>
+      <h1 class="mt-3 max-w-3xl font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
+        Support for living well, at home and in the community.
+      </h1>
+      <p class="mt-5 max-w-2xl text-lg text-muted">
+        {{ site.legalName }} provides community-based supports for people with intellectual and developmental disabilities and their families.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="/getting-started" class="btn-primary">Start intake</a>
+        <a href="/services" class="btn-outline">Explore services</a>
+      </div>
+    </div>
+  </section>
+{% endblock %}

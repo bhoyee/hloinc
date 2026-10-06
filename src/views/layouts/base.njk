@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if title %}{{ title }} | {% endif %}{{ site.legalName }}</title>
+  {% if description %}<meta name="description" content="{{ description }}">{% endif %}
+  {% block meta %}{% endblock %}
+  <link rel="stylesheet" href="/css/app.css">
+  <script src="/js/site.js" defer></script>
+</head>
+<body class="{% block bodyClass %}{% endblock %}">
+  <a href="#main" class="skip-link">Skip to main content</a>
+  {% block body %}{% endblock %}
+</body>
+</html>

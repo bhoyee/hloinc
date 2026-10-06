@@ -1,0 +1,11 @@
+{% extends "layouts/public.njk" %}
+
+{% block content %}
+  <section class="container-page py-24 text-center">
+    <p class="text-sm font-semibold text-brand-600">{{ status }}</p>
+    <h1 class="mt-2 font-display text-3xl font-bold text-ink">{{ title }}</h1>
+    <p class="mt-4 text-muted">{{ message }}</p>
+    <div class="mt-8"><a href="/" class="btn-primary">Go home</a></div>
+    {% if stack %}<pre class="mx-auto mt-10 max-w-4xl overflow-x-auto rounded-lg bg-ink p-4 text-left text-xs text-white">{{ stack }}</pre>{% endif %}
+  </section>
+{% endblock %}
