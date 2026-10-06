@@ -35,6 +35,18 @@
 7. **HTTPS** — enable AutoSSL / Let's Encrypt for the domain. Secure cookies and HSTS
    are on automatically when `NODE_ENV=production`.
 
+## Spam protection
+
+Every public form (contact, referral, appointment) is protected by: hidden honeypot
+fields, one-time form tokens with a minimum fill time, link-spam detection, duplicate
+detection, a per-email daily limit (`FORMS_MAX_PER_EMAIL_PER_DAY`, default 10), CSRF and
+cross-site checks, and per-IP rate limits. Blocked attempts are logged as `[spam] …`.
+
+**Optional — Cloudflare Turnstile** (free, privacy-friendly CAPTCHA; most visitors see no puzzle):
+1. Cloudflare dashboard → Turnstile → Add widget → domain `hloinc.com` → Managed mode.
+2. Set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in the Node.js App environment and restart.
+3. The widget, CSP allowance and Privacy/Cookie Policy wording switch on automatically.
+
 ## Updating
 
 ```bash

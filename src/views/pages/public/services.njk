@@ -4,42 +4,135 @@
 {% block content %}
   {% call ui.pageHero('Services', 'Support for every part of life', 'HLO provides Maryland DDA-approved, community-based supports. Every service follows the person’s own plan and goals.', [{ label: 'Services' }]) %}
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/getting-started" class="btn-primary">How to get started</a>
+      <a href="#help-choosing" class="btn-primary">Help me choose {{ icon('arrow-right', 'size-4') }}</a>
       <a href="/service-areas" class="btn-secondary">{{ icon('map-pin', 'size-4') }} Areas we serve</a>
     </div>
   {% endcall %}
 
+  {# Pledge & approach (from the current hloinc.com Services page) #}
+  <section class="border-b border-line bg-white">
+    <div class="container-page grid gap-8 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
+      <figure class="reveal relative pl-8 sm:pl-10">
+        <span class="absolute top-0 bottom-0 left-0 w-1.5 rounded-full bg-gradient-to-b from-accent-600 to-brand-600" aria-hidden="true"></span>
+        <p class="eyebrow">Our pledge</p>
+        <blockquote class="mt-4 font-display text-2xl leading-snug font-bold text-ink sm:text-3xl">“{{ page.pledge }}”</blockquote>
+      </figure>
+      <div class="reveal">
+        <p class="text-lg text-muted">{{ page.approach }}</p>
+        <a href="/about#who-we-support" class="group mt-6 inline-flex items-center gap-2 font-semibold text-brand-700 hover:text-brand-800">
+          See who we support {{ icon('arrow-right', 'size-4 transition group-hover:translate-x-1') }}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {# Service cards — the whole card is clickable via the title link's stretched ::after. #}
   <section class="section">
     <div class="container-page">
-      <ul class="grid gap-6 lg:grid-cols-2">
+      <ul class="grid gap-6 md:grid-cols-2">
         {% for s in services %}
-          <li>
-            <article class="flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition hover:shadow-lift">
-              <img src="/img/photos/{{ s.slug }}-sm.webp" srcset="/img/photos/{{ s.slug }}-sm.webp 560w, /img/photos/{{ s.slug }}.webp 960w"
-                   sizes="(min-width: 1024px) 50vw, 100vw" alt="" loading="lazy" width="560" height="373" class="aspect-[2/1] w-full object-cover">
+          {% set red = loop.index is odd %}
+          <li class="reveal">
+            <article class="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition duration-300 hover:-translate-y-1.5 hover:shadow-lift focus-within:-translate-y-1.5 focus-within:shadow-lift {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}">
+              <div class="relative aspect-[2/1] overflow-hidden">
+                <img src="/img/photos/{{ s.slug }}-sm.webp" srcset="/img/photos/{{ s.slug }}-sm.webp 560w, /img/photos/{{ s.slug }}.webp 960w"
+                     sizes="(min-width: 768px) 50vw, 100vw" alt="" loading="lazy" width="560" height="373"
+                     class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110 group-focus-within:scale-110">
+                <div class="absolute inset-0 bg-gradient-to-t from-ink/50 via-transparent to-transparent opacity-60 transition duration-300 group-hover:opacity-90" aria-hidden="true"></div>
+                <p class="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-ink shadow-soft">
+                  {{ icon('map-pin', 'size-4 ' + ('text-accent-600' if red else 'text-brand-700')) }} {{ s.setting }}
+                </p>
+              </div>
+              <span class="absolute inset-x-0 top-0 z-10 h-1.5 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100 group-focus-within:scale-x-100 {{ 'bg-accent-600' if red else 'bg-brand-600' }}" aria-hidden="true"></span>
+
               <div class="flex flex-1 flex-col p-6 sm:p-8">
-              <div class="flex items-start gap-4">
-                <span class="{{ 'icon-tile-red' if loop.index is odd else 'icon-tile' }}">{{ icon(s.icon, 'size-6') }}</span>
-                <div>
-                  <h2 class="text-2xl font-bold"><a href="/services/{{ s.slug }}" class="hover:text-brand-700">{{ s.name }}</a></h2>
-                  <p class="mt-1 text-sm font-medium text-brand-700">{{ s.setting }}</p>
+                <div class="flex items-center gap-4">
+                  <span class="grid size-12 shrink-0 place-items-center rounded-2xl ring-1 transition duration-300 {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover:bg-brand-700' }} group-hover:text-white group-hover:ring-transparent">
+                    {{ icon(s.icon, 'size-6') }}
+                  </span>
+                  <h2 class="text-2xl font-bold">
+                    <a href="/services/{{ s.slug }}" class="after:absolute after:inset-0 after:z-20 after:rounded-3xl after:content-[''] focus-visible:outline-none">{{ s.name }}</a>
+                  </h2>
                 </div>
+                <p class="mt-5 text-muted">{{ s.summary }}</p>
+                <ul class="mt-5 flex-1 space-y-2">
+                  {% for item in s.includes.slice(0, 3) %}
+                    <li class="flex gap-2.5 text-[15px] text-ink">{{ icon('check', 'mt-1 size-4 shrink-0 ' + ('text-accent-600' if red else 'text-brand-600')) }} {{ item }}</li>
+                  {% endfor %}
+                </ul>
+                <p class="mt-7 flex items-center justify-between border-t border-line pt-5 font-semibold" aria-hidden="true">
+                  <span class="{{ 'text-accent-600' if red else 'text-brand-700' }}">Learn more</span>
+                  <span class="grid size-10 place-items-center rounded-full transition duration-300 {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }} group-hover:translate-x-1 group-hover:text-white">
+                    {{ icon('arrow-right', 'size-5') }}
+                  </span>
+                </p>
               </div>
-              <p class="mt-5 text-muted">{{ s.summary }}</p>
-              <ul class="mt-5 flex-1 space-y-2">
-                {% for item in s.includes.slice(0, 3) %}
-                  <li class="flex gap-2.5 text-[15px] text-ink">{{ icon('check', 'mt-1 size-4 shrink-0 text-brand-600') }} {{ item }}</li>
-                {% endfor %}
-              </ul>
-              <a href="/services/{{ s.slug }}" class="link mt-6 self-start">Learn more<span class="sr-only"> about {{ s.name }}</span></a>
-              </div>
+              {# Visible focus ring for keyboard users on the stretched link. #}
+              <span class="pointer-events-none absolute inset-0 z-30 rounded-3xl ring-accent-500 ring-offset-2 group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
             </article>
           </li>
         {% endfor %}
       </ul>
-      <p class="mt-10 text-center text-[15px] text-muted">Not sure which service fits? <a href="/getting-started#compare" class="link">Compare our services</a> or <a href="/contact?to=intake" class="link">talk to our intake team</a>.</p>
     </div>
   </section>
 
-  {{ ui.ctaBand(site) }}
+  {# Help choosing #}
+  <section id="help-choosing" class="section bg-cream">
+    <div class="container-page">
+      <div class="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-14">
+        <div class="reveal">
+          <p class="eyebrow">Help choosing</p>
+          <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Not sure which service fits?</h2>
+          <p class="mt-4 text-lg text-muted">That’s completely normal. Many people use more than one service, and your Coordinator of Community Services and our intake team can help you decide. Here’s a quick guide to start:</p>
+
+          <ul class="mt-8 space-y-3">
+            {% for g in [
+              { need: 'I live with family and want help with daily life', slug: 'personal-supports' },
+              { need: 'I’d like a home of my own, with support', slug: 'supported-living' },
+              { need: 'I’d like to live in a shared home with staff on hand', slug: 'community-residential-services' },
+              { need: 'Our family caregiver needs a break', slug: 'respite-care' },
+              { need: 'I want to get out, try new things and make friends', slug: 'community-development-services' }
+            ] %}
+              {% set svc = serviceBySlug[g.slug] %}
+              <li>
+                <a href="/services/{{ svc.slug }}" class="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 transition duration-200 hover:border-brand-300 hover:shadow-soft sm:p-5">
+                  <span class="grid size-10 shrink-0 place-items-center rounded-full {{ 'bg-accent-50 text-accent-600' if loop.index is odd else 'bg-brand-50 text-brand-700' }}">{{ icon(svc.icon, 'size-5') }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-[15px] text-muted">“{{ g.need }}”</span>
+                    <span class="mt-0.5 block font-display font-bold text-ink group-hover:text-brand-700">May suit: {{ svc.name }}</span>
+                  </span>
+                  {{ icon('arrow-right', 'size-5 shrink-0 text-muted transition group-hover:translate-x-1 group-hover:text-accent-600') }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+          <p class="mt-5 text-sm text-muted">This guide is a starting point only. The services each person receives depend on their eligibility and person-centered plan.</p>
+        </div>
+
+        <div class="reveal flex flex-col gap-5 lg:pt-14">
+          <a href="/getting-started#compare" class="group relative overflow-hidden rounded-3xl bg-brand-800 p-7 text-white shadow-lift transition duration-300 hover:-translate-y-1 hover:bg-brand-900 sm:p-9">
+            <span class="pointer-events-none absolute -right-8 -bottom-10 text-white/10 transition duration-500 group-hover:scale-110" aria-hidden="true">{{ icon('document', 'size-48') }}</span>
+            <span class="relative grid size-12 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25">{{ icon('document', 'size-6') }}</span>
+            <span class="relative mt-6 block font-display text-2xl font-bold">Compare services side by side</span>
+            <span class="relative mt-2 block text-brand-100">See where each service happens and who it may suit, all in one table.</span>
+            <span class="relative mt-6 inline-flex items-center gap-2 font-semibold">View comparison {{ icon('arrow-right', 'size-5 transition group-hover:translate-x-1') }}</span>
+          </a>
+
+          <a href="/contact?to=intake" class="group relative overflow-hidden rounded-3xl bg-accent-700 p-7 text-white shadow-lift transition duration-300 hover:-translate-y-1 hover:bg-accent-800 sm:p-9">
+            <span class="pointer-events-none absolute -right-8 -bottom-10 text-white/10 transition duration-500 group-hover:scale-110" aria-hidden="true">{{ icon('chat', 'size-48') }}</span>
+            <span class="relative grid size-12 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25">{{ icon('chat', 'size-6') }}</span>
+            <span class="relative mt-6 block font-display text-2xl font-bold">Talk to our intake team</span>
+            <span class="relative mt-2 block text-accent-50">Tell us a little about what you’re looking for and we’ll help you find the right fit.</span>
+            <span class="relative mt-6 inline-flex items-center gap-2 font-semibold">Send a message {{ icon('arrow-right', 'size-5 transition group-hover:translate-x-1') }}</span>
+          </a>
+
+          <div class="flex items-center gap-4 rounded-3xl border border-line bg-white p-5 sm:p-6">
+            <span class="icon-tile">{{ icon('phone', 'size-6') }}</span>
+            <p class="text-[15px] text-muted">Prefer to talk? Call <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a><br>{{ site.hours }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  {# No CTA band here: the help section above already offers intake and contact. #}
 {% endblock %}

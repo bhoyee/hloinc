@@ -1,14 +1,44 @@
 {% extends "layouts/public.njk" %}
 {% import "partials/ui.njk" as ui %}
 
-{% set fullAddress = site.address.street + ', ' + site.address.city + ', ' + site.address.state + ' ' + site.address.zip %}
-
 {% block content %}
-  {{ ui.pageHero('Contact', 'We’re here to help', 'Call, email, visit our office or send a message, and we will get back to you as soon as we can.', [{ label: 'Contact' }], 'contact', 'Three colleagues having a friendly conversation') }}
+  {% call ui.pageHero('Contact', 'We’re here to help', 'Call, email, visit our office or send a message, and we will get back to you as soon as we can.', [{ label: 'Contact' }], 'contact', 'Three colleagues having a friendly conversation') %}
+    <p class="mt-6 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-sm font-semibold ring-1 {{ 'bg-brand-50 text-brand-800 ring-brand-200' if office.open else 'bg-white text-ink ring-line' }}">
+      <span class="relative flex size-2.5" aria-hidden="true">
+        {% if office.open %}<span class="absolute inline-flex size-full animate-ping rounded-full bg-brand-500 opacity-60 motion-reduce:animate-none"></span>{% endif %}
+        <span class="relative inline-flex size-2.5 rounded-full {{ 'bg-brand-500' if office.open else 'bg-accent-500' }}"></span>
+      </span>
+      {{ office.label }}
+    </p>
+  {% endcall %}
 
+  {# Quick ways to reach us #}
+  <section class="container-page relative z-10 -mt-8">
+    <h2 class="sr-only">Ways to reach us</h2>
+    <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {% for c in [
+        { href: site.phone | telHref, icon: 'phone', title: 'Call us', text: site.phone, red: true },
+        { href: 'mailto:' + site.email, icon: 'mail', title: 'Email us', text: site.email },
+        { href: '#visit', icon: 'map-pin', title: 'Visit us', text: site.address.city + ', ' + site.address.state, red: true },
+        { href: '/referrals', icon: 'document', title: 'Send a referral', text: 'Refer someone' }
+      ] %}
+        <li>
+          <a href="{{ c.href }}" class="group flex h-full flex-col gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+            <span class="grid size-12 shrink-0 place-items-center rounded-2xl ring-1 transition duration-300 group-hover:text-white group-hover:ring-transparent {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover:bg-accent-600' if c.red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover:bg-brand-700' }}">{{ icon(c.icon, 'size-6') }}</span>
+            <span class="min-w-0">
+              <span class="block font-display font-bold text-ink">{{ c.title }}</span>
+              <span class="block truncate text-sm text-muted sm:text-[15px]">{{ c.text }}</span>
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {# Message form + who to contact #}
   <section class="section">
-    <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr]">
-      <div>
+    <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
+      <div id="contact-form" class="min-w-0 scroll-mt-28">
         {{ ui.flash(flash) }}
         <p class="mb-6 flex gap-3 rounded-2xl border border-accent-100 bg-accent-50 p-4 text-[15px] text-accent-800">
           {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }}
@@ -41,42 +71,102 @@
             {{ ui.input('email', 'Email address', values, errors, type='email', autocomplete='email') }}
             {{ ui.textarea('message', 'Your message', values, errors, rows=6) }}
 
+            {{ ui.captcha(turnstileSiteKey, errors) }}
             <button type="submit" class="btn-primary">Send message {{ icon('arrow-right', 'size-4') }}</button>
           </form>
         </div>
       </div>
 
-      <aside class="space-y-5">
-        <div class="card !p-6">
-          <h2 class="text-lg font-bold">Call or email</h2>
-          <ul class="mt-4 space-y-4">
-            <li><a href="{{ site.phone | telHref }}" class="flex items-center gap-4 font-semibold text-ink hover:text-brand-700"><span class="icon-tile size-11">{{ icon('phone', 'size-5') }}</span>{{ site.phone }}</a></li>
-            <li><a href="mailto:{{ site.email }}" class="flex items-center gap-4 font-semibold text-ink hover:text-brand-700"><span class="icon-tile size-11">{{ icon('mail', 'size-5') }}</span>{{ site.email }}</a></li>
+      <aside class="space-y-5 lg:sticky lg:top-28 lg:self-start">
+        <div class="card !p-6 sm:!p-7">
+          <h2 class="text-lg font-bold">Who should I contact?</h2>
+          <p class="mt-1 text-[15px] text-muted">Choose the best fit and we’ll route your message.</p>
+          <ul class="mt-5 space-y-2">
+            {% for r in recipients %}
+              {% set red = loop.index is odd %}
+              <li>
+                <a href="/contact?to={{ r.key }}#contact-form" data-set-recipient="{{ r.key }}"
+                   class="group flex items-start gap-3 rounded-2xl border border-transparent p-3 transition hover:border-line hover:bg-surface">
+                  <span class="grid size-10 shrink-0 place-items-center rounded-xl transition group-hover:text-white {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }}">{{ icon(r.icon, 'size-5') }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block font-semibold text-ink">{{ r.label }}</span>
+                    <span class="block text-sm text-muted">{{ r.description }}</span>
+                  </span>
+                  {{ icon('chevron-right', 'mt-3 size-4 shrink-0 text-muted transition group-hover:translate-x-0.5') }}
+                </a>
+              </li>
+            {% endfor %}
           </ul>
         </div>
 
-        <div id="visit" class="card !p-6">
-          <h2 class="text-lg font-bold">Visit our office</h2>
-          <address class="mt-4 flex gap-3 not-italic text-ink">
-            {{ icon('map-pin', 'mt-0.5 size-5 shrink-0 text-brand-600') }}
-            <span>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</span>
-          </address>
-          <p class="mt-3 flex gap-3 text-ink">{{ icon('clock', 'mt-0.5 size-5 shrink-0 text-brand-600') }} {{ site.hours }}</p>
-          <p class="mt-4 rounded-2xl bg-surface p-4 text-[15px] text-muted ring-1 ring-line">{{ site.walkIn }}</p>
-          <a href="https://www.google.com/maps/dir/?api=1&amp;destination={{ fullAddress | urlencode }}" target="_blank" rel="noopener noreferrer" class="btn-secondary mt-5 w-full">
-            {{ icon('map-pin', 'size-4') }} Get directions<span class="sr-only"> (opens Google Maps in a new tab)</span>
-          </a>
-        </div>
-
-        <a href="/appointments/request" class="card card-hover group flex items-center gap-4 !p-6">
-          <span class="icon-tile">{{ icon('calendar', 'size-6') }}</span>
+        <a href="/appointments/request" class="group flex items-center gap-4 rounded-3xl bg-brand-900 p-6 text-white shadow-lift transition hover:-translate-y-1">
+          <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/20">{{ icon('calendar', 'size-6') }}</span>
           <span class="flex-1">
-            <span class="block font-bold text-ink">Request an appointment</span>
-            <span class="block text-[15px] text-muted">Book a time in advance</span>
+            <span class="block font-display font-bold">Request an appointment</span>
+            <span class="block text-[15px] text-brand-100">Book a time with our team in advance</span>
           </span>
-          {{ icon('arrow-right', 'size-5 text-brand-600 transition group-hover:translate-x-1') }}
+          {{ icon('arrow-right', 'size-5 transition group-hover:translate-x-1') }}
         </a>
       </aside>
+    </div>
+  </section>
+
+  {# Visit — map loads only on request, so Google sets no cookies unless the visitor chooses. #}
+  <section id="visit" class="section bg-cream scroll-mt-20">
+    <div class="container-page grid gap-8 lg:grid-cols-[1fr_1.5fr] lg:gap-12">
+      <div class="reveal">
+        <p class="eyebrow">Visit us</p>
+        <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Our office in Catonsville</h2>
+        <dl class="mt-8 space-y-6">
+          <div>
+            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('map-pin', 'size-5 text-accent-600') }} Address</dt>
+            <dd class="mt-1.5 pl-7.5 text-lg text-ink"><address class="not-italic">{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</address></dd>
+          </div>
+          <div>
+            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('clock', 'size-5 text-accent-600') }} Office hours</dt>
+            <dd class="mt-1.5 pl-7.5 text-lg text-ink">
+              {{ site.hours }}
+              <span class="mt-1 block text-sm text-muted">{{ office.label }} (hours may differ on public holidays)</span>
+            </dd>
+          </div>
+          <div>
+            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('users', 'size-5 text-accent-600') }} Walk-ins</dt>
+            <dd class="mt-1.5 pl-7.5 text-ink">{{ site.walkIn }}</dd>
+          </div>
+        </dl>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="{{ directionsUrl }}" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            {{ icon('map-pin', 'size-4') }} Get directions<span class="sr-only"> (opens Google Maps in a new tab)</span>
+          </a>
+          <a href="{{ site.phone | telHref }}" class="btn-secondary">{{ icon('phone', 'size-4') }} Call ahead</a>
+        </div>
+      </div>
+
+      <div class="reveal relative min-h-[26rem] overflow-hidden rounded-3xl bg-brand-50 shadow-lift ring-1 ring-line lg:min-h-[28rem]" data-map>
+        {# Placeholder: a stylised street grid, not a real map. #}
+        <div class="absolute inset-0" aria-hidden="true">
+          <div class="absolute inset-0 bg-[linear-gradient(var(--color-brand-100)_2px,transparent_2px),linear-gradient(90deg,var(--color-brand-100)_2px,transparent_2px)] bg-[size:56px_56px]"></div>
+          <div class="absolute top-[38%] -right-10 -left-10 h-5 -rotate-6 bg-white shadow-sm"></div>
+          <div class="absolute top-[-10%] bottom-[-10%] left-[58%] w-4 rotate-12 bg-white shadow-sm"></div>
+          <div class="absolute top-[15%] right-[10%] size-24 rounded-full bg-brand-200/60 blur-sm"></div>
+          <div class="absolute bottom-[12%] left-[12%] h-16 w-28 rounded-2xl bg-brand-200/50"></div>
+          <div class="absolute top-[28%] left-[55%] -translate-x-1/2 -translate-y-full">
+            <span class="grid size-14 place-items-center rounded-full rounded-br-none bg-accent-600 text-white shadow-lift rotate-45">
+              <span class="-rotate-45">{{ icon('heart', 'size-6') }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="absolute inset-x-4 bottom-4 rounded-2xl bg-white/95 p-5 shadow-lift backdrop-blur sm:inset-x-6 sm:bottom-6">
+          <p class="font-display font-bold text-ink">{{ site.legalName }}</p>
+          <p class="text-[15px] text-muted">{{ site.address.street }}, {{ site.address.city }}, {{ site.address.state }}</p>
+          <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button type="button" class="btn-green !py-2.5" data-map-src="{{ mapEmbedUrl }}" data-map-title="Map showing {{ site.legalName }} at {{ site.address.street }}, {{ site.address.city }}">
+              {{ icon('map-pin', 'size-4') }} Show map
+            </button>
+            <p class="text-xs text-muted">Loads Google Maps, which may set its own cookies. <a href="/cookies" class="underline underline-offset-2 hover:text-ink">Cookie Policy</a></p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 {% endblock %}

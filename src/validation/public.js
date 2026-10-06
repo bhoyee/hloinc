@@ -2,6 +2,8 @@
 
 const { z } = require('zod');
 const { recipients } = require('../lib/site');
+const services = require('../content/services');
+const areas = require('../content/areas');
 
 const TIMEZONE = 'America/New_York';
 
@@ -41,6 +43,49 @@ const contactSchema = z.object({
     .trim()
     .min(10, 'Your message should be at least 10 characters.')
     .max(3000, 'Keep your message under 3,000 characters.'),
+});
+
+const REFERRER_ROLES = {
+  ccs: 'Coordinator of Community Services',
+  family: 'Family member or guardian',
+  professional: 'Other professional',
+  self: 'Referring myself',
+  other: 'Other',
+};
+
+const COUNTIES = [...areas.flatMap((a) => a.counties), 'Other / not sure'];
+
+const optionalEmail = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(191, 'Email address is too long.')
+  .refine((v) => v === '' || z.email().safeParse(v).success, 'Enter a valid email address, like name@example.com.');
+
+/** Checkbox groups arrive as a string (one ticked), an array (several) or nothing. */
+const checkboxList = (allowed) =>
+  z.preprocess(
+    (v) => (v === undefined || v === '' ? [] : Array.isArray(v) ? v : [v]),
+    z.array(z.enum(allowed, { error: 'Choose from the listed services.' })).max(allowed.length)
+  );
+
+const referralSchema = z.object({
+  referrer_name: trimmed(120, 'name'),
+  referrer_email: email,
+  referrer_phone: phone.optional().default(''),
+  referrer_role: z.enum(Object.keys(REFERRER_ROLES), { error: 'Tell us how you know the person.' }),
+  organization: z.string().trim().max(160, 'Keep the organization name under 160 characters.').optional().default(''),
+  person_name: z
+    .string({ error: 'Enter the name of the person being referred.' })
+    .trim()
+    .min(1, 'Enter the name of the person being referred.')
+    .max(120, 'Keep the name under 120 characters.'),
+  person_phone: phone.optional().default(''),
+  person_email: optionalEmail.optional().default(''),
+  county: z.enum(COUNTIES, { error: 'Choose the county where the person lives.' }),
+  services: checkboxList(services.map((s) => s.slug)),
+  notes: z.string().trim().max(1500, 'Keep notes under 1,500 characters.').optional().default(''),
+  consent: z.literal('yes', { error: 'Please confirm the person knows about this referral.' }),
 });
 
 /** Today's date in Maryland as YYYY-MM-DD. */
@@ -88,4 +133,4 @@ function appointmentSchema(typeIds, now = new Date()) {
     });
 }
 
-module.exports = { contactSchema, appointmentSchema, todayInMaryland, addDays };
+module.exports = { contactSchema, appointmentSchema, referralSchema, REFERRER_ROLES, COUNTIES, todayInMaryland, addDays };

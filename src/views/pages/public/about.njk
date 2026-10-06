@@ -4,57 +4,86 @@
 {% block content %}
   {{ ui.pageHero('About HLO', 'People first, in everything we do', page.intro, [{ label: 'About' }], 'about-team', 'Three team members talking and laughing together') }}
 
+  {# Mission & vision #}
   <section class="section">
-    <div class="container-page grid gap-6 lg:grid-cols-2">
-      <div class="card bg-gradient-to-br from-brand-50 to-white">
-        <span class="icon-tile">{{ icon('heart', 'size-6') }}</span>
-        <h2 class="mt-6 text-2xl font-bold">Our mission</h2>
-        <p class="mt-3 text-lg text-muted">{{ page.mission }}</p>
-      </div>
-      <div class="card">
-        <span class="icon-tile-red">{{ icon('sun', 'size-6') }}</span>
-        <h2 class="mt-6 text-2xl font-bold">Our vision</h2>
-        <p class="mt-3 text-lg text-muted">{{ page.vision }}</p>
-      </div>
+    <div class="container-page grid gap-6 md:grid-cols-2">
+      {% for item in [
+        { title: 'Our mission', text: page.mission, icon: 'heart', red: false },
+        { title: 'Our vision', text: page.vision, icon: 'sun', red: true }
+      ] %}
+        {% set bar = 'bg-accent-600' if item.red else 'bg-brand-600' %}
+        <article class="reveal group relative overflow-hidden rounded-3xl border border-line bg-white p-7 shadow-soft transition duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-lift sm:p-10">
+          <span class="absolute inset-x-0 top-0 h-1.5 origin-left scale-x-0 {{ bar }} transition-transform duration-500 group-hover:scale-x-100" aria-hidden="true"></span>
+          <span class="pointer-events-none absolute -right-6 -bottom-8 opacity-[0.06] transition duration-500 group-hover:scale-110 group-hover:opacity-[0.1] {{ 'text-accent-600' if item.red else 'text-brand-700' }}" aria-hidden="true">{{ icon(item.icon, 'size-44') }}</span>
+          <span class="grid size-14 place-items-center rounded-2xl ring-1 transition duration-300 {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover:bg-accent-600' if item.red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover:bg-brand-700' }} group-hover:text-white group-hover:ring-transparent">
+            {{ icon(item.icon, 'size-7') }}
+          </span>
+          <h2 class="relative mt-6 text-2xl font-bold sm:text-3xl">{{ item.title }}</h2>
+          <p class="relative mt-4 text-lg leading-relaxed text-muted">{{ item.text }}</p>
+        </article>
+      {% endfor %}
     </div>
   </section>
 
+  {# Values #}
   <section class="section bg-cream">
     <div class="container-page">
       {{ ui.sectionHeading('Our values', 'What guides our work', null, true) }}
       <ul class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {% for v in page.values %}
-          <li class="card !p-6">
-            <span class="font-display text-3xl font-extrabold {{ 'text-accent-600' if loop.index is odd else 'text-brand-600' }}" aria-hidden="true">0{{ loop.index }}</span>
-            <h3 class="mt-3 text-xl font-bold">{{ v.name }}</h3>
-            <p class="mt-2 text-[15px] text-muted">{{ v.text }}</p>
+          {% set red = loop.index is odd %}
+          <li class="reveal group relative overflow-hidden rounded-3xl border border-line bg-white p-6 shadow-soft transition duration-300 hover:-translate-y-1.5 hover:shadow-lift sm:p-7 {{ 'hover:border-accent-600 hover:bg-accent-600' if red else 'hover:border-brand-700 hover:bg-brand-700' }}">
+            {# Decorative watermark drawn by CSS, so it isn't text for screen readers or contrast checks. #}
+            <span data-n="0{{ loop.index }}" class="absolute -top-4 -right-2 font-display text-8xl font-extrabold opacity-[0.07] transition duration-300 before:content-[attr(data-n)] group-hover:text-white group-hover:opacity-15 {{ 'text-accent-600' if red else 'text-brand-700' }}" aria-hidden="true"></span>
+            <span class="font-display text-3xl font-extrabold transition-colors duration-300 group-hover:text-white {{ 'text-accent-600' if red else 'text-brand-600' }}" aria-hidden="true">0{{ loop.index }}</span>
+            <span class="mt-3 block h-1 w-10 rounded-full transition-all duration-300 group-hover:w-16 group-hover:bg-white/70 {{ 'bg-accent-500' if red else 'bg-brand-500' }}" aria-hidden="true"></span>
+            <h3 class="mt-4 text-xl font-bold transition-colors duration-300 group-hover:text-white">{{ v.name }}</h3>
+            <p class="mt-2 text-[15px] text-muted transition-colors duration-300 group-hover:text-white/90">{{ v.text }}</p>
           </li>
         {% endfor %}
       </ul>
     </div>
   </section>
 
-  <section class="section">
-    <div class="container-page grid gap-12 lg:grid-cols-[1fr_1.3fr]">
-      <div>
-        <p class="eyebrow">Who we support</p>
-        <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Adults with intellectual and developmental disabilities</h2>
-        <p class="mt-5 text-lg text-muted">We support adults with a wide range of support needs, including:</p>
-        <img src="/img/photos/about-friends-sm.webp" srcset="/img/photos/about-friends-sm.webp 560w, /img/photos/about-friends.webp 960w"
-             sizes="(min-width: 1024px) 35vw, 100vw" width="560" height="766" loading="lazy"
-             alt="Two friends sitting together and smiling outdoors" class="photo mt-8 hidden aspect-[4/5] shadow-soft lg:block">
+  {# Who we support #}
+  <section id="who-we-support" class="section">
+    <div class="container-page">
+      <div class="grid gap-4 lg:grid-cols-[1fr_1.3fr] lg:items-end lg:gap-12">
+        <div>
+          <p class="eyebrow">Who we support</p>
+          <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Adults with intellectual and developmental disabilities</h2>
+        </div>
+        <p class="text-lg text-muted lg:pb-1">We support adults with a wide range of support needs. Every person’s support is shaped around their own goals, choices and plan, including people with:</p>
       </div>
-      <div>
-        <ul class="grid gap-3 sm:grid-cols-2">
-          {% for need in page.supportNeeds %}
-            <li class="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 text-ink ring-1 ring-line">
-              {{ icon('check', 'size-4 shrink-0 text-brand-600') }} {{ need }}
-            </li>
-          {% endfor %}
-        </ul>
-        <p class="mt-6 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-[15px] text-brand-900">
-          {{ icon('info', 'mt-0.5 size-5 shrink-0') }} {{ page.eligibilityNote }}
-        </p>
+
+      <div class="mt-10 grid gap-8 lg:mt-12 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
+        <div class="reveal relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[28rem]">
+          <img src="/img/photos/about-friends-sm.webp" srcset="/img/photos/about-friends-sm.webp 560w, /img/photos/about-friends.webp 960w"
+               sizes="(min-width: 1024px) 40vw, 100vw" width="560" height="766" loading="lazy"
+               alt="Two friends sitting together and smiling outdoors"
+               class="absolute inset-0 h-full w-full rounded-3xl object-cover object-[center_30%] shadow-lift">
+          <div class="absolute right-4 bottom-4 left-4 rounded-2xl bg-white/95 p-4 shadow-lift backdrop-blur sm:right-auto sm:max-w-xs">
+            <p class="flex items-center gap-2 font-display font-bold text-ink">{{ icon('heart', 'size-5 text-accent-600') }} Every person, their own plan</p>
+            <p class="mt-1 text-sm text-muted">Support that follows each person’s goals and choices.</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col">
+          <ul class="grid flex-1 content-start gap-3 sm:grid-cols-2">
+            {% for need in page.supportNeeds %}
+              {% set red = loop.index is odd %}
+              <li class="group flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-ink transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-soft {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}">
+                <span class="grid size-8 shrink-0 place-items-center rounded-full transition duration-200 {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }} group-hover:text-white">
+                  {{ icon('check', 'size-4') }}
+                </span>
+                <span class="font-medium">{{ need }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <p class="mt-6 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-[15px] text-brand-900">
+            {{ icon('info', 'mt-0.5 size-5 shrink-0') }} {{ page.eligibilityNote }}
+          </p>
+        </div>
       </div>
     </div>
   </section>

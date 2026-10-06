@@ -16,6 +16,8 @@ const defaults = {
     zip: '', // CONFIRM — client question 3
   },
   hours: 'Monday to Friday, 9 a.m. to 5 p.m.',
+  // Machine-readable hours for the "Open now" badge (Maryland time; 0 = Sunday).
+  schedule: { days: [1, 2, 3, 4, 5], open: 9, close: 17 },
   walkIn: 'Walk-ins are welcome during office hours. Calling ahead helps us make sure the right person is available.',
 };
 
@@ -32,13 +34,19 @@ const nav = [
  * Email addresses come from site_settings `contact.recipient_emails` (client question 4),
  * falling back to the main business email.
  */
+// `description` helps visitors choose (shown on the contact page). CONFIRM wording with HLO.
 const recipients = [
   // The requirements document labels this "More inquiry"; CONFIRM the wording.
-  { key: 'general', label: 'General inquiry', category: 'general' },
-  { key: 'program_coordinator', label: 'Program coordinator', category: 'general' },
-  { key: 'program_director', label: 'Program director', category: 'general' },
-  { key: 'executive', label: 'CEO/COO', category: 'general' },
-  { key: 'intake', label: 'Intake specialist', category: 'intake' },
+  { key: 'general', label: 'General inquiry', category: 'general', icon: 'chat',
+    description: 'Questions about HLO, our services, or anything else.' },
+  { key: 'program_coordinator', label: 'Program coordinator', category: 'general', icon: 'calendar',
+    description: 'Day-to-day questions about current services and schedules.' },
+  { key: 'program_director', label: 'Program director', category: 'general', icon: 'users',
+    description: 'Feedback or concerns about the quality of a program.' },
+  { key: 'executive', label: 'CEO/COO', category: 'general', icon: 'briefcase',
+    description: 'Partnerships, leadership matters, or formal concerns.' },
+  { key: 'intake', label: 'Intake specialist', category: 'intake', icon: 'heart',
+    description: 'Starting services with HLO and referrals.' },
 ];
 
 module.exports = { defaults, nav, recipients };

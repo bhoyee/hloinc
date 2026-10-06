@@ -37,6 +37,7 @@ async function getBusiness() {
     email: s['business.email'] ?? site.defaults.email,
     address: { ...site.defaults.address, ...(s['business.address'] || {}) },
     hours: s['business.hours'] ?? site.defaults.hours,
+    schedule: s['business.schedule'] ?? site.defaults.schedule,
     walkIn: s['business.walk_in'] ?? site.defaults.walkIn,
   };
 }

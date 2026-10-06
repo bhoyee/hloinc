@@ -26,7 +26,7 @@ describe('public pages', () => {
 
   it('lists exactly the five non-nursing services', async () => {
     const res = await request(app).get('/services');
-    const names = [...res.text.matchAll(/<h2 class="text-2xl font-bold"><a href="\/services\/([a-z-]+)"/g)].map((m) => m[1]);
+    const names = [...res.text.matchAll(/<a href="\/services\/([a-z-]+)" class="after:absolute/g)].map((m) => m[1]);
     expect(names).toHaveLength(5);
     expect(res.text).not.toMatch(/nursing|transportation/i);
   });
@@ -61,7 +61,7 @@ describe('legacy WordPress URLs', () => {
     ['/about-hlo-inc/', '/about'],
     ['/contact-us/', '/contact'],
     ['/schedule-an-appointment/', '/appointments/request'],
-    ['/send-your-referrals/', '/getting-started#referrals'],
+    ['/send-your-referrals/', '/referrals'],
     ['/services/', '/services'],
   ])('%s redirects permanently to %s', async (from, to) => {
     const res = await request(app).get(from);
@@ -318,5 +318,333 @@ describe('dates', () => {
   it('shows calendar dates without a time-zone shift', async () => {
     const res = await request(app).get('/privacy');
     expect(res.text).toContain('October 6, 2026');
+  });
+});
+
+describe('services help', () => {
+  it('guides visitors who are unsure which service fits', async () => {
+    const res = await request(app).get('/services');
+    expect(res.text).toContain('Not sure which service fits?');
+    expect(res.text).toContain('href="/getting-started#compare"');
+    expect(res.text).toContain('href="/contact?to=intake"');
+    // Every quick-guide entry resolves to a real service.
+    expect(res.text.match(/May suit: [A-Z]/g)).toHaveLength(5);
+  });
+});
+
+describe('getting started comparison', () => {
+  it('tags every service so the "where" filter can find it', async () => {
+    const res = await request(app).get('/getting-started');
+    const rows = [...res.text.matchAll(/<tr data-where="([a-z -]+)"/g)].map((m) => m[1]);
+    expect(rows).toHaveLength(5);
+    for (const key of ['home', 'shared-home', 'community']) {
+      expect(res.text).toContain(`data-filter="${key}"`);
+      expect(rows.some((w) => w.split(' ').includes(key))).toBe(true);
+    }
+  });
+
+  it('keeps filter controls hidden until JavaScript enables them', async () => {
+    const res = await request(app).get('/getting-started');
+    expect(res.text).toMatch(/data-filter-controls hidden/);
+  });
+});
+
+describe('referrals', () => {
+  beforeEach(() => db('contact_messages').del());
+
+  const valid = {
+    referrer_name: 'Casey Coordinator',
+    referrer_email: 'casey@agency.example',
+    referrer_phone: '',
+    referrer_role: 'ccs',
+    organization: 'Example Coordination Agency',
+    person_name: 'Jordan Example',
+    person_phone: '410-555-0199',
+    person_email: '',
+    county: 'Howard County',
+    services: ['personal-supports', 'respite-care'],
+    notes: 'Best reached in the afternoon.',
+    consent: 'yes',
+  };
+
+  it('renders the referral form', async () => {
+    const res = await request(app).get('/referrals');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Send a referral');
+    expect(res.text).toContain('Please don’t include health information');
+  });
+
+  it('saves a referral to the intake inbox with its details', async () => {
+    const { agent, csrf } = await formAgent(app, '/referrals');
+    const res = await agent.post('/referrals').type('form').send({ ...valid, _csrf: csrf });
+    expect(res.status).toBe(303);
+
+    const [row] = await db('contact_messages');
+    expect(row).toMatchObject({ type: 'referral', recipient: 'intake', email: 'casey@agency.example', email_status: 'sent' });
+    expect(JSON.parse(row.details)).toMatchObject({
+      person_name: 'Jordan Example',
+      county: 'Howard County',
+      services: ['personal-supports', 'respite-care'],
+    });
+  });
+
+  it('accepts a single ticked service', async () => {
+    const { agent, csrf } = await formAgent(app, '/referrals');
+    await agent.post('/referrals').type('form').send({ ...valid, services: 'supported-living', _csrf: csrf });
+    const [row] = await db('contact_messages');
+    expect(JSON.parse(row.details).services).toEqual(['supported-living']);
+  });
+
+  it('requires consent and the key details', async () => {
+    const { agent, csrf } = await formAgent(app, '/referrals');
+    const res = await agent
+      .post('/referrals')
+      .type('form')
+      .send({ ...valid, consent: '', person_name: '', county: '', _csrf: csrf });
+    expect(res.status).toBe(422);
+    expect(res.text).toContain('Please confirm the person knows about this referral');
+    expect(res.text).toContain('Enter the name of the person being referred');
+    expect(res.text).toContain('Choose the county where the person lives');
+    // What was typed is kept, including ticked services.
+    expect(res.text).toMatch(/value="respite-care" class="[^"]*" checked/);
+    expect(await db('contact_messages')).toHaveLength(0);
+  });
+
+  it('rejects services HLO does not offer through the website', async () => {
+    const { agent, csrf } = await formAgent(app, '/referrals');
+    const res = await agent.post('/referrals').type('form').send({ ...valid, services: ['nursing'], _csrf: csrf });
+    expect(res.status).toBe(422);
+  });
+});
+
+describe('content from the current site', () => {
+  it('lists every condition from the current Services page on About', async () => {
+    const res = await request(app).get('/about');
+    for (const c of ['Muscular dystrophy', 'Multiple sclerosis', 'Cystic fibrosis', 'Spinal cord injuries',
+      'Orthopedic and physical disabilities', 'Behavioral support needs', 'Disabilities not yet diagnosed']) {
+      expect(res.text).toContain(c);
+    }
+  });
+
+  it('shows the pledge and approach on the Services page', async () => {
+    const res = await request(app).get('/services');
+    expect(res.text).toContain('We pledge to support adults with intellectual disabilities');
+    expect(res.text).toContain('self-determination');
+  });
+});
+
+describe('job detail page', () => {
+  beforeEach(async () => {
+    await db('jobs').del();
+    await db('jobs').insert({
+      title: 'Direct Support Professional (DSP)',
+      slug: 'dsp-test',
+      department: 'Residential & Community Services',
+      location: 'Catonsville, MD',
+      employment_type: 'Full-time',
+      pay_range: '$17.00 – $19.00 per hour',
+      description: 'Intro paragraph.\n\nWhat you will do:\n- Support daily living skills\n- <script>alert(1)</script>',
+      requirements: '- High school diploma or GED',
+      benefits: '- Paid training',
+      apply_url: 'https://workforcenow.adp.com/example',
+      status: 'published',
+      published_at: new Date(),
+    });
+  });
+
+  it('shows pay range and benefits (Maryland wage range transparency)', async () => {
+    const res = await request(app).get('/careers/dsp-test');
+    expect(res.text).toContain('$17.00 – $19.00 per hour');
+    expect(res.text).toContain('Pay and benefits');
+    expect(res.text).toContain('<li>Paid training</li>');
+  });
+
+  it('turns "- " lines into a list and escapes any HTML', async () => {
+    const res = await request(app).get('/careers/dsp-test');
+    expect(res.text).toContain('<ul><li>Support daily living skills</li>');
+    expect(res.text).not.toContain('<script>alert(1)</script>');
+    expect(res.text).toContain('&lt;script&gt;');
+  });
+
+  it('publishes valid JobPosting structured data for Google', async () => {
+    const res = await request(app).get('/careers/dsp-test');
+    const json = res.text.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1];
+    // "<" is escaped so job text can never close the script tag.
+    expect(json).not.toMatch(/<\/script/i);
+    const data = JSON.parse(json);
+    expect(data).toMatchObject({
+      '@type': 'JobPosting',
+      title: 'Direct Support Professional (DSP)',
+      employmentType: 'FULL_TIME',
+      directApply: false,
+      baseSalary: { currency: 'USD', value: { minValue: 17, maxValue: 19, unitText: 'HOUR' } },
+    });
+    expect(data.jobLocation.address.addressRegion).toBe('MD');
+  });
+
+  it('keeps the careers list compact (no full descriptions)', async () => {
+    const res = await request(app).get('/careers');
+    expect(res.text).toContain('Direct Support Professional (DSP)');
+    expect(res.text).not.toContain('Support daily living skills');
+  });
+});
+
+describe('careers search and pagination', () => {
+  beforeEach(async () => {
+    await db('jobs').del();
+    const rows = [];
+    for (let i = 1; i <= 23; i++) {
+      rows.push({
+        title: i % 2 ? `Direct Support Professional ${i}` : `House Manager ${i}`,
+        slug: `job-${i}`,
+        department: i % 2 ? 'Residential' : 'Programs',
+        location: i % 3 ? 'Howard County, MD' : 'Charles County, MD',
+        employment_type: i % 4 ? 'Full-time' : 'Part-time',
+        description: i === 7 ? 'Includes 50% travel.' : 'Support adults in the community.',
+        apply_url: 'https://workforcenow.adp.com/example',
+        status: 'published',
+        // Newest first: job-23 is the most recent.
+        published_at: new Date(Date.UTC(2026, 8, i)),
+      });
+    }
+    rows.push({ ...rows[0], slug: 'draft-job', title: 'Hidden Draft', status: 'draft' });
+    await db('jobs').insert(rows);
+  });
+
+  const titles = (html) => [...html.matchAll(/<a href="\/careers\/(job-\d+)"/g)].map((m) => m[1]);
+
+  it('shows 10 roles per page, newest first, with a count', async () => {
+    const res = await request(app).get('/careers');
+    expect(titles(res.text)).toHaveLength(10);
+    expect(titles(res.text)[0]).toBe('job-23');
+    expect(res.text).toMatch(/Showing <strong class="text-ink">1–10<\/strong> of <strong class="text-ink">23<\/strong>/);
+    expect(res.text).not.toContain('Hidden Draft');
+  });
+
+  it('pages through the results', async () => {
+    const page3 = await request(app).get('/careers?page=3');
+    expect(titles(page3.text)).toEqual(['job-3', 'job-2', 'job-1']);
+    expect(page3.text).toContain('aria-current="page" class="grid size-11');
+    expect(page3.text).toContain('rel="prev"');
+    expect(page3.text).not.toContain('rel="next"');
+  });
+
+  it('treats an out-of-range or bad page number safely', async () => {
+    expect(titles((await request(app).get('/careers?page=99')).text)).toEqual(['job-3', 'job-2', 'job-1']);
+    expect(titles((await request(app).get('/careers?page=abc')).text)[0]).toBe('job-23');
+  });
+
+  it('searches by keyword', async () => {
+    const res = await request(app).get('/careers?q=house+manager');
+    const found = titles(res.text);
+    expect(found).toHaveLength(10); // 11 matches, first page
+    expect(res.text).toContain('of <strong class="text-ink">11</strong>');
+    expect(res.text).toContain('matching your search');
+  });
+
+  it('treats % and _ in a search as plain text', async () => {
+    expect(titles((await request(app).get('/careers?q=50%25')).text)).toEqual(['job-7']);
+    expect(titles((await request(app).get('/careers?q=_')).text)).toEqual([]);
+  });
+
+  it('filters by schedule, location and department together', async () => {
+    const res = await request(app).get('/careers?type=Part-time&location=Charles+County%2C+MD&department=Programs');
+    // Part-time = multiples of 4; Charles = multiples of 3; Programs = even -> 12
+    expect(titles(res.text)).toEqual(['job-12']);
+  });
+
+  it('ignores filter values that do not exist', async () => {
+    const res = await request(app).get('/careers?type=Astronaut');
+    expect(res.text).toContain('of <strong class="text-ink">23</strong>');
+  });
+
+  it('keeps the search in pagination links', async () => {
+    const res = await request(app).get('/careers?q=house');
+    expect(res.text).toContain('href="/careers?q=house&amp;page=2#positions"');
+  });
+
+  it('offers to clear a search that finds nothing', async () => {
+    const res = await request(app).get('/careers?q=astronaut');
+    expect(res.text).toContain('No roles match your search');
+    expect(res.text).toContain('Clear search');
+  });
+
+  it('builds filter dropdowns from published jobs only', async () => {
+    const res = await request(app).get('/careers');
+    expect(res.text).toContain('<option value="Charles County, MD"');
+    expect(res.text).toContain('<option value="Part-time"');
+  });
+});
+
+describe('careers live search', () => {
+  beforeEach(async () => {
+    await db('jobs').del();
+    await db('jobs').insert([
+      { title: 'Direct Support Professional (DSP)', slug: 'dsp-1', description: 'x', apply_url: 'https://workforcenow.adp.com/x', status: 'published', published_at: new Date() },
+      { title: 'House Manager', slug: 'hm-1', description: 'x', apply_url: 'https://workforcenow.adp.com/x', status: 'published', published_at: new Date() },
+    ]);
+  });
+
+  it('returns only the results block for ?partial=1', async () => {
+    const res = await request(app).get('/careers?q=dsp&partial=1');
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain('<html');
+    expect(res.text).not.toContain('Why work at HLO');
+    expect(res.text).toContain('data-results-count');
+    expect(res.headers['x-robots-tag']).toBe('noindex');
+  });
+
+  it('highlights the search term in matching titles', async () => {
+    const res = await request(app).get('/careers?q=dsp&partial=1');
+    expect(res.text).toContain('(<mark class="rounded bg-accent-100 px-0.5 text-inherit">DSP</mark>)');
+    expect(res.text).not.toContain('House Manager');
+  });
+
+  it('never lets a search term inject HTML through highlighting', async () => {
+    const res = await request(app).get('/careers?q=%3Cimg%20src%3Dx%3E&partial=1');
+    expect(res.text).not.toContain('<img src=x>');
+  });
+
+  it('keeps ?partial out of pagination links', async () => {
+    const res = await request(app).get('/careers?partial=1');
+    expect(res.text).not.toContain('partial=1');
+  });
+});
+
+describe('careers search relevance', () => {
+  it('lists title matches before description-only matches', async () => {
+    await db('jobs').del();
+    await db('jobs').insert([
+      { title: 'House Manager', slug: 'newest', description: 'Show respite families respect.', apply_url: 'https://workforcenow.adp.com/x', status: 'published', published_at: new Date() },
+      { title: 'Respite Care Worker', slug: 'older', description: 'x', apply_url: 'https://workforcenow.adp.com/x', status: 'published', published_at: new Date(Date.now() - 86400000) },
+    ]);
+    const res = await request(app).get('/careers?q=respite&partial=1');
+    const order = [...res.text.matchAll(/<a href="\/careers\/(newest|older)"/g)].map((m) => m[1]);
+    expect(order).toEqual(['older', 'newest']);
+  });
+});
+
+describe('contact page', () => {
+  it('does not load Google Maps until the visitor asks', async () => {
+    const res = await request(app).get('/contact');
+    expect(res.text).not.toMatch(/<iframe/);
+    expect(res.text).toContain('data-map-src="https://www.google.com/maps?q=4%20East%20Rolling%20Crossroads%2C%20Catonsville%2C%20MD&amp;output=embed"');
+    expect(res.headers['content-security-policy']).toContain('frame-src \'self\' https://www.google.com');
+  });
+
+  it('shows an office open/closed status', async () => {
+    const res = await request(app).get('/contact');
+    expect(res.text).toMatch(/(Open now · until 5 p\.m\.|Closed · opens)/);
+  });
+
+  it('explains each recipient so visitors can choose', async () => {
+    const res = await request(app).get('/contact');
+    expect(res.text).toContain('Starting services with HLO and referrals.');
+    expect(res.text).toContain('href="/contact?to=intake#contact-form" data-set-recipient="intake"');
+  });
+
+  it('mentions the optional map in the Cookie Policy', async () => {
+    const res = await request(app).get('/cookies');
+    expect(res.text).toContain('The map loads only if you select “Show map”');
   });
 });

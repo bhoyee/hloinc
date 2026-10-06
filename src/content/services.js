@@ -5,9 +5,17 @@
  * Transportation and nursing are intentionally excluded (§2).
  * Wording must not promise eligibility or clinical treatment.
  */
-module.exports = [
+/** Where support happens — drives the filter on the Getting Started comparison. */
+const WHERE_LABELS = {
+  home: 'At home',
+  'shared-home': 'In a shared home',
+  community: 'Out in the community',
+};
+
+const services = [
   {
     slug: 'personal-supports',
+    where: ['home', 'community'],
     imageAlt: 'A man and a woman preparing a meal together in a kitchen',
     name: 'Personal Supports',
     icon: 'hand-heart',
@@ -29,6 +37,7 @@ module.exports = [
   },
   {
     slug: 'community-residential-services',
+    where: ['shared-home'],
     imageAlt: 'A bright, welcoming dining room in a family home',
     name: 'Community Residential Services',
     icon: 'home',
@@ -50,6 +59,7 @@ module.exports = [
   },
   {
     slug: 'supported-living',
+    where: ['home'],
     imageAlt: 'The front door of a home surrounded by potted flowers',
     name: 'Supported Living',
     icon: 'key',
@@ -71,6 +81,7 @@ module.exports = [
   },
   {
     slug: 'respite-care',
+    where: ['home', 'community'],
     imageAlt: 'Hands resting around a warm mug in a calm, sunny room',
     name: 'Respite Care',
     icon: 'sun',
@@ -91,6 +102,7 @@ module.exports = [
   },
   {
     slug: 'community-development-services',
+    where: ['community'],
     imageAlt: 'A group of friends relaxing together on a picnic in a park',
     name: 'Community Development Services',
     icon: 'users',
@@ -110,3 +122,6 @@ module.exports = [
     setting: 'Community settings',
   },
 ];
+
+module.exports = services;
+module.exports.WHERE_LABELS = WHERE_LABELS;

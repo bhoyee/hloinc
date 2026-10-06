@@ -5,12 +5,13 @@ import AxeBuilder from '@axe-core/playwright';
 
 const base = process.env.BASE_URL || 'http://127.0.0.1:4310';
 const paths = ['/', '/about', '/services', '/services/personal-supports', '/service-areas', '/getting-started',
-  '/resources', '/careers', '/contact', '/appointments/request', '/nope'];
+  '/resources', '/careers', '/careers/direct-support-professional', '/contact', '/referrals', '/appointments/request', '/privacy', '/terms', '/data-protection', '/cookies', '/nope'];
 
 const browser = await chromium.launch();
 let failures = 0;
 for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-  const context = await browser.newContext({ viewport });
+  // Reduced motion shows scroll-reveal content immediately, so colors are measured at rest.
+  const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
   const page = await context.newPage();
   const scan = async (label) => {
     const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();

@@ -6,16 +6,20 @@ const rateLimit = require('express-rate-limit');
 const config = require('../config');
 
 function securityHeaders() {
+  // Cloudflare Turnstile needs its script, frame and API only when enabled.
+  const turnstile = config.turnstile.enabled ? ['https://challenges.cloudflare.com'] : [];
   return helmet({
     contentSecurityPolicy: {
       useDefaults: false,
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", ...turnstile],
         styleSrc: ["'self'"],
         imgSrc: ["'self'", 'data:'],
         fontSrc: ["'self'"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", ...turnstile],
+        // Google Maps loads only after the visitor clicks "Show map" on the contact page.
+        frameSrc: ["'self'", 'https://www.google.com', ...turnstile],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
@@ -43,6 +47,13 @@ function csrf() {
 
     if (SAFE.has(req.method)) return next();
 
+    // Reject form posts sent from other websites before checking the token.
+    if (isCrossSite(req)) {
+      const err = new Error('This form must be submitted from our website.');
+      err.status = 403;
+      return next(err);
+    }
+
     const sent = (req.body && req.body._csrf) || req.get('x-csrf-token') || '';
     const expected = req.session.csrfToken || '';
     const ok =
@@ -61,6 +72,18 @@ function csrf() {
 
 // Automated tests submit many forms quickly; limits are exercised manually.
 const skip = () => config.isTest;
+
+/** True when the browser says the request came from another site. */
+function isCrossSite(req) {
+  if (req.get('sec-fetch-site') === 'cross-site') return true;
+  const origin = req.get('origin');
+  if (!origin || origin === 'null') return false;
+  try {
+    return new URL(origin).host !== req.get('host');
+  } catch {
+    return true;
+  }
+}
 
 const limiters = {
   // Applied to every request — generous; stops floods, not people.

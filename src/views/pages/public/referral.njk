@@ -1,0 +1,119 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {{ ui.pageHero('Referrals', 'Send a referral', 'Coordinators, families, professionals and individuals can refer someone to HLO. Share a few details and our intake team will be in touch.', [{ label: 'Getting started', href: '/getting-started' }, { label: 'Send a referral' }], 'approach', 'A support worker kneeling to talk with a woman using a wheelchair') }}
+
+  <section class="section">
+    <div class="container-page grid gap-12 lg:grid-cols-[1.5fr_1fr]">
+      <div class="min-w-0">
+        {{ ui.flash(flash) }}
+        <p class="mb-6 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-[15px] text-brand-900">
+          {{ icon('shield', 'mt-0.5 size-5 shrink-0') }}
+          <span><strong>Please don’t include health information.</strong> Leave out diagnoses, medication details and health records. Our intake team will arrange a secure way to share these if needed.</span>
+        </p>
+
+        <form method="post" action="/referrals" class="relative space-y-8" novalidate data-once>
+          {{ ui.errorSummary(errors) }}
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          {{ ui.honeypot() }}
+
+          {# About the referrer #}
+          <fieldset class="card space-y-6">
+            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
+              <span class="grid size-9 place-items-center rounded-full bg-accent-600 font-display text-base text-white">1</span> About you
+            </legend>
+            <div class="clear-both grid gap-6 sm:grid-cols-2">
+              {{ ui.input('referrer_name', 'Your name', values, errors, autocomplete='name') }}
+              {{ ui.input('referrer_email', 'Your email address', values, errors, type='email', autocomplete='email') }}
+              {{ ui.input('referrer_phone', 'Your phone', values, errors, type='tel', required=false, autocomplete='tel') }}
+              <div>
+                <label for="f-referrer_role" class="form-label">How do you know the person?</label>
+                <select id="f-referrer_role" name="referrer_role" class="form-control" required aria-required="true"
+                  {% if errors.referrer_role %}aria-invalid="true" aria-describedby="f-referrer_role-error"{% endif %}>
+                  <option value="">Choose one</option>
+                  {% for key, label in roles %}
+                    <option value="{{ key }}" {% if values.referrer_role == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {{ ui.fieldError('referrer_role', errors) }}
+              </div>
+            </div>
+            {{ ui.input('organization', 'Organization', values, errors, required=false, autocomplete='organization', hint='For example, your coordination agency.') }}
+          </fieldset>
+
+          {# About the person #}
+          <fieldset class="card space-y-6">
+            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
+              <span class="grid size-9 place-items-center rounded-full bg-brand-700 font-display text-base text-white">2</span> About the person you’re referring
+            </legend>
+            <div class="clear-both grid gap-6 sm:grid-cols-2">
+              {{ ui.input('person_name', 'Their name', values, errors) }}
+              <div>
+                <label for="f-county" class="form-label">County where they live</label>
+                <select id="f-county" name="county" class="form-control" required aria-required="true"
+                  {% if errors.county %}aria-invalid="true" aria-describedby="f-county-error"{% endif %}>
+                  <option value="">Choose a county</option>
+                  {% for c in counties %}
+                    <option value="{{ c }}" {% if values.county == c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+                {{ ui.fieldError('county', errors) }}
+              </div>
+              {{ ui.input('person_phone', 'Their phone', values, errors, type='tel', required=false, hint='Leave blank and we’ll contact you first.') }}
+              {{ ui.input('person_email', 'Their email', values, errors, type='email', required=false) }}
+            </div>
+
+            <fieldset id="f-services" tabindex="-1" {% if errors.services %}aria-describedby="f-services-error"{% endif %}>
+              <legend class="form-label">Services of interest <span class="font-normal text-muted">(optional — choose any)</span></legend>
+              <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                {% for s in services %}
+                  <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-line p-3.5 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                    <input type="checkbox" name="services" value="{{ s.slug }}" class="size-5 shrink-0 accent-brand-700" {% if s.slug in values.services %}checked{% endif %}>
+                    <span class="font-medium text-ink">{{ s.name }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              {{ ui.fieldError('services', errors) }}
+            </fieldset>
+
+            {{ ui.textarea('notes', 'Anything else we should know?', values, errors, required=false, rows=4, maxlength=1500, hint='For example, the best time to call or who else to involve. No health information, please.') }}
+          </fieldset>
+
+          <div>
+            <label class="flex gap-3 text-[15px] text-ink" for="f-consent">
+              <input id="f-consent" type="checkbox" name="consent" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" required
+                {% if values.consent == 'yes' %}checked{% endif %}
+                {% if errors.consent %}aria-invalid="true" aria-describedby="f-consent-error"{% endif %}>
+              <span>The person (or their legal representative) knows about and agrees to this referral. I understand HLO will use these details as described in the <a href="/privacy" class="link">Privacy Policy</a>.</span>
+            </label>
+            {{ ui.fieldError('consent', errors) }}
+          </div>
+
+          {{ ui.captcha(turnstileSiteKey, errors) }}
+          <button type="submit" class="btn-primary">Send referral {{ icon('arrow-right', 'size-4') }}</button>
+        </form>
+      </div>
+
+      <aside class="space-y-5 lg:sticky lg:top-28 lg:self-start">
+        <div class="card !p-6">
+          <h2 class="text-lg font-bold">What happens next</h2>
+          <ol class="mt-4 space-y-4">
+            {% for step in ['Our intake team reviews your referral.', 'We contact you, or the person directly, to talk about their goals and needs.', 'If HLO is a good fit, we work with their coordinator on next steps.'] %}
+              <li class="flex gap-3 text-[15px] text-ink">
+                <span class="grid size-7 shrink-0 place-items-center rounded-full {{ 'bg-accent-50 text-accent-700' if loop.index is odd else 'bg-brand-100 text-brand-800' }} text-sm font-bold">{{ loop.index }}</span>
+                {{ step }}
+              </li>
+            {% endfor %}
+          </ol>
+        </div>
+        <div class="rounded-3xl bg-surface p-6 ring-1 ring-line">
+          <h2 class="text-lg font-bold">Prefer to talk?</h2>
+          <p class="mt-2 text-[15px] text-muted">Our intake team is available {{ site.hours | replace(r/\.$/, "") }}.</p>
+          <a href="{{ site.phone | telHref }}" class="btn-secondary mt-4 w-full">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
+          <a href="/contact?to=intake" class="btn-secondary mt-3 w-full">{{ icon('mail', 'size-4') }} Message intake</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

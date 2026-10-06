@@ -1,0 +1,83 @@
+{# Job search results. Rendered inside careers.njk, and on its own for live search
+   (GET /careers?partial=1). The count text is copied into a persistent live
+   region by site.js, so screen readers announce new results. #}
+<div class="mt-6 flex flex-wrap items-center justify-between gap-3" data-results-count>
+  <p class="text-[15px] text-muted">
+    {% if total %}
+      Showing <strong class="text-ink">{{ from }}–{{ to }}</strong> of <strong class="text-ink">{{ total }}</strong> open {{ 'role' if total == 1 else 'roles' }}{% if filtered %} matching your search{% endif %}
+    {% elif filtered %}
+      No roles match your search.
+    {% endif %}
+  </p>
+  {% if filtered %}
+    <a href="/careers#positions" class="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-600 hover:text-accent-700">{{ icon('close', 'size-4') }} Clear search</a>
+  {% endif %}
+</div>
+
+{% if jobs.length %}
+  <ul class="mt-4 divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+    {% for job in jobs %}
+      <li class="group relative transition-colors hover:bg-surface focus-within:bg-surface">
+        <span class="absolute inset-y-0 left-0 w-1 origin-top scale-y-0 bg-accent-600 transition-transform duration-300 group-hover:scale-y-100 group-focus-within:scale-y-100" aria-hidden="true"></span>
+        <div class="flex flex-col gap-3 px-5 py-5 sm:px-7 md:flex-row md:items-center md:gap-6">
+          <div class="min-w-0 flex-1">
+            <h3 class="text-lg font-bold sm:text-xl">
+              <a href="/careers/{{ job.slug }}" class="after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ job.title | highlight(criteria.q) }}</a>
+            </h3>
+            <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[15px] text-muted">
+              {% if job.department %}<span class="inline-flex items-center gap-1.5">{{ icon('users', 'size-4') }} {{ job.department }}</span>{% endif %}
+              {% if job.location %}<span class="inline-flex items-center gap-1.5">{{ icon('map-pin', 'size-4') }} {{ job.location }}</span>{% endif %}
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-sm font-semibold md:justify-end">
+            {% if job.employment_type %}<span class="rounded-full bg-white px-3 py-1 text-ink ring-1 ring-line">{{ job.employment_type }}</span>{% endif %}
+            {% if job.pay_range %}<span class="rounded-full bg-brand-50 px-3 py-1 text-brand-800 ring-1 ring-brand-100">{{ job.pay_range }}</span>{% endif %}
+          </div>
+          <div class="flex items-center justify-between gap-4 md:w-44 md:justify-end">
+            {% if job.published_at %}<span class="text-sm text-muted">Posted {{ job.published_at | date({ month: 'short', day: 'numeric' }) }}</span>{% endif %}
+            <span class="grid size-10 shrink-0 place-items-center rounded-full bg-accent-50 text-accent-600 transition duration-300 group-hover:translate-x-1 group-hover:bg-accent-600 group-hover:text-white" aria-hidden="true">{{ icon('arrow-right', 'size-5') }}</span>
+          </div>
+        </div>
+        <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
+      </li>
+    {% endfor %}
+  </ul>
+
+  {% if pages > 1 %}
+    <nav aria-label="Job listing pages" class="mt-8 flex flex-wrap items-center justify-center gap-2">
+      {% if prevUrl %}
+        <a href="{{ prevUrl }}" rel="prev" class="inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-sm font-semibold text-ink hover:border-brand-300">{{ icon('chevron-right', 'size-4 rotate-180') }} Previous</a>
+      {% endif %}
+      <ul class="flex items-center gap-1.5">
+        {% for link in pageLinks %}
+          <li>
+            {% if not link %}
+              <span class="px-1.5 text-muted" aria-hidden="true">…</span>
+            {% elif link.page == page %}
+              <span aria-current="page" class="grid size-11 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white"><span class="sr-only">Page </span>{{ link.page }}</span>
+            {% else %}
+              <a href="{{ link.url }}" class="grid size-11 place-items-center rounded-full border border-line bg-white text-sm font-semibold text-ink hover:border-brand-300 hover:text-brand-700"><span class="sr-only">Page </span>{{ link.page }}</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% if nextUrl %}
+        <a href="{{ nextUrl }}" rel="next" class="inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-sm font-semibold text-ink hover:border-brand-300">Next {{ icon('chevron-right', 'size-4') }}</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+
+{% elif filtered %}
+  <div class="mt-4 rounded-3xl border-2 border-dashed border-line p-10 text-center">
+    <span class="icon-tile mx-auto">{{ icon('search', 'size-6') }}</span>
+    <p class="mt-4 text-lg font-semibold text-ink">No roles match your search</p>
+    <p class="mt-1 text-muted">Try a different keyword or fewer filters.</p>
+    <a href="/careers#positions" class="btn-secondary mt-6">See all open positions</a>
+  </div>
+{% else %}
+  <div class="mt-4 rounded-3xl border-2 border-dashed border-line p-10 text-center">
+    <span class="icon-tile mx-auto">{{ icon('briefcase', 'size-6') }}</span>
+    <p class="mt-4 text-lg font-semibold text-ink">There are no open positions right now.</p>
+    <p class="mt-1 text-muted">New roles are posted here first. Please check back soon.</p>
+  </div>
+{% endif %}

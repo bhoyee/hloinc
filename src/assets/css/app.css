@@ -45,6 +45,7 @@
 
   --color-accent-50: #fef2f2;
   --color-accent-100: #fde3e4;
+  --color-accent-200: #f9c3c6;
   --color-accent-500: #e3242c;
   --color-accent-600: #c41a22;
   --color-accent-700: #a3151c;
@@ -162,4 +163,45 @@
   & p + p { @apply mt-4; }
   & h2 { @apply mt-10 mb-3 text-2xl font-bold; }
   & ul { @apply mt-3 list-disc space-y-1.5 pl-5; }
+}
+
+/* Fade-and-rise as an element scrolls into view (site.js adds .is-visible).
+   Content is only hidden once JS is running (html.js), so it is always
+   visible without JS, when printing, and for reduced-motion users. */
+@utility reveal {
+  @media (prefers-reduced-motion: no-preference) {
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    :where(html.js) &:not(.is-visible) {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+  @media print {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Bulleted lists in staff-written job text: small brand dots instead of discs. */
+@utility job-text {
+  /* !important: prose-hlo's list-disc would otherwise add a second bullet. */
+  & ul {
+    list-style: none !important;
+    padding-left: 0 !important;
+  }
+  & li {
+    position: relative;
+    padding-left: 1.75rem;
+  }
+  & li::before {
+    content: "";
+    position: absolute;
+    left: 0.3rem;
+    top: 0.6em;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background: var(--color-accent-500);
+    box-shadow: 0 0 0 3px var(--color-accent-100);
+  }
 }

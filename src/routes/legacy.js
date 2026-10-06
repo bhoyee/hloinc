@@ -16,7 +16,7 @@ const redirects = {
   '/about-hlo-inc/appointments': '/appointments/request',
   '/contact-us': '/contact',
   '/schedule-an-appointment': '/appointments/request',
-  '/send-your-referrals': '/getting-started#referrals',
+  '/send-your-referrals': '/referrals',
 };
 
 const gonePrefixes = [

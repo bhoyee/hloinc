@@ -29,20 +29,36 @@ module.exports = {
       { name: 'Compassion', text: 'We listen first and support people with patience and care.' },
       { name: 'Community', text: 'We help people take part in community life in ways that matter to them.' },
     ],
+    // From the current hloinc.com Services page, in respectful person-first wording.
     supportNeeds: [
       'Intellectual disabilities',
       'Autism',
       'Cerebral palsy',
+      'Muscular dystrophy',
+      'Multiple sclerosis',
       'Epilepsy and seizure disorders',
-      'Brain injury',
       'Spina bifida',
-      'Hearing or vision loss',
+      'Cystic fibrosis',
+      'Brain and head injuries',
+      'Spinal cord injuries',
+      'Orthopedic and physical disabilities',
+      'Blindness or low vision',
+      'Deafness or hearing loss',
       'Speech and language disabilities',
-      'Learning disabilities',
-      'Other developmental and neurological disabilities',
+      'Specific learning disabilities',
+      'Behavioral support needs',
+      'Other neurological disabilities',
+      'Disabilities not yet diagnosed',
     ],
     eligibilityNote:
       'Eligibility for DDA-funded services is decided by the Maryland Developmental Disabilities Administration, not by HLO. We are happy to talk through the process with you.',
+  },
+
+  services: {
+    pledge:
+      'We pledge to support adults with intellectual disabilities in a way that promotes their dignity, choices and individual rights.',
+    approach:
+      'Our approach follows evidence-based practices and focuses on maximizing choice, empowerment and self-determination, so each person has a real chance at independent living. We do this within a natural sense of community between our team and the people we support.',
   },
 
   gettingStarted: {
@@ -51,18 +67,26 @@ module.exports = {
       'Starting new services can feel like a lot. Here is how the process usually works in Maryland, and where HLO fits in.',
     steps: [
       {
+        icon: 'chat',
+        who: 'You + HLO',
         title: 'Talk to us',
         text: 'Call, email or send us a message. We will listen, answer questions and explain the services we offer.',
       },
       {
+        icon: 'users',
+        who: 'You + your coordinator',
         title: 'Work with your Coordinator of Community Services',
         text: 'Your Coordinator of Community Services (CCS) helps you apply to the DDA, if you have not already, and build your person-centered plan.',
       },
       {
+        icon: 'heart',
+        who: 'You + HLO',
         title: 'Choose HLO as your provider',
         text: 'Once services are in your plan, you can choose HLO. We meet with you to understand your goals and preferences.',
       },
       {
+        icon: 'home',
+        who: 'HLO team',
         title: 'Start your services',
         text: 'We match staff, agree a schedule and begin. We keep in touch with you, your family and your CCS as things change.',
       },

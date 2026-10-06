@@ -5,7 +5,8 @@
  * Text describes what the site actually does; keep it in sync when features
  * change (new cookies, analytics, new forms, retention period, MFA).
  *
- * Each section: { id, heading, paragraphs: [], list?: [] }
+ * Each section: { id, heading, paragraphs: [], list?: [], onlyIf?: 'turnstile' }
+ * Sections with `onlyIf` are shown only when that feature is switched on.
  * `{business}`-style tokens are not used — the template passes `site` for
  * contact details shown at the end of every page.
  */
@@ -33,8 +34,24 @@ const privacy = {
       list: [
         'Contact form: your name, email address, phone number (optional), the person or team you chose to contact, and your message.',
         'Appointment requests: your name, email address, phone number (optional), how you prefer to be contacted, the type of appointment, your preferred date and time of day, and any notes you choose to add.',
+        'Referrals: the referrer’s name, email address, phone number (optional), role and organization (optional); and the referred person’s name, county, phone number and email address (optional), the services they are interested in, and any notes. We ask referrers to confirm the person knows about and agrees to the referral.',
         'Technical information: your IP address is stored with form submissions to help us prevent spam and abuse. Our hosting provider also keeps standard server logs (such as IP address, browser type and pages requested) for security and reliability.',
         'Cookies: we use one essential cookie. See our Cookie Policy for details.',
+      ],
+    },
+    {
+      id: 'spam',
+      heading: 'Keeping our forms free of spam',
+      paragraphs: [
+        'To stop automated spam, our forms use hidden checks, record when a form was opened, and store your IP address with your submission. For up to 24 hours we also keep a one-way scrambled (hashed) version of the email address used, to limit repeated submissions. This information is used only to protect our forms.',
+      ],
+    },
+    {
+      id: 'turnstile',
+      onlyIf: 'turnstile',
+      heading: 'Security check by Cloudflare',
+      paragraphs: [
+        'Our forms use Cloudflare Turnstile to check that a person, not an automated program, is sending them. Turnstile processes technical information about your browser and device for this purpose only, under Cloudflare’s privacy policy (cloudflare.com/privacypolicy).',
       ],
     },
     {
@@ -49,6 +66,7 @@ const privacy = {
       heading: 'How we use your information',
       list: [
         'To reply to your message and route it to the right member of our team.',
+        'To follow up on referrals with the referrer and the person being referred.',
         'To review, arrange and confirm appointment requests, and to send you related emails.',
         'To keep the website secure, prevent spam and investigate misuse.',
         'To meet our legal and regulatory obligations.',
@@ -316,6 +334,14 @@ const cookies = {
       },
     },
     {
+      id: 'turnstile',
+      onlyIf: 'turnstile',
+      heading: 'Security check on our forms',
+      paragraphs: [
+        'Our contact, referral and appointment forms include a Cloudflare Turnstile security check. Cloudflare may store information in your browser that is needed to run that check. It is used for security only, never for advertising or tracking.',
+      ],
+    },
+    {
       id: 'storage',
       heading: 'Other storage',
       paragraphs: [
@@ -334,6 +360,7 @@ const cookies = {
       heading: 'Other websites',
       paragraphs: [
         'When you follow a link to another website, such as ADP for job applications or Google Maps for directions, that website may set its own cookies under its own policy.',
+        'Our contact page can show a Google map of our office. The map loads only if you select “Show map”; until then, nothing is loaded from Google. Once loaded, Google may set cookies under its own privacy policy.',
       ],
     },
     {

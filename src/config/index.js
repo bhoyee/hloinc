@@ -29,6 +29,11 @@ const schema = z.object({
   SMTP_USER: z.string().default(''),
   SMTP_PASSWORD: z.string().default(''),
   MAIL_FROM: z.string().default('HLO Inc. <no-reply@hloinc.com>'),
+
+  // Optional Cloudflare Turnstile (spam check on public forms).
+  TURNSTILE_SITE_KEY: z.string().default(''),
+  TURNSTILE_SECRET_KEY: z.string().default(''),
+  FORMS_MAX_PER_EMAIL_PER_DAY: z.coerce.number().int().positive().default(10),
 });
 
 const parsed = schema.safeParse({
@@ -75,6 +80,12 @@ module.exports = {
   forms: {
     // Submissions faster than this are treated as bots.
     minSubmitSeconds: env.NODE_ENV === 'test' ? 0 : 3,
+    maxPerEmailPerDay: env.FORMS_MAX_PER_EMAIL_PER_DAY,
+  },
+  turnstile: {
+    enabled: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),
+    siteKey: env.TURNSTILE_SITE_KEY,
+    secretKey: env.TURNSTILE_SECRET_KEY,
   },
   paths: {
     root: path.join(__dirname, '../..'),

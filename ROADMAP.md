@@ -62,6 +62,10 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Legal pages: Terms & Conditions, Privacy Policy, Data Protection, Cookie Policy (`src/content/legal.js`) **(DRAFT — HLO legal review before launch; add retention periods)**
 - [x] Cookie notice (informational — only one strictly necessary cookie, `hlo.sid`; no tracking)
 - [x] Footer: legal links + "Powered by GiddyHost"; favicon from logo; "not for emergencies — call 911 / 988" notice on contact page
+- [x] **Send a referral** page (`/referrals`) replacing the old WordPress referral form; saves to the intake inbox as type `referral`; old `/send-your-referrals/` URL redirects to it
+- [x] Content carried over from current site: full conditions list (About), pledge + evidence-based approach (Services)
+- [x] Layered spam protection on all public forms: 2 honeypots, one-time form tokens + minimum fill time, link-spam and duplicate detection, per-email daily limit, cross-site rejection, IP rate limits; optional Cloudflare Turnstile (off until keys are set)
+- [x] Careers redesign: job cards with pay/location/schedule chips, "How to apply" card, job detail page with summary + sticky Apply (fixed bar on phones), Google JobPosting structured data; demo DSP jobs seeded in development only
 - Still needed from HLO: corrected logo (current reads "Health Living", 300px JPG — ideally SVG), ZIP code, real photos of HLO staff/homes to replace the CC0 stock placeholders (see docs/photo-sources.md), recipient emails, approval of service copy + appointment types, "More inquiry" label wording
 
 ## Phase 2 — Auth, roles, accounts, audit
@@ -86,9 +90,9 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [ ] Leave / time-off requests **(CONFIRM — Q11)**
 
 ## Phase 4 — Jobs, announcements, contacts, site content
-- [ ] Jobs: create/edit/publish/unpublish/archive; fields title, department, description, requirements, location, status, ADP link (validate ADP link is https://)
+- [ ] Jobs: create/edit/publish/unpublish/archive; fields title, department, description, requirements, location, status, ADP link (validate ADP link is https://), **pay range + benefits** (Maryland Wage Range Transparency Act); text supports "- " bullet lines
 - [ ] Announcements: public / internal / both, start & end dates (auto-expire)
-- [ ] Contacts inbox: routed by recipient, statuses New / In progress / Resolved, internal notes; Intake Specialist sees intake & referral only; Reception view-only
+- [ ] Contacts inbox: show referral details (`type = referral`, `details` JSON) alongside messages; routed by recipient, statuses New / In progress / Resolved, internal notes; Intake Specialist sees intake & referral only; Reception view-only
 - [ ] Contact submissions emailed (plain text) to the matching HLO address; honest failure messages
 - [ ] Site content editor: page text, office hours, address, contact details (Program Director limited to announcements, careers text, office hours **(CONFIRM)**)
 
@@ -126,3 +130,6 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-06 | Contact recipient "More inquiry" shown as "General inquiry" | Clearer wording; HLO to confirm |
 | 2026-10-06 | Phase 1 public website complete | — |
 | 2026-10-06 | Added legal pages, cookie notice, "Powered by GiddyHost" | Developer request |
+| 2026-10-06 | Added dedicated referral form (old site had one; doc §6.2 only required a section) | Developer request |
+| 2026-10-06 | Transportation and nursing intentionally not listed as services | Requirements §2 (out of scope) — HLO to confirm they want them omitted entirely |
+| 2026-10-06 | Jobs gain `pay_range` and `benefits` fields | Maryland Wage Range Transparency Act (Oct 2024) requires both in public postings |

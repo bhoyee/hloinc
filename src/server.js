@@ -11,6 +11,7 @@ const { notFound, errorHandler } = require('./middleware/errors');
 const { flashMiddleware } = require('./lib/forms');
 const content = require('./services/content');
 const { icon } = require('./lib/icons');
+const { richText, highlight } = require('./lib/text');
 
 function createApp() {
   const app = express();
@@ -27,14 +28,16 @@ function createApp() {
   env.addGlobal('currentYear', new Date().getFullYear());
   env.addGlobal('icon', (name, className) => new nunjucks.runtime.SafeString(icon(name, className)));
   env.addFilter('telHref', (phone) => `tel:+1${String(phone).replace(/\D/g, '').replace(/^1/, '')}`);
-  env.addFilter('paragraphs', (text) =>
-    new nunjucks.runtime.SafeString(
-      String(text || '')
-        .split(/\n{2,}/)
-        .map((p) => `<p>${nunjucks.lib.escape(p.trim()).replace(/\n/g, '<br>')}</p>`)
-        .join('')
-    )
-  );
+  env.addFilter('richText', (text) => new nunjucks.runtime.SafeString(richText(text)));
+  env.addFilter('highlight', (text, query) => new nunjucks.runtime.SafeString(highlight(text, query)));
+  // First paragraph of staff-written text, shortened for cards.
+  env.addFilter('excerpt', (text, max = 170) => {
+    const first = String(text || '').split(/\n{2,}/)[0].replace(/\s+/g, ' ').trim();
+    if (first.length <= max) return first;
+    return `${first.slice(0, max).replace(/\s+\S*$/, '').replace(/[\s.,;:!?]+$/, '')}…`;
+  });
+  // For <script type="application/ld+json">: escape "<" so text can't close the tag.
+  env.addFilter('jsonld', (obj) => new nunjucks.runtime.SafeString(JSON.stringify(obj).replace(/</g, '\\u003c')));
   env.addFilter('date', (value, opts = { month: 'long', day: 'numeric', year: 'numeric' }) => {
     if (!value) return '';
     // A bare YYYY-MM-DD is a calendar date, not an instant: don't shift it by time zone.
@@ -58,6 +61,7 @@ function createApp() {
     res.locals.site = await content.getBusiness();
     res.locals.nav = site.nav;
     res.locals.currentPath = req.path;
+    res.locals.turnstileSiteKey = config.turnstile.enabled ? config.turnstile.siteKey : '';
     next();
   });
   app.use(require('./routes/legacy'));

@@ -1,37 +1,111 @@
 {% extends "layouts/public.njk" %}
 {% import "partials/ui.njk" as ui %}
 
+{# Lets Google list this role in its job search. #}
+{% block meta %}<script type="application/ld+json">{{ structuredData | jsonld }}</script>{% endblock %}
+
 {% block content %}
-  {% call ui.pageHero('Careers', job.title, null, [{ label: 'Careers', href: '/careers' }, { label: job.title }]) %}
-    <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-muted">
-      {% if job.department %}<span class="flex items-center gap-1.5">{{ icon('briefcase', 'size-5') }} {{ job.department }}</span>{% endif %}
-      {% if job.location %}<span class="flex items-center gap-1.5">{{ icon('map-pin', 'size-5') }} {{ job.location }}</span>{% endif %}
-      {% if job.employment_type %}<span class="flex items-center gap-1.5">{{ icon('clock', 'size-5') }} {{ job.employment_type }}</span>{% endif %}
-    </p>
+  {% call ui.pageHero(job.department or 'Careers', job.title, null, [{ label: 'Careers', href: '/careers' }, { label: job.title }]) %}
+    <ul class="mt-6 flex flex-wrap gap-2 text-sm font-medium">
+      {% if job.location %}<li class="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-ink ring-1 ring-line">{{ icon('map-pin', 'size-4 text-accent-600') }} {{ job.location }}</li>{% endif %}
+      {% if job.employment_type %}<li class="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-ink ring-1 ring-line">{{ icon('clock', 'size-4 text-accent-600') }} {{ job.employment_type }}</li>{% endif %}
+      {% if job.pay_range %}<li class="inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-3.5 py-2 font-semibold text-white">{{ job.pay_range }}</li>{% endif %}
+    </ul>
+    <div class="mt-8 hidden flex-wrap gap-3 sm:flex">
+      <a href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary">
+        Apply on ADP {{ icon('external', 'size-4') }}<span class="sr-only"> (opens in a new tab)</span>
+      </a>
+      <a href="/careers" class="btn-secondary">All open positions</a>
+    </div>
   {% endcall %}
 
-  <section class="section">
-    <div class="container-page grid gap-12 lg:grid-cols-[1.6fr_1fr]">
-      <article>
-        <h2 class="text-2xl font-bold">About the role</h2>
-        <div class="prose-hlo mt-4 text-lg">{{ job.description | paragraphs }}</div>
+  <section class="section pb-32 lg:pb-24">
+    <div class="container-page grid gap-12 lg:grid-cols-[1.65fr_1fr] lg:gap-14">
+      <article class="min-w-0">
+        <section class="reveal">
+          <h2 class="flex items-center gap-3 text-2xl font-bold">
+            <span class="icon-tile-red size-10">{{ icon('briefcase', 'size-5') }}</span> About the role
+          </h2>
+          <div class="prose-hlo job-text mt-5 text-[17px]">{{ job.description | richText }}</div>
+        </section>
+
         {% if job.requirements %}
-          <h2 class="mt-12 text-2xl font-bold">Requirements</h2>
-          <div class="prose-hlo mt-4 text-lg">{{ job.requirements | paragraphs }}</div>
+          <section class="reveal mt-12 border-t border-line pt-12">
+            <h2 class="flex items-center gap-3 text-2xl font-bold">
+              <span class="icon-tile size-10">{{ icon('check', 'size-5') }}</span> What you’ll need
+            </h2>
+            <div class="prose-hlo job-text mt-5 text-[17px]">{{ job.requirements | richText }}</div>
+          </section>
+        {% endif %}
+
+        {% if job.pay_range or job.benefits %}
+          <section class="reveal mt-12 border-t border-line pt-12">
+            <h2 class="flex items-center gap-3 text-2xl font-bold">
+              <span class="icon-tile-red size-10">{{ icon('heart', 'size-5') }}</span> Pay and benefits
+            </h2>
+            {% if job.pay_range %}
+              <p class="mt-5 inline-flex flex-wrap items-baseline gap-x-3 rounded-2xl bg-brand-50 px-5 py-4 ring-1 ring-brand-100">
+                <span class="text-sm font-semibold tracking-wide text-brand-800 uppercase">Pay range</span>
+                <span class="font-display text-xl font-bold text-ink">{{ job.pay_range }}</span>
+              </p>
+            {% endif %}
+            {% if job.benefits %}<div class="prose-hlo job-text mt-5 text-[17px]">{{ job.benefits | richText }}</div>{% endif %}
+          </section>
         {% endif %}
       </article>
 
       <aside class="lg:sticky lg:top-28 lg:self-start">
-        <div class="card !p-6">
-          <h2 class="text-lg font-bold">Interested?</h2>
-          <p class="mt-2 text-[15px] text-muted">Apply through our secure ADP careers portal. It opens in a new tab.</p>
-          <a href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary mt-5 w-full">
-            Apply on ADP {{ icon('external', 'size-4') }}<span class="sr-only"> (opens in a new tab)</span>
-          </a>
-          {% if job.published_at %}<p class="mt-4 text-center text-sm text-muted">Posted {{ job.published_at | date }}</p>{% endif %}
+        <div class="overflow-hidden rounded-3xl border border-line bg-white shadow-lift">
+          <div class="bg-brand-900 px-6 py-5 text-white sm:px-7">
+            <p class="text-sm text-brand-200">Interested in this role?</p>
+            <p class="mt-0.5 font-display text-lg font-bold">{{ job.title }}</p>
+          </div>
+          <dl class="divide-y divide-line px-6 sm:px-7">
+            {% for row in [
+              { k: 'Department', v: job.department, i: 'users' },
+              { k: 'Location', v: job.location, i: 'map-pin' },
+              { k: 'Schedule', v: job.employment_type, i: 'clock' },
+              { k: 'Pay', v: job.pay_range, i: 'briefcase' }
+            ] %}
+              {% if row.v %}
+                <div class="py-4">
+                  <dt class="flex items-center gap-3 text-xs font-semibold tracking-wide text-muted uppercase">{{ icon(row.i, 'size-5 shrink-0 text-brand-600') }} {{ row.k }}</dt>
+                  <dd class="mt-0.5 pl-8 font-medium text-ink">{{ row.v }}</dd>
+                </div>
+              {% endif %}
+            {% endfor %}
+            {% if job.published_at %}
+              <div class="py-4">
+                <dt class="flex items-center gap-3 text-xs font-semibold tracking-wide text-muted uppercase">{{ icon('calendar', 'size-5 shrink-0 text-brand-600') }} Posted</dt>
+                <dd class="mt-0.5 pl-8 font-medium text-ink">{{ job.published_at | date }}</dd>
+              </div>
+            {% endif %}
+          </dl>
+          <div class="border-t border-line bg-surface p-6 sm:p-7">
+            <a href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary w-full">
+              Apply on ADP {{ icon('external', 'size-4') }}<span class="sr-only"> (opens in a new tab)</span>
+            </a>
+            <p class="mt-3 flex items-start gap-2 text-sm text-muted">
+              {{ icon('shield', 'mt-0.5 size-4 shrink-0 text-brand-700') }}
+              <span>Opens our secure ADP careers portal in a new tab.</span>
+            </p>
+          </div>
         </div>
-        <a href="/careers" class="link mt-6 inline-block">&larr; All open positions</a>
+        <a href="/careers" class="mt-6 inline-flex items-center gap-2 font-semibold text-brand-700 hover:text-brand-800">&larr; All open positions</a>
       </aside>
     </div>
   </section>
+
+  {# Phones: keep Apply within reach while reading. #}
+  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 px-4 py-3 shadow-[0_-8px_24px_-12px_rgb(15_28_22/0.25)] backdrop-blur sm:hidden">
+    <div class="flex items-center gap-3">
+      <p class="min-w-0 flex-1">
+        <span class="block truncate font-display font-bold text-ink">{{ job.title }}</span>
+        {% if job.pay_range %}<span class="block truncate text-sm text-muted">{{ job.pay_range }}</span>{% endif %}
+      </p>
+      <a href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary shrink-0 !px-5">
+        Apply {{ icon('external', 'size-4') }}<span class="sr-only"> on ADP (opens in a new tab)</span>
+      </a>
+    </div>
+  </div>
 {% endblock %}

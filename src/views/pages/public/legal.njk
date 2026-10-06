@@ -43,7 +43,8 @@
               {% endif %}
             </div>
             {% if s.table %}
-              <div class="mt-6 overflow-x-auto rounded-2xl ring-1 ring-line">
+              {# Focusable so keyboard users can scroll the table on narrow screens. #}
+              <div class="mt-6 overflow-x-auto rounded-2xl ring-1 ring-line" tabindex="0" role="region" aria-label="{{ s.table.caption }}">
                 <table class="w-full min-w-[560px] text-left text-[15px]">
                   <caption class="sr-only">{{ s.table.caption }}</caption>
                   <thead class="bg-surface text-sm text-muted">

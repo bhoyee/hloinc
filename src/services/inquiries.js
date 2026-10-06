@@ -43,6 +43,63 @@ async function submitContact(data, { ip }) {
   return { id, emailed: result.ok };
 }
 
+/**
+ * Save a referral into the intake inbox (type "referral") and email the intake
+ * team. Like contact messages, it is kept even if the email fails.
+ */
+async function submitReferral(data, { ip, roleLabel, serviceNames }) {
+  const details = {
+    referrer_role: data.referrer_role,
+    organization: data.organization || null,
+    person_name: data.person_name,
+    person_phone: data.person_phone || null,
+    person_email: data.person_email || null,
+    county: data.county,
+    services: data.services,
+  };
+
+  const [id] = await db('contact_messages').insert({
+    type: 'referral',
+    recipient: 'intake',
+    name: data.referrer_name,
+    email: data.referrer_email,
+    phone: data.referrer_phone || null,
+    message: data.notes || '(No notes)',
+    details: JSON.stringify(details),
+    ip,
+  });
+
+  const result = await notify({
+    to: await content.getRecipientEmail('intake'),
+    replyTo: data.referrer_email,
+    subject: `New referral #${id} from ${data.referrer_name}`,
+    text: [
+      `New referral from the HLO website (reference #${id}).`,
+      '',
+      'REFERRED BY',
+      `Name: ${data.referrer_name}`,
+      `Role: ${roleLabel}`,
+      `Organization: ${data.organization || 'Not given'}`,
+      `Email: ${data.referrer_email}`,
+      `Phone: ${data.referrer_phone || 'Not given'}`,
+      '',
+      'PERSON BEING REFERRED',
+      `Name: ${data.person_name}`,
+      `County: ${data.county}`,
+      `Phone: ${data.person_phone || 'Not given'}`,
+      `Email: ${data.person_email || 'Not given'}`,
+      `Services of interest: ${serviceNames.length ? serviceNames.join(', ') : 'Not sure yet'}`,
+      '',
+      `Notes: ${data.notes || 'None'}`,
+      '',
+      'The referrer confirmed the person knows about this referral.',
+    ].join('\n'),
+  });
+
+  await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
+  return { id, emailed: result.ok };
+}
+
 /** Save a website appointment request (status Requested) and acknowledge it by email. */
 async function submitAppointmentRequest(data, { ip }) {
   const type = await db('appointment_types').where({ id: data.type_id, active: true }).first();
@@ -113,4 +170,4 @@ function formatDate(isoDate) {
   });
 }
 
-module.exports = { submitContact, submitAppointmentRequest, WINDOW_LABELS };
+module.exports = { submitContact, submitReferral, submitAppointmentRequest, WINDOW_LABELS };

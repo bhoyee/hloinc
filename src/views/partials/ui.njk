@@ -105,12 +105,30 @@
   </div>
 {% endmacro %}
 
-{# Hidden field bots fill in; people never see it. #}
+{# Hidden fields bots fill in; people never see them (names must match lib/spam.js). #}
 {% macro honeypot() %}
-  <div class="absolute -left-[9999px]" aria-hidden="true">
+  <div class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
     <label for="f-website">Leave this field empty</label>
     <input id="f-website" type="text" name="website" tabindex="-1" autocomplete="off">
+    <label for="f-email_confirm">Leave this field empty</label>
+    <input id="f-email_confirm" type="email" name="email_confirm" tabindex="-1" autocomplete="off">
   </div>
+{% endmacro %}
+
+{# Cloudflare Turnstile security check — only rendered when keys are configured. #}
+{% macro captcha(siteKey, errors) %}
+  {% if siteKey %}
+    <div id="f-captcha" tabindex="-1">
+      <div class="cf-turnstile" data-sitekey="{{ siteKey }}" data-theme="light" data-size="flexible"></div>
+      {{ fieldError('captcha', errors) }}
+    </div>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  {% endif %}
+  {% if errors.limit %}
+    <p id="f-limit" class="flex gap-3 rounded-2xl border border-accent-200 bg-accent-50 p-4 text-[15px] text-accent-800" role="alert">
+      {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }} {{ errors.limit }}
+    </p>
+  {% endif %}
 {% endmacro %}
 
 {% macro ctaBand(site) %}
