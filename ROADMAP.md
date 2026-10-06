@@ -58,7 +58,8 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Spam protection: honeypot, minimum fill time, rate limits, CSRF
 - [x] Tests: 52 passing (pages, redirects, forms, validation, careers, announcements) against `hloinc_test`
 - [x] Accessibility: axe WCAG 2.1 AA scan clean at desktop + mobile (`npm run test:a11y`)
-- Still needed from HLO: corrected logo (current reads "Health Living", 300px JPG — ideally SVG), ZIP code, photos, recipient emails, approval of service copy + appointment types, "More inquiry" label wording
+- [x] Redesign pass: red (actions/highlights) + green (brand/structure), real photography on every main page, hero photo first on mobile
+- Still needed from HLO: corrected logo (current reads "Health Living", 300px JPG — ideally SVG), ZIP code, real photos of HLO staff/homes to replace the CC0 stock placeholders (see docs/photo-sources.md), recipient emails, approval of service copy + appointment types, "More inquiry" label wording
 
 ## Phase 2 — Auth, roles, accounts, audit
 - [ ] Staff login/logout, session expiry + revocation, login rate limiting, lockout

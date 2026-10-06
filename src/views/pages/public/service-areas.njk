@@ -2,14 +2,14 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {{ ui.pageHero('Service areas', 'Ten counties across Central and Southern Maryland', 'Our office is in Catonsville, and our teams support people in their homes and communities across the region.', [{ label: 'Service areas' }]) }}
+  {{ ui.pageHero('Service areas', 'Ten counties across Central and Southern Maryland', 'Our office is in Catonsville, and our teams support people in their homes and communities across the region.', [{ label: 'Service areas' }], 'service-areas', 'A green, tree-lined park on a sunny day') }}
 
   <section class="section">
     <div class="container-page grid gap-6 md:grid-cols-2">
       {% for area in areas %}
         <div class="card">
           <div class="flex items-center gap-4">
-            <span class="icon-tile">{{ icon('map-pin', 'size-6') }}</span>
+            <span class="{{ 'icon-tile-red' if loop.first else 'icon-tile' }}">{{ icon('map-pin', 'size-6') }}</span>
             <h2 class="text-2xl font-bold">{{ area.region }}</h2>
           </div>
           <ul class="mt-6 divide-y divide-line">

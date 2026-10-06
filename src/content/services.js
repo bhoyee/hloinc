@@ -8,6 +8,7 @@
 module.exports = [
   {
     slug: 'personal-supports',
+    imageAlt: 'A man and a woman preparing a meal together in a kitchen',
     name: 'Personal Supports',
     icon: 'hand-heart',
     summary:
@@ -28,6 +29,7 @@ module.exports = [
   },
   {
     slug: 'community-residential-services',
+    imageAlt: 'A bright, welcoming dining room in a family home',
     name: 'Community Residential Services',
     icon: 'home',
     summary:
@@ -48,6 +50,7 @@ module.exports = [
   },
   {
     slug: 'supported-living',
+    imageAlt: 'The front door of a home surrounded by potted flowers',
     name: 'Supported Living',
     icon: 'key',
     summary:
@@ -68,6 +71,7 @@ module.exports = [
   },
   {
     slug: 'respite-care',
+    imageAlt: 'Hands resting around a warm mug in a calm, sunny room',
     name: 'Respite Care',
     icon: 'sun',
     summary:
@@ -87,6 +91,7 @@ module.exports = [
   },
   {
     slug: 'community-development-services',
+    imageAlt: 'A group of friends relaxing together on a picnic in a park',
     name: 'Community Development Services',
     icon: 'users',
     summary:

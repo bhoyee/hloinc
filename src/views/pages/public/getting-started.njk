@@ -2,7 +2,7 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% call ui.pageHero('Intake', page.title, page.intro, [{ label: 'Getting started' }]) %}
+  {% call ui.pageHero('Intake', page.title, page.intro, [{ label: 'Getting started' }], 'getting-started', 'A support worker warmly greeting a woman with a handshake') %}
     <div class="mt-8 flex flex-wrap gap-3">
       <a href="/appointments/request" class="btn-primary">{{ icon('calendar', 'size-4') }} Request an intake appointment</a>
       <a href="{{ site.phone | telHref }}" class="btn-secondary">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
@@ -16,7 +16,7 @@
       <ol class="relative mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {% for step in page.steps %}
           <li class="card relative !p-6">
-            <span class="grid size-11 place-items-center rounded-full bg-brand-700 font-display text-lg font-bold text-white">{{ loop.index }}</span>
+            <span class="grid size-11 place-items-center rounded-full {{ 'bg-accent-600' if loop.index is odd else 'bg-brand-700' }} font-display text-lg font-bold text-white">{{ loop.index }}</span>
             <h3 class="mt-5 text-lg font-bold">{{ step.title }}</h3>
             <p class="mt-2 text-[15px] text-muted">{{ step.text }}</p>
           </li>

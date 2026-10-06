@@ -2,7 +2,7 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {{ ui.pageHero('Services', service.name, service.summary, [{ label: 'Services', href: '/services' }, { label: service.name }]) }}
+  {{ ui.pageHero('Services', service.name, service.summary, [{ label: 'Services', href: '/services' }, { label: service.name }], service.slug, service.imageAlt) }}
 
   <section class="section">
     <div class="container-page grid gap-12 lg:grid-cols-[1.6fr_1fr]">
@@ -15,7 +15,7 @@
         <ul class="mt-6 grid gap-3 sm:grid-cols-2">
           {% for item in service.includes %}
             <li class="flex gap-3 rounded-2xl bg-surface p-4 text-ink ring-1 ring-line">
-              <span class="grid size-6 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-700">{{ icon('check', 'size-3.5') }}</span>
+              <span class="grid size-6 shrink-0 place-items-center rounded-full bg-accent-50 text-accent-600 ring-1 ring-accent-100">{{ icon('check', 'size-3.5') }}</span>
               {{ item }}
             </li>
           {% endfor %}

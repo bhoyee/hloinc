@@ -14,9 +14,12 @@
       <ul class="grid gap-6 lg:grid-cols-2">
         {% for s in services %}
           <li>
-            <article class="card card-hover flex h-full flex-col">
-              <div class="flex items-start gap-5">
-                <span class="icon-tile size-14">{{ icon(s.icon, 'size-7') }}</span>
+            <article class="flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition hover:shadow-lift">
+              <img src="/img/photos/{{ s.slug }}-sm.webp" srcset="/img/photos/{{ s.slug }}-sm.webp 560w, /img/photos/{{ s.slug }}.webp 960w"
+                   sizes="(min-width: 1024px) 50vw, 100vw" alt="" loading="lazy" width="560" height="373" class="aspect-[2/1] w-full object-cover">
+              <div class="flex flex-1 flex-col p-6 sm:p-8">
+              <div class="flex items-start gap-4">
+                <span class="{{ 'icon-tile-red' if loop.index is odd else 'icon-tile' }}">{{ icon(s.icon, 'size-6') }}</span>
                 <div>
                   <h2 class="text-2xl font-bold"><a href="/services/{{ s.slug }}" class="hover:text-brand-700">{{ s.name }}</a></h2>
                   <p class="mt-1 text-sm font-medium text-brand-700">{{ s.setting }}</p>
@@ -29,6 +32,7 @@
                 {% endfor %}
               </ul>
               <a href="/services/{{ s.slug }}" class="link mt-6 self-start">Learn more<span class="sr-only"> about {{ s.name }}</span></a>
+              </div>
             </article>
           </li>
         {% endfor %}

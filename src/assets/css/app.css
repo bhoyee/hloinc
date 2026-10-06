@@ -22,9 +22,10 @@
 
 /*
  * Design tokens. Brand colors come from the HLO logo: green stethoscope
- * (#189F67) and red heart (#E3242C). Text/background pairs in use meet
+ * (#189F67) and red heart (#E3242C). Green carries the brand and structure;
+ * red marks actions and highlights. Text/background pairs in use meet
  * WCAG 2.1 AA: white on brand-700 ≈ 6.5:1, white on accent-600 ≈ 6:1,
- * muted on white ≈ 7:1.
+ * accent-600 on white ≈ 6:1, muted on white ≈ 7:1.
  */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -47,6 +48,8 @@
   --color-accent-500: #e3242c;
   --color-accent-600: #c41a22;
   --color-accent-700: #a3151c;
+  --color-accent-800: #861218;
+  --color-accent-900: #5e0d11;
 
   --color-ink: #0f1c16;
   --color-muted: #475950;
@@ -90,14 +93,18 @@
   @apply py-16 sm:py-24;
 }
 @utility eyebrow {
-  @apply inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-brand-700 uppercase;
+  @apply inline-flex items-center gap-2.5 text-sm font-bold tracking-wider text-accent-600 uppercase before:h-0.5 before:w-6 before:rounded-full before:bg-accent-500 before:content-[''];
 }
 
 /* Buttons */
 @utility btn {
   @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[15px] font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-60;
 }
+/* Red = main actions (intake, submit). Green = supporting actions. */
 @utility btn-primary {
+  @apply btn bg-accent-600 text-white shadow-sm shadow-accent-900/20 hover:bg-accent-700;
+}
+@utility btn-green {
   @apply btn bg-brand-700 text-white shadow-sm hover:bg-brand-800;
 }
 @utility btn-secondary {
@@ -122,6 +129,13 @@
 }
 @utility icon-tile {
   @apply grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100;
+}
+@utility icon-tile-red {
+  @apply grid size-12 shrink-0 place-items-center rounded-2xl bg-accent-50 text-accent-600 ring-1 ring-accent-100;
+}
+/* Photos: consistent rounding, cropping and a soft frame. */
+@utility photo {
+  @apply block w-full rounded-3xl object-cover;
 }
 
 /* Forms */
