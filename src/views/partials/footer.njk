@@ -1,33 +1,49 @@
-<footer class="mt-24 bg-brand-900 text-brand-50">
-  <div class="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
-    <div>
-      <p class="font-display text-lg font-bold text-white">{{ site.legalName }}</p>
-      <p class="mt-3 text-sm text-brand-100">Community-based supports across Central and Southern Maryland.</p>
+<footer class="bg-brand-950 text-brand-100">
+  <div class="container-page grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-12">
+    <div class="lg:col-span-4">
+      <p class="font-display text-xl font-bold text-white">{{ site.legalName }}</p>
+      <p class="mt-4 max-w-sm text-[15px] leading-relaxed text-brand-200">
+        Community-based supports for adults with intellectual and developmental disabilities across Central and Southern Maryland.
+      </p>
+      <a href="/getting-started" class="btn-light mt-6">Start intake {{ icon('arrow-right', 'size-4') }}</a>
     </div>
-    <div>
-      <h2 class="text-sm font-semibold uppercase tracking-wide text-white">Visit</h2>
-      <address class="mt-3 text-sm not-italic leading-relaxed text-brand-100">
-        {{ site.address.street }}<br>
-        {{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}
+
+    <div class="lg:col-span-3">
+      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">Visit</h2>
+      <address class="mt-4 space-y-3 text-[15px] not-italic text-brand-200">
+        <p class="flex gap-3">{{ icon('map-pin', 'mt-0.5 size-5 shrink-0 text-brand-400') }}
+          <span>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</span></p>
+        <p class="flex gap-3">{{ icon('clock', 'mt-0.5 size-5 shrink-0 text-brand-400') }} <span>{{ site.hours }}</span></p>
       </address>
     </div>
-    <div>
-      <h2 class="text-sm font-semibold uppercase tracking-wide text-white">Contact</h2>
-      <ul class="mt-3 space-y-1 text-sm text-brand-100">
-        <li><a class="hover:text-white" href="tel:{{ site.phone | replace('-', '') }}">{{ site.phone }}</a></li>
-        <li><a class="hover:text-white" href="mailto:{{ site.email }}">{{ site.email }}</a></li>
-        <li>{{ site.hours }}</li>
+
+    <div class="lg:col-span-2">
+      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">Contact</h2>
+      <ul class="mt-4 space-y-3 text-[15px]">
+        <li><a class="flex items-center gap-3 text-brand-200 hover:text-white" href="{{ site.phone | telHref }}">{{ icon('phone', 'size-5 text-brand-400') }} {{ site.phone }}</a></li>
+        <li><a class="flex items-center gap-3 text-brand-200 hover:text-white" href="mailto:{{ site.email }}">{{ icon('mail', 'size-5 text-brand-400') }} {{ site.email }}</a></li>
       </ul>
     </div>
-    <div>
-      <h2 class="text-sm font-semibold uppercase tracking-wide text-white">Explore</h2>
-      <ul class="mt-3 space-y-1 text-sm text-brand-100">
-        {% for item in nav %}<li><a class="hover:text-white" href="{{ item.href }}">{{ item.label }}</a></li>{% endfor %}
-        <li><a class="hover:text-white" href="/portal">Staff login</a></li>
+
+    <div class="lg:col-span-3">
+      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">Explore</h2>
+      <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[15px] text-brand-200">
+        <li><a class="hover:text-white" href="/about">About HLO</a></li>
+        <li><a class="hover:text-white" href="/services">Services</a></li>
+        <li><a class="hover:text-white" href="/service-areas">Service areas</a></li>
+        <li><a class="hover:text-white" href="/getting-started">Getting started</a></li>
+        <li><a class="hover:text-white" href="/resources">Resources</a></li>
+        <li><a class="hover:text-white" href="/careers">Careers</a></li>
+        <li><a class="hover:text-white" href="/appointments/request">Appointments</a></li>
+        <li><a class="hover:text-white" href="/contact">Contact</a></li>
       </ul>
     </div>
   </div>
-  <div class="border-t border-brand-800">
-    <p class="container-page py-5 text-xs text-brand-200">&copy; {{ currentYear }} {{ site.legalName }} All rights reserved.</p>
+
+  <div class="border-t border-white/10">
+    <div class="container-page flex flex-col gap-3 py-6 text-sm text-brand-300 sm:flex-row sm:items-center sm:justify-between">
+      <p>&copy; {{ currentYear }} {{ site.legalName }} All rights reserved.</p>
+      <a href="/portal" class="hover:text-white">Staff login</a>
+    </div>
   </div>
 </footer>

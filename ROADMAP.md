@@ -39,23 +39,26 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Permissions matrix (§4) in `src/auth/permissions.js` with tests — pulled forward from Phase 2
 - [x] Audit + notify services; `create-admin` CLI
 
-## Phase 1 — Public website
-- [ ] Design system: colors, type scale, buttons, cards, forms, header/footer, focus states (WCAG 2.1 AA)
-- [ ] Header: logo, 4 nav links + **Intake** button; mobile menu
-- [ ] Footer: address, phone 410-874-8551, info@hloinc.com, hours Mon–Fri 9–5
-- [ ] **Home** — intro, paths to Services / Location / Careers / Contact, intake CTA
-- [ ] **About HLO** — mission, vision, values, support needs (no eligibility/clinical promises)
-- [ ] **Services** — index + the five non-nursing service pages
-- [ ] **Service Areas** — the ten Central & Southern Maryland counties
-- [ ] **Getting Started / Intake** — guidance, comparisons, "Talk to us about intake" (referrals)
-- [ ] **Resources** — national orgs + Maryland planning resources (marked as independent)
-- [ ] **Careers** — reads job postings from DB, Apply → ADP link
-- [ ] **Contact** — form with recipient dropdown (More inquiry, Program coordinator, Program director, CEO/COO, Intake specialist), map/directions link, walk-in info
-- [ ] **Appointment request** form (scheduled, in advance; no diagnoses/medication fields)
-- [ ] Public announcements display **(CONFIRM placement)**
-- [ ] All page text stored in DB (`site_settings` / `page_content`) so Phase 4 editor needs no rework
-- [ ] SEO: titles/meta, sitemap.xml, robots.txt, 301 redirects from old WordPress URLs
-- Client input: ZIP code, logo, brand colors, photos, recipient emails
+## Phase 1 — Public website ✅ done (content awaiting client approval)
+- [x] Design system: brand palette from logo (green #189F67 / red #E3242C), Plus Jakarta Sans + Inter (self-hosted), buttons, cards, forms, focus states
+- [x] Header: logo, 4 nav links + **Start intake** button, office-hours bar; accessible mobile menu
+- [x] Footer: address, phone, email, hours, site links, staff login
+- [x] **Home** — hero, quick paths (Services / Location / Careers / Contact), services, approach, service areas, CTA
+- [x] **About HLO** — mission, vision, values, support needs, eligibility note (no eligibility/clinical promises)
+- [x] **Services** — index + five service pages **(DRAFT copy — HLO to approve the five services and wording)**
+- [x] **Service Areas** — the ten Central & Southern Maryland counties
+- [x] **Getting Started** — four steps, comparison table, "Talk to us about intake" (#referrals)
+- [x] **Resources** — Maryland + national organizations, marked independent **(verify links before launch)**
+- [x] **Careers** — published jobs from DB, job detail page, Apply → ADP (new tab)
+- [x] **Contact** — recipient dropdown in §6.5 order, saves to DB + emails recipient, honest failure message, directions link, walk-in info
+- [x] **Appointment request** — approved types only, weekday ≥ 1 day ahead ≤ 90 days, morning/afternoon, no medical fields, acknowledgement email
+- [x] Public announcements: banner at top of the home page **(CONFIRM placement)**
+- [x] Text served via `services/content.js` (defaults + `site_settings` overrides) so the Phase 4 editor needs no rework
+- [x] SEO: titles/meta descriptions, sitemap.xml, robots.txt, 301s from old WordPress URLs, 410 for theme demo/spam pages
+- [x] Spam protection: honeypot, minimum fill time, rate limits, CSRF
+- [x] Tests: 52 passing (pages, redirects, forms, validation, careers, announcements) against `hloinc_test`
+- [x] Accessibility: axe WCAG 2.1 AA scan clean at desktop + mobile (`npm run test:a11y`)
+- Still needed from HLO: corrected logo (current reads "Health Living", 300px JPG — ideally SVG), ZIP code, photos, recipient emails, approval of service copy + appointment types, "More inquiry" label wording
 
 ## Phase 2 — Auth, roles, accounts, audit
 - [ ] Staff login/logout, session expiry + revocation, login rate limiting, lockout
@@ -79,7 +82,7 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [ ] Leave / time-off requests **(CONFIRM — Q11)**
 
 ## Phase 4 — Jobs, announcements, contacts, site content
-- [ ] Jobs: create/edit/publish/unpublish/archive; fields title, department, description, requirements, location, status, ADP link
+- [ ] Jobs: create/edit/publish/unpublish/archive; fields title, department, description, requirements, location, status, ADP link (validate ADP link is https://)
 - [ ] Announcements: public / internal / both, start & end dates (auto-expire)
 - [ ] Contacts inbox: routed by recipient, statuses New / In progress / Resolved, internal notes; Intake Specialist sees intake & referral only; Reception view-only
 - [ ] Contact submissions emailed (plain text) to the matching HLO address; honest failure messages
@@ -114,3 +117,6 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 |---|---|---|
 | 2026-10-06 | Hosting = shared cPanel with Node.js; DB = MySQL; prototype phase skipped | Developer decision |
 | 2026-10-06 | Phase 0 setup complete | — |
+| 2026-10-06 | Five services drafted (Personal Supports, Community Residential, Supported Living, Respite Care, Community Development) | Live site listed only two; HLO to approve |
+| 2026-10-06 | Contact recipient "More inquiry" shown as "General inquiry" | Clearer wording; HLO to confirm |
+| 2026-10-06 | Phase 1 public website complete | — |

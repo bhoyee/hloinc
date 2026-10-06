@@ -31,7 +31,9 @@ npm run dev                   # terminal 2
 | `npm run migrate` / `migrate:rollback` | Database migrations |
 | `npm run seed` | Default site settings (safe to re-run) |
 | `npm run create-admin` | Create an Admin account from the terminal |
-| `npm test` | Run tests |
+| `npm test` | Run tests (needs local MySQL; uses a separate `<DB_NAME>_test` database) |
+| `npm run test:a11y` | WCAG 2.1 AA scan with axe (app must be running) |
+| `npm run screens -- <outDir> <paths…>` | Desktop + mobile screenshots (app must be running) |
 
 ## Layout
 
@@ -45,7 +47,9 @@ src/
   middleware/          security (CSP, CSRF, rate limits), session, errors
   routes/              public site; routes/portal = staff portal
   services/            audit log, notifications (email; SMS-ready)
-  lib/site.js          default business details & navigation
+  lib/                 site defaults, icons, form helpers
+  content/             page text, services, areas, resources (defaults)
+  validation/          zod schemas for public forms
   db/migrations, seeds
   views/               Nunjucks layouts, partials, pages
   assets/css/app.css   Tailwind source + design tokens

@@ -1,0 +1,40 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {{ ui.pageHero('Service areas', 'Ten counties across Central and Southern Maryland', 'Our office is in Catonsville, and our teams support people in their homes and communities across the region.', [{ label: 'Service areas' }]) }}
+
+  <section class="section">
+    <div class="container-page grid gap-6 md:grid-cols-2">
+      {% for area in areas %}
+        <div class="card">
+          <div class="flex items-center gap-4">
+            <span class="icon-tile">{{ icon('map-pin', 'size-6') }}</span>
+            <h2 class="text-2xl font-bold">{{ area.region }}</h2>
+          </div>
+          <ul class="mt-6 divide-y divide-line">
+            {% for c in area.counties %}
+              <li class="flex items-center gap-3 py-3 text-lg text-ink">{{ icon('check', 'size-5 text-brand-600') }} {{ c }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="container-page mt-10">
+      <div class="flex flex-col gap-6 rounded-3xl bg-surface p-6 ring-1 ring-line sm:p-8 md:flex-row md:items-center md:justify-between">
+        <div class="flex gap-4">
+          <span class="icon-tile !bg-white">{{ icon('home', 'size-6') }}</span>
+          <div>
+            <h2 class="text-lg font-bold">Our office</h2>
+            <p class="mt-1 text-muted">{{ site.address.street }}, {{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</p>
+          </div>
+        </div>
+        <a href="/contact#visit" class="btn-secondary shrink-0">Directions</a>
+      </div>
+      <p class="mt-6 text-center text-[15px] text-muted">Live outside these counties? <a href="/contact" class="link">Contact us</a> and we will help where we can.</p>
+    </div>
+  </section>
+
+  {{ ui.ctaBand(site) }}
+{% endblock %}

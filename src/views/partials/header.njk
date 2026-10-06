@@ -1,41 +1,51 @@
-<header class="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur">
-  <div class="container-page flex h-18 items-center justify-between gap-6">
-    <a href="/" class="flex items-center gap-2 font-display text-xl font-bold text-brand-800">
-      {# Replace with the HLO logo once supplied (public/img/logo.svg). #}
-      <span class="grid size-9 place-items-center rounded-lg bg-brand-600 text-sm text-white" aria-hidden="true">HLO</span>
-      <span>{{ site.legalName }}</span>
+<div class="hidden bg-brand-950 text-sm text-brand-100 md:block">
+  <div class="container-page flex h-10 items-center justify-between">
+    <p class="flex items-center gap-2">{{ icon('clock', 'size-4') }} Office hours: {{ site.hours }}</p>
+    <div class="flex items-center gap-6">
+      <a href="{{ site.phone | telHref }}" class="flex items-center gap-2 hover:text-white">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
+      <a href="mailto:{{ site.email }}" class="flex items-center gap-2 hover:text-white">{{ icon('mail', 'size-4') }} {{ site.email }}</a>
+    </div>
+  </div>
+</div>
+
+<header class="sticky top-0 z-40 border-b border-line/80 bg-white/90 backdrop-blur-lg">
+  <div class="container-page flex h-20 items-center justify-between gap-6">
+    <a href="/" class="shrink-0" aria-label="{{ site.legalName }} home">
+      <img src="/img/logo.jpg" alt="{{ site.legalName }}" width="192" height="60" class="h-12 w-auto sm:h-14">
     </a>
 
     <nav aria-label="Main" class="hidden lg:block">
-      <ul class="flex items-center gap-8">
+      <ul class="flex items-center gap-1">
         {% for item in nav %}
+          {% set active = currentPath == item.href or currentPath.startsWith(item.href + '/') %}
           <li>
             <a href="{{ item.href }}"
-               class="text-sm font-medium text-muted hover:text-brand-700 {% if currentPath.startsWith(item.href) %}text-brand-700{% endif %}"
-               {% if currentPath.startsWith(item.href) %}aria-current="page"{% endif %}>{{ item.label }}</a>
+               class="rounded-full px-4 py-2 text-[15px] font-semibold transition {{ 'bg-brand-50 text-brand-800' if active else 'text-muted hover:bg-surface hover:text-ink' }}"
+               {% if active %}aria-current="page"{% endif %}>{{ item.label }}</a>
           </li>
         {% endfor %}
       </ul>
     </nav>
 
-    <div class="flex items-center gap-3">
-      <a href="/getting-started" class="btn-accent hidden sm:inline-flex">Start intake</a>
-      <button type="button" class="rounded-md p-2 text-brand-800 lg:hidden"
+    <div class="flex items-center gap-2">
+      <a href="/getting-started" class="btn-primary hidden sm:inline-flex">Start intake {{ icon('arrow-right', 'size-4') }}</a>
+      <button type="button" class="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-surface lg:hidden"
               aria-controls="mobile-nav" aria-expanded="false" data-menu-toggle>
-        <span class="sr-only">Open menu</span>
-        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
+        <span class="sr-only" data-menu-label>Open menu</span>
+        <span data-menu-open>{{ icon('menu', 'size-6') }}</span>
+        <span data-menu-close class="hidden">{{ icon('close', 'size-6') }}</span>
       </button>
     </div>
   </div>
 
-  <nav id="mobile-nav" aria-label="Main" class="hidden border-t border-brand-100 lg:hidden">
-    <ul class="container-page flex flex-col py-3">
+  <nav id="mobile-nav" aria-label="Mobile" class="hidden border-t border-line bg-white lg:hidden">
+    <ul class="container-page flex flex-col gap-1 py-4">
       {% for item in nav %}
-        <li><a href="{{ item.href }}" class="block py-2.5 font-medium text-ink">{{ item.label }}</a></li>
+        <li><a href="{{ item.href }}" class="block rounded-xl px-3 py-3 text-lg font-semibold text-ink hover:bg-surface"
+               {% if currentPath.startsWith(item.href) %}aria-current="page"{% endif %}>{{ item.label }}</a></li>
       {% endfor %}
-      <li class="pt-2"><a href="/getting-started" class="btn-accent w-full">Start intake</a></li>
+      <li class="pt-3"><a href="/getting-started" class="btn-primary w-full">Start intake</a></li>
+      <li><a href="{{ site.phone | telHref }}" class="btn-secondary mt-2 w-full">{{ icon('phone', 'size-4') }} Call {{ site.phone }}</a></li>
     </ul>
   </nav>
 </header>

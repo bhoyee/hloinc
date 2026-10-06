@@ -16,6 +16,7 @@ const defaults = {
     zip: '', // CONFIRM — client question 3
   },
   hours: 'Monday to Friday, 9 a.m. to 5 p.m.',
+  walkIn: 'Walk-ins are welcome during office hours. Calling ahead helps us make sure the right person is available.',
 };
 
 const nav = [
@@ -25,4 +26,19 @@ const nav = [
   { label: 'Contact', href: '/contact' },
 ];
 
-module.exports = { defaults, nav };
+/**
+ * Contact form recipients, in the order required by §6.5.
+ * `category` drives portal inbox access (Intake Specialist sees `intake` only).
+ * Email addresses come from site_settings `contact.recipient_emails` (client question 4),
+ * falling back to the main business email.
+ */
+const recipients = [
+  // The requirements document labels this "More inquiry"; CONFIRM the wording.
+  { key: 'general', label: 'General inquiry', category: 'general' },
+  { key: 'program_coordinator', label: 'Program coordinator', category: 'general' },
+  { key: 'program_director', label: 'Program director', category: 'general' },
+  { key: 'executive', label: 'CEO/COO', category: 'general' },
+  { key: 'intake', label: 'Intake specialist', category: 'intake' },
+];
+
+module.exports = { defaults, nav, recipients };

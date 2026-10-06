@@ -1,0 +1,41 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {% call ui.pageHero('Services', 'Support for every part of life', 'HLO provides Maryland DDA-approved, community-based supports. Every service follows the person’s own plan and goals.', [{ label: 'Services' }]) %}
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="/getting-started" class="btn-primary">How to get started</a>
+      <a href="/service-areas" class="btn-secondary">{{ icon('map-pin', 'size-4') }} Areas we serve</a>
+    </div>
+  {% endcall %}
+
+  <section class="section">
+    <div class="container-page">
+      <ul class="grid gap-6 lg:grid-cols-2">
+        {% for s in services %}
+          <li>
+            <article class="card card-hover flex h-full flex-col">
+              <div class="flex items-start gap-5">
+                <span class="icon-tile size-14">{{ icon(s.icon, 'size-7') }}</span>
+                <div>
+                  <h2 class="text-2xl font-bold"><a href="/services/{{ s.slug }}" class="hover:text-brand-700">{{ s.name }}</a></h2>
+                  <p class="mt-1 text-sm font-medium text-brand-700">{{ s.setting }}</p>
+                </div>
+              </div>
+              <p class="mt-5 text-muted">{{ s.summary }}</p>
+              <ul class="mt-5 flex-1 space-y-2">
+                {% for item in s.includes.slice(0, 3) %}
+                  <li class="flex gap-2.5 text-[15px] text-ink">{{ icon('check', 'mt-1 size-4 shrink-0 text-brand-600') }} {{ item }}</li>
+                {% endfor %}
+              </ul>
+              <a href="/services/{{ s.slug }}" class="link mt-6 self-start">Learn more<span class="sr-only"> about {{ s.name }}</span></a>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="mt-10 text-center text-[15px] text-muted">Not sure which service fits? <a href="/getting-started#compare" class="link">Compare our services</a> or <a href="/contact?to=intake" class="link">talk to our intake team</a>.</p>
+    </div>
+  </section>
+
+  {{ ui.ctaBand(site) }}
+{% endblock %}

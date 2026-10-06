@@ -1,67 +1,151 @@
 @import "tailwindcss";
 
 @source "../../views";
+@source "../../lib";
 @source "../../../public/js";
 
+/* Self-hosted fonts (CSP allows fonts from 'self' only). */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("/fonts/plus-jakarta-sans.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/fonts/inter.woff2") format("woff2-variations");
+}
+
 /*
- * Design tokens. Brand colors are placeholders until HLO supplies its
- * approved palette — change them here and the whole site follows.
- * All text/background pairs used must meet WCAG 2.1 AA (4.5:1).
+ * Design tokens. Brand colors come from the HLO logo: green stethoscope
+ * (#189F67) and red heart (#E3242C). Text/background pairs in use meet
+ * WCAG 2.1 AA: white on brand-700 ≈ 6.5:1, white on accent-600 ≈ 6:1,
+ * muted on white ≈ 7:1.
  */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-brand-50: #eef7f6;
-  --color-brand-100: #d5ece9;
-  --color-brand-200: #aad8d2;
-  --color-brand-500: #1f8a7e;
-  --color-brand-600: #17716a;
-  --color-brand-700: #145a55;
-  --color-brand-800: #124845;
-  --color-brand-900: #0f3a38;
+  --color-brand-50: #edf8f3;
+  --color-brand-100: #d3efe2;
+  --color-brand-200: #a8dec6;
+  --color-brand-300: #74c7a5;
+  --color-brand-400: #3fae82;
+  --color-brand-500: #189f67;
+  --color-brand-600: #12845a;
+  --color-brand-700: #0f6b4a;
+  --color-brand-800: #0d553c;
+  --color-brand-900: #0b4532;
+  --color-brand-950: #052a1e;
 
-  --color-accent-400: #f2b544;
-  --color-accent-500: #e09a1c;
-  --color-accent-600: #b97b10;
+  --color-accent-50: #fef2f2;
+  --color-accent-100: #fde3e4;
+  --color-accent-500: #e3242c;
+  --color-accent-600: #c41a22;
+  --color-accent-700: #a3151c;
 
-  --color-ink: #13201f;
-  --color-muted: #4b5d5b;
-  --color-surface: #f7faf9;
+  --color-ink: #0f1c16;
+  --color-muted: #475950;
+  --color-line: #dfe8e3;
+  --color-surface: #f6f9f7;
+  --color-cream: #fbf8f3;
+
+  --shadow-soft: 0 1px 2px rgb(15 28 22 / 0.04), 0 8px 24px -8px rgb(15 28 22 / 0.10);
+  --shadow-lift: 0 2px 4px rgb(15 28 22 / 0.05), 0 18px 40px -12px rgb(15 28 22 / 0.18);
 }
 
 @layer base {
   html {
     @apply scroll-smooth antialiased;
+    scroll-padding-top: 6rem;
   }
   body {
-    @apply bg-white font-sans text-ink;
+    @apply bg-white font-sans text-[17px] leading-relaxed text-ink;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight text-ink;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
   :focus-visible {
     @apply outline-3 outline-offset-2 outline-accent-500;
   }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
 }
 
+/* Layout */
 @utility container-page {
   @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
 }
+@utility section {
+  @apply py-16 sm:py-24;
+}
+@utility eyebrow {
+  @apply inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-brand-700 uppercase;
+}
 
+/* Buttons */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors;
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[15px] font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-60;
 }
-
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn bg-brand-700 text-white shadow-sm hover:bg-brand-800;
+}
+@utility btn-secondary {
+  @apply btn bg-white text-brand-800 ring-1 ring-line ring-inset hover:bg-brand-50 hover:ring-brand-200;
+}
+@utility btn-light {
+  @apply btn bg-white text-brand-900 hover:bg-brand-50;
+}
+@utility btn-ghost-light {
+  @apply btn text-white ring-1 ring-white/40 ring-inset hover:bg-white/10;
+}
+@utility link {
+  @apply font-semibold text-brand-700 underline decoration-brand-300 decoration-2 underline-offset-4 hover:text-brand-800 hover:decoration-brand-600;
 }
 
-@utility btn-accent {
-  @apply btn bg-accent-400 text-ink hover:bg-accent-500;
+/* Surfaces */
+@utility card {
+  @apply rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8;
+}
+@utility card-hover {
+  @apply transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lift;
+}
+@utility icon-tile {
+  @apply grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100;
 }
 
-@utility btn-outline {
-  @apply btn border border-brand-600 text-brand-700 hover:bg-brand-50;
+/* Forms */
+@utility form-label {
+  @apply mb-1.5 block text-[15px] font-semibold text-ink;
+}
+@utility form-hint {
+  @apply mt-1 text-sm text-muted;
+}
+@utility form-control {
+  @apply block w-full rounded-xl border border-[#b9c8c0] bg-white px-4 py-3 text-base text-ink shadow-xs transition placeholder:text-[#6b7c73] focus:border-brand-600 focus:ring-4 focus:ring-brand-100 focus:outline-none aria-invalid:border-accent-600 aria-invalid:focus:ring-accent-100;
+}
+@utility form-error {
+  @apply mt-1.5 flex items-center gap-1.5 text-sm font-medium text-accent-700;
 }
 
 @utility skip-link {
-  @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg;
+  @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg;
+}
+
+/* Long-form text blocks */
+@utility prose-hlo {
+  @apply max-w-none text-muted;
+  & p + p { @apply mt-4; }
+  & h2 { @apply mt-10 mb-3 text-2xl font-bold; }
+  & ul { @apply mt-3 list-disc space-y-1.5 pl-5; }
 }

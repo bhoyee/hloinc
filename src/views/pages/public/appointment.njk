@@ -1,0 +1,110 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {{ ui.pageHero('Appointments', 'Request an appointment', 'Choose a type of appointment and a preferred day. Requests must be made at least one day in advance, and our team will contact you to confirm.', [{ label: 'Request an appointment' }]) }}
+
+  <section class="section">
+    <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr]">
+      <div>
+        {{ ui.flash(flash) }}
+        <div class="card">
+          <form method="post" action="/appointments/request" class="relative space-y-8" novalidate data-once>
+            {{ ui.errorSummary(errors) }}
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            {{ ui.honeypot() }}
+
+            <fieldset id="f-type_id" tabindex="-1" {% if errors.type_id %}aria-describedby="f-type_id-error"{% endif %}>
+              <legend class="form-label">Type of appointment</legend>
+              <div class="mt-2 grid gap-3">
+                {% for t in types %}
+                  <label class="flex cursor-pointer gap-4 rounded-2xl border border-line p-4 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:ring-2 has-[:checked]:ring-brand-100">
+                    <input type="radio" name="type_id" value="{{ t.id }}" class="mt-1 size-5 accent-brand-700" required
+                      {% if values.type_id == t.id | string %}checked{% endif %}>
+                    <span>
+                      <span class="block font-semibold text-ink">{{ t.name }}</span>
+                      {% if t.description %}<span class="mt-0.5 block text-[15px] text-muted">{{ t.description }}</span>{% endif %}
+                    </span>
+                  </label>
+                {% else %}
+                  <p class="text-muted">Online requests are not available right now. Please call us at {{ site.phone }}.</p>
+                {% endfor %}
+              </div>
+              {{ ui.fieldError('type_id', errors) }}
+            </fieldset>
+
+            <div class="grid gap-6 sm:grid-cols-2">
+              {{ ui.input('name', 'Your name', values, errors, autocomplete='name') }}
+              {{ ui.input('email', 'Email address', values, errors, type='email', autocomplete='email', hint='We send your request details here.') }}
+            </div>
+
+            <div class="grid gap-6 sm:grid-cols-2">
+              {{ ui.input('phone', 'Phone', values, errors, type='tel', required=false, autocomplete='tel', hint='Needed if you prefer a call.') }}
+              <fieldset id="f-preferred_contact" tabindex="-1">
+                <legend class="form-label">How should we contact you?</legend>
+                <div class="mt-2 flex gap-3">
+                  {% for opt in [{ v: 'email', l: 'Email' }, { v: 'phone', l: 'Phone' }] %}
+                    <label class="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                      <input type="radio" name="preferred_contact" value="{{ opt.v }}" class="size-5 accent-brand-700" {% if values.preferred_contact == opt.v %}checked{% endif %}>
+                      <span class="font-medium">{{ opt.l }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+                {{ ui.fieldError('preferred_contact', errors) }}
+              </fieldset>
+            </div>
+
+            <div class="grid gap-6 sm:grid-cols-2">
+              {{ ui.input('requested_date', 'Preferred date', values, errors, type='date', hint='Weekdays only, from tomorrow up to 90 days ahead.', attrs='min="' + minDate + '" max="' + maxDate + '"') }}
+              <fieldset id="f-requested_window" tabindex="-1">
+                <legend class="form-label">Preferred time of day</legend>
+                <div class="mt-2 grid gap-3">
+                  {% for opt in [{ v: 'morning', l: 'Morning', d: '9 a.m. – 12 p.m.' }, { v: 'afternoon', l: 'Afternoon', d: '12 p.m. – 5 p.m.' }] %}
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                      <input type="radio" name="requested_window" value="{{ opt.v }}" class="size-5 accent-brand-700" required {% if values.requested_window == opt.v %}checked{% endif %}>
+                      <span class="font-medium">{{ opt.l }}</span> <span class="text-sm text-muted">{{ opt.d }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+                {{ ui.fieldError('requested_window', errors) }}
+              </fieldset>
+            </div>
+
+            {{ ui.textarea('notes', 'Anything we should know?', values, errors, required=false, rows=4, maxlength=1000, hint='For example, accessibility needs or who will attend. Please don’t include diagnoses or medication details.') }}
+
+            <div>
+              <label class="flex gap-3 text-[15px] text-ink" for="f-consent">
+                <input id="f-consent" type="checkbox" name="consent" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" required
+                  {% if values.consent == 'yes' %}checked{% endif %}
+                  {% if errors.consent %}aria-invalid="true" aria-describedby="f-consent-error"{% endif %}>
+                <span>I understand HLO will use these details only to arrange this appointment, and that this is a request, not a confirmed booking.</span>
+              </label>
+              {{ ui.fieldError('consent', errors) }}
+            </div>
+
+            <button type="submit" class="btn-primary" {% if not types.length %}disabled{% endif %}>Send request {{ icon('arrow-right', 'size-4') }}</button>
+          </form>
+        </div>
+      </div>
+
+      <aside class="space-y-5">
+        <div class="card !p-6">
+          <h2 class="text-lg font-bold">What happens next</h2>
+          <ol class="mt-4 space-y-4">
+            {% for step in ['We email you a copy of your request.', 'Our team reviews it and contacts you to confirm a time.', 'You receive a confirmation email once it is booked.'] %}
+              <li class="flex gap-3 text-[15px] text-ink">
+                <span class="grid size-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-800">{{ loop.index }}</span>
+                {{ step }}
+              </li>
+            {% endfor %}
+          </ol>
+        </div>
+        <div class="rounded-3xl bg-surface p-6 ring-1 ring-line">
+          <h2 class="text-lg font-bold">Prefer to call or walk in?</h2>
+          <p class="mt-2 text-[15px] text-muted">{{ site.walkIn }}</p>
+          <a href="{{ site.phone | telHref }}" class="btn-secondary mt-4 w-full">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

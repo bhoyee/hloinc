@@ -59,13 +59,16 @@ function csrf() {
   };
 }
 
+// Automated tests submit many forms quickly; limits are exercised manually.
+const skip = () => config.isTest;
+
 const limiters = {
   // Applied to every request — generous; stops floods, not people.
-  global: rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false }),
+  global: rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
   // Public forms (contact, appointment requests).
-  forms: rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false }),
+  forms: rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
   // Staff login attempts per IP (per-account lockout is handled separately).
-  login: rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false }),
+  login: rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
 };
 
 module.exports = { securityHeaders, csrf, limiters };

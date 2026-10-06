@@ -1,0 +1,37 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {% call ui.pageHero('Careers', job.title, null, [{ label: 'Careers', href: '/careers' }, { label: job.title }]) %}
+    <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-muted">
+      {% if job.department %}<span class="flex items-center gap-1.5">{{ icon('briefcase', 'size-5') }} {{ job.department }}</span>{% endif %}
+      {% if job.location %}<span class="flex items-center gap-1.5">{{ icon('map-pin', 'size-5') }} {{ job.location }}</span>{% endif %}
+      {% if job.employment_type %}<span class="flex items-center gap-1.5">{{ icon('clock', 'size-5') }} {{ job.employment_type }}</span>{% endif %}
+    </p>
+  {% endcall %}
+
+  <section class="section">
+    <div class="container-page grid gap-12 lg:grid-cols-[1.6fr_1fr]">
+      <article>
+        <h2 class="text-2xl font-bold">About the role</h2>
+        <div class="prose-hlo mt-4 text-lg">{{ job.description | paragraphs }}</div>
+        {% if job.requirements %}
+          <h2 class="mt-12 text-2xl font-bold">Requirements</h2>
+          <div class="prose-hlo mt-4 text-lg">{{ job.requirements | paragraphs }}</div>
+        {% endif %}
+      </article>
+
+      <aside class="lg:sticky lg:top-28 lg:self-start">
+        <div class="card !p-6">
+          <h2 class="text-lg font-bold">Interested?</h2>
+          <p class="mt-2 text-[15px] text-muted">Apply through our secure ADP careers portal. It opens in a new tab.</p>
+          <a href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary mt-5 w-full">
+            Apply on ADP {{ icon('external', 'size-4') }}<span class="sr-only"> (opens in a new tab)</span>
+          </a>
+          {% if job.published_at %}<p class="mt-4 text-center text-sm text-muted">Posted {{ job.published_at | date }}</p>{% endif %}
+        </div>
+        <a href="/careers" class="link mt-6 inline-block">&larr; All open positions</a>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

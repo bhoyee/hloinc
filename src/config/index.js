@@ -59,7 +59,8 @@ module.exports = {
   db: {
     host: env.DB_HOST,
     port: env.DB_PORT,
-    database: env.DB_NAME,
+    // Tests run against a separate database so they never touch real data.
+    database: env.NODE_ENV === 'test' ? `${env.DB_NAME}_test` : env.DB_NAME,
     user: env.DB_USER,
     password: env.DB_PASSWORD,
   },
@@ -70,6 +71,10 @@ module.exports = {
     user: env.SMTP_USER,
     password: env.SMTP_PASSWORD,
     from: env.MAIL_FROM,
+  },
+  forms: {
+    // Submissions faster than this are treated as bots.
+    minSubmitSeconds: env.NODE_ENV === 'test' ? 0 : 3,
   },
   paths: {
     root: path.join(__dirname, '../..'),
