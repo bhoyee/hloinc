@@ -24,7 +24,7 @@ const MODULES = [
     label: 'Appointments',
     description: 'Website appointment requests, walk-ins and phone bookings.',
     actions: ['view', 'edit', 'archive', 'delete'],
-    extras: { log: 'Log walk-in and phone appointments' },
+    extras: { log: 'Log walk-in and phone appointments', manage_types: 'Manage appointment types (names, length, capacity)' },
     labels: { edit: 'Confirm & update', archive: 'Cancel' },
   },
   {
@@ -77,6 +77,13 @@ const MODULES = [
     actions: ['view', 'edit', 'delete'],
   },
   {
+    key: 'reports',
+    label: 'Dashboard analytics',
+    description: 'Charts and trends on the dashboard (only for the areas the role can already see).',
+    actions: ['view'],
+    labels: { view: 'See charts' },
+  },
+  {
     key: 'audit',
     label: 'Audit log',
     description: 'The record of sign-ins and important changes.',
@@ -100,7 +107,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && has('view_intake') && !has('view'))) {
       set.add(`${m.key}.view`);
     }
@@ -132,12 +139,13 @@ const DEFAULT_ROLES = [
     description: 'Runs programs: jobs, announcements, schedules, appointments and limited site content.',
     require_mfa: true,
     permissions: [
-      'appointments.view', 'appointments.edit', 'appointments.log',
+      'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'appointments.manage_types',
       'schedule.view', 'schedule.edit',
       'messages.view', 'messages.edit',
       'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
       'announcements.view', 'announcements.edit', 'announcements.archive', 'announcements.delete',
       'site_content.edit_limited',
+      'reports.view',
     ],
   },
   {
@@ -145,7 +153,7 @@ const DEFAULT_ROLES = [
     name: 'Program Coordinator',
     description: 'Day-to-day coordination: announcements, schedules and appointments.',
     permissions: [
-      'appointments.view', 'appointments.edit', 'appointments.log',
+      'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log',
       'schedule.view', 'schedule.edit',
       'messages.view', 'messages.edit',
       'announcements.view', 'announcements.edit', 'announcements.archive',
@@ -155,7 +163,7 @@ const DEFAULT_ROLES = [
     key: 'intake_specialist',
     name: 'Intake Specialist',
     description: 'Appointments and the intake / referral inbox.',
-    permissions: ['appointments.view', 'appointments.edit', 'appointments.log', 'messages.view_intake', 'messages.edit'],
+    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.view_intake', 'messages.edit'],
   },
   {
     key: 'reception',

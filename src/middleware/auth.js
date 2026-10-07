@@ -7,9 +7,9 @@ const { can } = require('../auth/permissions');
 
 const AUTH_KEYS = ['userId', 'sessionVersion', 'loginAt', 'lastActivity', 'previousLoginAt', 'pendingMfa', 'mfaSetup'];
 
-// Background requests (the notification bell's refresh) don't count as activity,
+// Background requests (the notification bell and dashboard refreshes) don't count as activity,
 // so an open but unattended tab still times out.
-const BACKGROUND_PATHS = new Set(['/notifications/summary']);
+const BACKGROUND_PATHS = new Set(['/notifications/summary', '/dashboard/data']);
 
 /** Forget who is signed in, but keep the session (and its CSRF token). */
 function clearAuth(req) {

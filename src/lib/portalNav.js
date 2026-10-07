@@ -7,8 +7,8 @@
  */
 const NAV = [
   { label: 'Dashboard', href: '/portal', icon: 'dashboard' },
-  { label: 'Appointments', icon: 'calendar', permission: 'appointments.view', soon: 'Phase 3' },
-  { label: 'Schedule', icon: 'clock', permission: 'schedule.view', soon: 'Phase 3' },
+  { label: 'Appointments', href: '/portal/appointments', icon: 'calendar', permission: ['appointments.view', 'appointments.log'] },
+  { label: 'Schedule', href: '/portal/schedule', icon: 'clock' },
   { label: 'Messages', icon: 'inbox', permission: ['messages.view', 'messages.view_intake'], soon: 'Phase 4' },
   { label: 'Jobs', icon: 'briefcase', permission: 'jobs.view', soon: 'Phase 4' },
   { label: 'Announcements', icon: 'megaphone', permission: 'announcements.view', soon: 'Phase 4' },

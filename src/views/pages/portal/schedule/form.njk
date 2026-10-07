@@ -1,0 +1,66 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <section class="max-w-2xl rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+    <form method="post" action="{{ '/portal/schedule/' + shift.id if shift else '/portal/schedule' }}" class="space-y-5" novalidate data-once data-shift-form>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+
+      <fieldset id="f-kind" tabindex="-1">
+        <legend class="form-label">What is it?</legend>
+        <div class="mt-2 grid gap-3 sm:grid-cols-2">
+          {% for o in [{ v: 'shift', l: 'Shift', d: 'Working time' }, { v: 'time_off', l: 'Time off', d: 'Leave, training, sickness' }] %}
+            <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-line p-4 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+              <input type="radio" name="kind" value="{{ o.v }}" class="size-5 accent-brand-700" {% if values.kind == o.v %}checked{% endif %}>
+              <span><span class="block font-semibold text-ink">{{ o.l }}</span><span class="block text-sm text-muted">{{ o.d }}</span></span>
+            </label>
+          {% endfor %}
+        </div>
+        {{ ui.fieldError('kind', errors) }}
+      </fieldset>
+
+      <div>
+        <label for="f-user_id" class="form-label">Staff member</label>
+        <select id="f-user_id" name="user_id" class="form-control" required {% if errors.user_id %}aria-invalid="true" aria-describedby="f-user_id-error"{% endif %}>
+          <option value="">Choose…</option>
+          {% for s in staff %}<option value="{{ s.id }}" {% if values.user_id == s.id | string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        </select>
+        {{ ui.fieldError('user_id', errors) }}
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-3">
+        {{ ui.input('date', 'Date', values, errors, type='date') }}
+        {{ ui.input('start_time', 'Starts', values, errors, type='time', required=false, attrs='step="900" data-time-field') }}
+        {{ ui.input('end_time', 'Ends', values, errors, type='time', required=false, attrs='step="900" data-time-field', hint='Earlier than the start = ends next day.') }}
+      </div>
+      <label class="flex items-center gap-3 text-[15px]">
+        <input type="checkbox" name="all_day" value="yes" class="size-5 accent-brand-700" {% if values.all_day == 'yes' %}checked{% endif %} data-all-day> All day
+      </label>
+
+      <div class="grid gap-5 sm:grid-cols-2">
+        {{ ui.input('label', 'Label', values, errors, required=false, attrs='maxlength="80"', hint='For example “Office”, “Community visits”, “Annual leave”.') }}
+        {{ ui.input('location', 'Location', values, errors, required=false, attrs='maxlength="120"') }}
+      </div>
+      {{ ui.textarea('notes', 'Notes', values, errors, required=false, rows=2, maxlength=500) }}
+
+      {% if not shift %}
+        <div class="max-w-xs">
+          {{ ui.input('repeat_weeks', 'Repeat for how many weeks', values, errors, type='number', required=false, attrs='min="1" max="12"', hint='1 = just this week. Clashing weeks are skipped.') }}
+        </div>
+      {% endif %}
+
+      <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn-primary">{{ 'Save changes' if shift else 'Add to schedule' }}</button>
+        <a href="/portal/schedule" class="btn-secondary">Cancel</a>
+      </div>
+    </form>
+
+    {% if shift %}
+      <form method="post" action="/portal/schedule/{{ shift.id }}/delete" class="mt-6 border-t border-line pt-5">
+        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+        <button type="submit" class="inline-flex items-center gap-2 text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'size-4') }} Remove from schedule</button>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

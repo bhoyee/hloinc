@@ -57,4 +57,49 @@ function marylandDayStart(isoDate) {
   return new Date(`${isoDate}T00:00:00${sign}${String(Math.abs(hours)).padStart(2, '0')}:00`);
 }
 
-module.exports = { officeStatus, formatHour, marylandDayStart };
+/** A Maryland local date + "HH:MM" time as a Date (correct for EST and EDT). */
+function marylandDateTime(isoDate, time) {
+  const [h, m] = String(time).split(':').map(Number);
+  return new Date(marylandDayStart(isoDate).getTime() + (h * 60 + m) * 60 * 1000);
+}
+
+/** Maryland calendar date, time and weekday of an instant. */
+function marylandParts(when) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' })
+      .formatToParts(new Date(when))
+      .map((p) => [p.type, p.value])
+  );
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+    hour: Number(parts.hour) + Number(parts.minute) / 60,
+    dow: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday),
+  };
+}
+
+/** "2026-10-06" + n days. */
+function addDaysIso(isoDate, n) {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Monday of the week containing isoDate. */
+function weekStartIso(isoDate) {
+  const dow = new Date(`${isoDate}T12:00:00Z`).getUTCDay();
+  return addDaysIso(isoDate, dow === 0 ? -6 : 1 - dow);
+}
+
+/** A real calendar date in YYYY-MM-DD form (rejects e.g. 2026-02-30). */
+const isIsoDate = (v) =>
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(`${v}T12:00:00Z`).toISOString().slice(0, 10) === v;
+
+/** Is [start, end) entirely inside office hours on an office day? */
+function withinOfficeHours(schedule, start, end) {
+  const a = marylandParts(start);
+  const b = marylandParts(new Date(new Date(end).getTime() - 1));
+  return a.date === b.date && schedule.days.includes(a.dow) && a.hour >= schedule.open && b.hour < schedule.close;
+}
+
+module.exports = { officeStatus, formatHour, marylandDayStart, marylandDateTime, marylandParts, addDaysIso, weekStartIso, isIsoDate, withinOfficeHours };

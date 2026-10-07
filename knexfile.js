@@ -14,6 +14,9 @@ module.exports = {
     // JSON as LONGTEXT), so callers always JSON.parse exactly once.
     typeCast(field, next) {
       if (field.type === 'JSON') return field.string('utf8');
+      // DATE columns are calendar days, not instants: return "YYYY-MM-DD" so
+      // they never shift a day when shown in Maryland time.
+      if (field.type === 'DATE') return field.string();
       return next();
     },
   },

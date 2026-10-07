@@ -1,0 +1,112 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% macro chip(a, statusLabels, compact=false) %}
+  {% if a.status == 'confirmed' %}{% set tone = 'border-brand-600 bg-brand-50 hover:bg-brand-100' %}
+  {% elif a.status == 'no_show' %}{% set tone = 'border-accent-500 bg-accent-50 hover:bg-accent-100' %}
+  {% else %}{% set tone = 'border-[#93a49b] bg-surface hover:bg-line' %}{% endif %}
+  <a href="/portal/appointments/{{ a.id }}" class="block rounded-lg border-l-4 px-2.5 py-1.5 text-left transition {{ tone }}">
+    <span class="block text-xs font-semibold text-ink">{{ a.scheduled_at | time }}{% if a.status != 'confirmed' %} · {{ statusLabels[a.status] }}{% endif %}</span>
+    <span class="block truncate text-sm font-medium text-ink">{{ a.name }}</span>
+    {% if not compact %}<span class="block truncate text-xs text-muted">{{ a.type_name }}{% if a.assigned_name %} · {{ a.assigned_name }}{% endif %}</span>{% endif %}
+  </a>
+{% endmacro %}
+
+{% block actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="/portal/appointments" class="btn-secondary">{{ icon('inbox', 'size-4') }} List</a>
+    {% if can('appointments.log') %}<a href="/portal/appointments/new" class="btn-primary">{{ icon('plus', 'size-4') }} Log walk-in / phone</a>{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="grid gap-6 2xl:grid-cols-[1fr_20rem]">
+    <section class="min-w-0 rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="cal-h">
+      <div class="flex flex-col gap-3 border-b border-line p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div class="flex items-center gap-2">
+          <a href="?view={{ view }}&date={{ prev }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5 rotate-180') }}<span class="sr-only">Previous {{ view }}</span></a>
+          <a href="?view={{ view }}&date={{ today }}" class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-line hover:bg-surface">Today</a>
+          <a href="?view={{ view }}&date={{ next }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5') }}<span class="sr-only">Next {{ view }}</span></a>
+          <h2 id="cal-h" class="ml-2 font-display text-lg font-bold" aria-live="polite">{{ label }}</h2>
+        </div>
+        <div class="flex rounded-xl bg-surface p-1 ring-1 ring-line" role="group" aria-label="Calendar view">
+          {% for v in ['week', 'month'] %}
+            <a href="?view={{ v }}&date={{ anchor }}" {% if v == view %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold capitalize {{ 'bg-white text-ink shadow-sm' if v == view else 'text-muted hover:text-ink' }}">{{ v }}</a>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if view == 'week' %}
+        {# Wide screens: seven columns. Phones: one list, day by day. #}
+        <ol class="grid grid-cols-1 divide-y divide-line lg:grid-cols-7 lg:divide-x lg:divide-y-0">
+          {% for d in grid %}
+            <li class="min-h-24 p-3 lg:min-h-[28rem] {{ 'bg-brand-50/40' if d.isToday }}">
+              <p class="mb-2 flex items-baseline gap-2 lg:flex-col lg:items-center lg:gap-0">
+                <span class="text-xs font-semibold tracking-wide text-muted uppercase">{{ d.dow }}</span>
+                <span class="font-display text-lg font-bold {{ 'grid size-8 place-items-center rounded-full bg-accent-600 text-white' if d.isToday else 'text-ink' }}">{{ d.dayNum }}</span>
+                {% if d.isToday %}<span class="sr-only">(today)</span>{% endif %}
+              </p>
+              {% if d.items.length %}
+                <ul class="space-y-1.5">{% for a in d.items %}<li>{{ chip(a, statusLabels) }}</li>{% endfor %}</ul>
+              {% else %}
+                <p class="text-sm text-muted lg:text-center lg:text-xs">No appointments</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="hidden grid-cols-7 border-b border-line bg-surface text-center text-xs font-semibold tracking-wide text-muted uppercase lg:grid" aria-hidden="true">
+          {% for n in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}<span class="py-2">{{ n }}</span>{% endfor %}
+        </div>
+        <ol class="lg:grid lg:grid-cols-7">
+          {% for d in grid %}
+            <li class="border-line p-2 lg:min-h-32 lg:border-r lg:border-b {{ 'hidden lg:block' if not d.items.length and not d.isToday }} {{ 'lg:bg-surface/60' if not d.inMonth }} {{ 'bg-brand-50/40' if d.isToday }} border-b">
+              <a href="?view=week&date={{ d.date }}" class="mb-1 inline-flex items-center gap-2 text-sm font-semibold {{ 'text-muted' if not d.inMonth else 'text-ink' }} hover:text-brand-700">
+                <span class="lg:hidden">{{ d.dow }}</span>
+                <span class="{{ 'grid size-7 place-items-center rounded-full bg-accent-600 text-white' if d.isToday }}">{{ d.dayNum }}</span>
+              </a>
+              <ul class="space-y-1">
+                {% for a in d.items %}
+                  {% if loop.index <= 3 %}<li>{{ chip(a, statusLabels, true) }}</li>{% endif %}
+                {% endfor %}
+                {% if d.items.length > 3 %}<li><a href="?view=week&date={{ d.date }}" class="text-xs font-semibold text-brand-700">+{{ d.items.length - 3 }} more</a></li>{% endif %}
+              </ul>
+            </li>
+          {% endfor %}
+        </ol>
+      {% endif %}
+    </section>
+
+    <aside class="space-y-4" aria-labelledby="wait-h">
+      <section class="rounded-3xl border border-line bg-white p-5 shadow-soft">
+        <h2 id="wait-h" class="flex items-center justify-between font-display text-lg font-bold">
+          Waiting to be scheduled
+          <span class="rounded-full {{ 'bg-accent-600 text-white' if waiting.length else 'bg-surface text-muted ring-1 ring-line' }} px-2.5 py-0.5 text-sm">{{ waiting.length }}</span>
+        </h2>
+        {% if waiting.length %}
+          <ul class="mt-3 space-y-2">
+            {% for w in waiting %}
+              <li>
+                <a href="/portal/appointments/{{ w.id }}#schedule" class="block rounded-xl border-l-4 border-amber-400 bg-amber-50 px-3 py-2 hover:bg-amber-100">
+                  <span class="block text-sm font-semibold text-ink">{{ w.name }}</span>
+                  <span class="block text-xs text-muted">{{ w.type_name }}</span>
+                  <span class="block text-xs text-amber-900">Prefers {{ w.requested_date | date({ weekday: 'short', month: 'short', day: 'numeric' }) }}, {{ (windowLabels[w.requested_window] or '') | replace(r/ \(.*\)/, '') | lower }}</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="mt-2 text-sm text-muted">No website requests waiting.</p>
+        {% endif %}
+      </section>
+      <section class="rounded-3xl border border-line bg-white p-5 text-sm shadow-soft">
+        <h2 class="font-semibold text-ink">Key</h2>
+        <ul class="mt-2 space-y-1.5 text-muted">
+          <li class="flex items-center gap-2"><span class="h-4 w-1.5 rounded bg-brand-600"></span> Confirmed</li>
+          <li class="flex items-center gap-2"><span class="h-4 w-1.5 rounded bg-[#93a49b]"></span> Completed</li>
+          <li class="flex items-center gap-2"><span class="h-4 w-1.5 rounded bg-accent-500"></span> No-show</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+{% endblock %}

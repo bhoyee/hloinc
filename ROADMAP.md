@@ -86,15 +86,23 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Idle timeout enforced server-side so background refreshes don't keep sessions alive
 - [ ] Audit "viewed sensitive record" events — added with the modules that show sensitive records (Phases 3–4)
 
-## Phase 3 — Appointments & schedules
-- [ ] Appointment types table (approved types only, no "General appointment") **(CONFIRM types, durations, capacity)**
-- [ ] Website requests → status `Requested`; inbox of new requests
-- [ ] Statuses: Requested, Confirmed, Completed, Cancelled, No-show
-- [ ] Walk-in / phone logging by Reception and above
-- [ ] Calendar view (day/week/month)
-- [ ] Email confirmation to visitor on confirm/cancel (email only)
-- [ ] Staff schedule: shifts/availability by day & week; own view vs manager edit; Reception view-only
-- [ ] Leave / time-off requests **(CONFIRM — Q11)**
+## Phase 3 — Appointments & schedules ✅ done
+- [x] Appointment types managed in the portal (name, length, capacity, shown on website or not) — "Manage appointment types" permission **(CONFIRM real types — Q5)**
+- [x] Inbox tabs: Requests, Upcoming, Needs outcome, All (search + type/source/status filters)
+- [x] Confirm a request: date/time (Maryland time), length, assigned staff, optional note; visitor emailed; assignee notified
+- [x] Statuses Requested → Confirmed → Completed / No-show, Cancel (with reason + email), Reopen; impossible moves refused
+- [x] Walk-in / phone logging (Reception and above), optional email confirmation
+- [x] Capacity and office-hours checks with "book anyway" (recorded in the audit log)
+- [x] Calendar: week and month views, requests waiting panel; phone-friendly day list
+- [x] Staff notes (internal), history timeline, permanent delete (Admin), "viewed appointment" audit events
+- [x] Appointments in global search; dashboard tiles (requests, today, my next shift)
+- [x] Staff schedule: team week grid (schedule.view) and "My schedule" for everyone; shifts and time off, overnight shifts, all-day, repeat weekly, clash checks; staff notified of changes
+- [x] Fix: Directors, Coordinators and Intake can cancel appointments (§4) — migration adds the permission
+- [ ] Leave / time-off *requests* by staff **(CONFIRM — Q11)**; managers can already record time off
+- Tests: 22 new (201 total); axe clean on all Phase 3 screens
+- Dashboard upgrade: live Maryland clock and office status, cards 3 per row (2 on phones) with hover effects, analytics charts (appointments by week and attendance rate, website enquiries, booking sources, staff sign-ins) with a table view, and silent refresh every 30 s that doesn't keep idle sessions alive
+- New permission "Dashboard analytics → See charts" (Admin and Program Director by default); charts only cover areas the role can already see
+- Tests: 8 more (209 total)
 
 ## Phase 4 — Jobs, announcements, contacts, site content
 - [ ] Jobs: create/edit/publish/unpublish/archive; fields title, department, description, requirements, location, status, ADP link (validate ADP link is https://), **pay range + benefits** (Maryland Wage Range Transparency Act); text supports "- " bullet lines
@@ -144,3 +152,4 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-06 | Phase 2 complete; staff invited by email link instead of admin-set passwords | Admins never handle staff passwords |
 | 2026-10-06 | Roles and permissions became editable data (roles, role_permissions tables); MFA requirement moved from .env to each role | Client request: CEO/COO manages roles |
 | 2026-10-06 | Added IT Administrator role (accounts incl. "manage everyone except Admins", roles view, audit view; two-step required; no client data) | Client request |
+| 2026-10-07 | Phase 3 complete | — |

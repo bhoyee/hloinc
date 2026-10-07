@@ -1,28 +1,163 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 
+{% block scripts %}<script src="/js/dashboard.js" defer></script>{% endblock %}
+
+{# Table view of a chart: every value without needing the chart or hover. Rebuilt by dashboard.js on refresh. #}
+{% macro chartTable(c) %}
+  <table class="w-full min-w-max text-left text-sm" data-chart-table>
+    <caption class="sr-only">{{ c.title }}: {{ c.subtitle }}</caption>
+    <thead class="text-muted">
+      <tr>
+        <th scope="col" class="py-2 pr-4 font-semibold">{{ 'Source' if c.type == 'bars' else ('Day' if c.key == 'signins' else 'Week') }}</th>
+        {% for s in c.series %}<th scope="col" class="py-2 pr-4 text-right font-semibold">{{ s.name }}</th>{% endfor %}
+        {% if c.series.length > 1 %}<th scope="col" class="py-2 text-right font-semibold">Total</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-line tabular-nums">
+      {% for cat in c.categories %}
+        {% set i = loop.index0 %}
+        <tr>
+          <th scope="row" class="py-2 pr-4 font-medium text-ink">{{ c.categoryTitles[i] if c.categoryTitles else cat }}</th>
+          {% for s in c.series %}<td class="py-2 pr-4 text-right">{{ s.values[i] }}</td>{% endfor %}
+          {% if c.series.length > 1 %}<td class="py-2 text-right font-semibold">{{ c.totals[i] }}</td>{% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+
+{% macro tileClass(red) -%}
+  tile group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white p-4 shadow-soft sm:rounded-3xl transition duration-300 hover:-translate-y-1 hover:shadow-lift sm:p-6 {{ 'hover:border-accent-200' if red else 'hover:border-brand-200' }}
+{%- endmacro %}
+
+{% macro tileBody(t, red) %}
+  <span class="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r {{ 'from-accent-500 to-accent-700' if red else 'from-brand-400 to-brand-700' }} transition-transform duration-500 group-hover:scale-x-100" aria-hidden="true"></span>
+  <span class="pointer-events-none absolute -right-10 -bottom-10 size-36 rounded-full {{ 'bg-accent-50' if red else 'bg-brand-50' }} opacity-0 transition duration-500 group-hover:scale-110 group-hover:opacity-100" aria-hidden="true"></span>
+  <span class="relative flex items-start justify-between gap-3">
+    <span class="text-[13px] leading-snug font-semibold text-muted sm:text-sm">{{ t.label }}</span>
+    <span class="{{ 'icon-tile-red group-hover:bg-accent-600 group-hover:ring-accent-600' if red else 'icon-tile group-hover:bg-brand-700 group-hover:ring-brand-700' }} size-9 rounded-xl transition duration-300 sm:size-11 sm:rounded-2xl group-hover:-rotate-6 group-hover:text-white">{{ icon(t.icon, 'size-5') }}</span>
+  </span>
+  <span class="relative mt-2 block font-display text-3xl font-extrabold text-ink sm:text-[2.75rem]" data-tile-value>{{ t.value }}</span>
+  <span class="relative mt-auto flex items-center justify-between gap-2 pt-2 text-[13px] leading-snug text-muted sm:text-sm">
+    {% if t.href %}
+      <span class="font-semibold text-brand-700 group-hover:text-brand-800">{{ t.note }}</span>
+      <span class="hidden size-8 shrink-0 place-items-center rounded-full bg-surface sm:grid text-brand-700 transition duration-300 group-hover:translate-x-1 group-hover:bg-brand-700 group-hover:text-white" aria-hidden="true">{{ icon('chevron-right', 'size-4') }}</span>
+    {% else %}
+      <span>{{ t.note }}</span>
+    {% endif %}
+  </span>
+{% endmacro %}
+
+{% block actions %}
+  {# Live clock (Maryland time). Server renders the first value; dashboard.js ticks it every second. #}
+  <div class="flex items-center gap-4 self-stretch rounded-2xl border border-line bg-white py-3 pr-5 pl-3 shadow-soft sm:self-auto" data-clock>
+    <span class="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-950 text-white" aria-hidden="true">
+      <svg viewBox="0 0 48 48" class="size-11" data-clock-face>
+        <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="2"/>
+        {% for t in [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] %}<line x1="24" y1="5" x2="24" y2="{{ 9 if t % 90 == 0 else 7 }}" stroke="currentColor" stroke-opacity=".6" stroke-width="1.5" stroke-linecap="round" transform="rotate({{ t }} 24 24)"/>{% endfor %}
+        <line x1="24" y1="24" x2="24" y2="13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" data-hand="hour"/>
+        <line x1="24" y1="24" x2="24" y2="9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" data-hand="minute"/>
+        <line x1="24" y1="27" x2="24" y2="8" stroke="#e3242c" stroke-width="1.25" stroke-linecap="round" data-hand="second"/>
+        <circle cx="24" cy="24" r="2" fill="#e3242c"/>
+      </svg>
+    </span>
+    <div class="min-w-0 leading-tight">
+      <p class="text-sm font-medium text-muted" data-clock-date>{{ clock.date }}</p>
+      <p class="mt-0.5 font-display text-2xl font-bold text-ink tabular-nums"><span data-clock-time>{{ clock.time }}</span></p>
+      <p class="mt-1 flex items-center gap-1.5 text-xs text-muted">
+        {% if live.office %}
+          <span class="size-2 rounded-full {{ 'bg-brand-500' if live.office.open else 'bg-[#93a49b]' }}" data-office-dot aria-hidden="true"></span>
+          <span data-office>{{ live.office.label }}</span>
+        {% else %}Maryland time{% endif %}
+      </p>
+    </div>
+  </div>
+{% endblock %}
+
 {% block content %}
-  {% if tiles.length %}
-    <ul class="grid grid-cols-[repeat(auto-fit,minmax(12.5rem,1fr))] gap-4">
-      {% for t in tiles %}
+  <script type="application/json" id="dashboard-data">{{ live | jsonld }}</script>
+
+  <div class="mb-3 flex items-center justify-between gap-3">
+    <h2 class="text-base font-bold text-ink">At a glance</h2>
+    <p class="flex items-center gap-2 text-xs font-medium text-muted" data-live-status>
+      <span class="relative flex size-2.5" aria-hidden="true">
+        <span class="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-60" data-live-ping></span>
+        <span class="relative inline-flex size-2.5 rounded-full bg-brand-500" data-live-dot></span>
+      </span>
+      <span data-live-text>Live · updates automatically</span>
+    </p>
+  </div>
+
+  {% if live.tiles.length %}
+    <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5">
+      {% for t in live.tiles %}
         {% set red = loop.index is odd %}
-        <li class="rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold text-muted">{{ t.label }}</p>
-            <span class="{{ 'icon-tile-red' if red else 'icon-tile' }} size-10">{{ icon(t.icon, 'size-5') }}</span>
-          </div>
-          <p class="mt-3 font-display text-4xl font-extrabold text-ink">{{ t.value }}</p>
-          <p class="mt-1 text-sm text-muted">
-            {% if t.href %}<a href="{{ t.href }}" class="font-semibold text-brand-700 hover:text-brand-800">{{ t.note }} &rarr;</a>{% else %}{{ t.note }}{% endif %}
-          </p>
+        <li>
+          {% if t.href %}<a href="{{ t.href }}" class="{{ tileClass(red) }}" data-tile="{{ t.key }}">{{ tileBody(t, red) }}</a>
+          {% else %}<div class="{{ tileClass(red) }}" data-tile="{{ t.key }}">{{ tileBody(t, red) }}</div>{% endif %}
         </li>
       {% endfor %}
     </ul>
   {% endif %}
 
-  <div class="mt-6 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+  {% if live.charts.length %}
+    <section class="mt-8" aria-labelledby="analytics-h">
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 id="analytics-h" class="text-base font-bold text-ink">Analytics</h2>
+          <p class="text-sm text-muted">Trends across the areas your role can see. Hover or focus a chart to read values.</p>
+        </div>
+      </div>
+      <div class="grid gap-4 lg:gap-5 xl:grid-cols-2">
+        {% for c in live.charts %}
+          <article class="flex min-w-0 flex-col rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6" aria-labelledby="chart-{{ c.key }}-h" data-chart-card="{{ c.key }}">
+            <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div class="min-w-0">
+                <h3 id="chart-{{ c.key }}-h" class="text-lg font-bold">{{ c.title }}</h3>
+                <p class="text-sm text-muted">{{ c.subtitle }}</p>
+              </div>
+              {% if c.figure %}
+                <p class="flex shrink-0 items-baseline gap-2 leading-tight sm:block sm:text-right">
+                  <span class="block font-sans text-3xl font-bold text-ink" data-figure-value>{{ c.figure.value }}</span>
+                  <span class="block text-xs text-muted" data-figure-label>{{ c.figure.label }}</span>
+                </p>
+              {% endif %}
+            </header>
+
+            {% if c.series.length > 1 %}
+              <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted" aria-label="Legend">
+                {% for s in c.series %}
+                  <li class="flex items-center gap-2">
+                    <svg class="size-3.5 shrink-0" viewBox="0 0 14 14" aria-hidden="true">
+                      {% if c.type == 'line' %}<line x1="1" y1="7" x2="13" y2="7" stroke="{{ s.color }}" stroke-width="3" stroke-linecap="round"/>{% else %}<rect x="1" y="1" width="12" height="12" rx="3" fill="{{ s.color }}"/>{% endif %}
+                    </svg>
+                    {{ s.name }}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+
+            <div class="relative mt-4 mb-3 rounded-xl outline-offset-4 {{ 'h-44' if c.type == 'bars' else 'h-64' }}" data-chart="{{ c.key }}"
+                 tabindex="0" role="group" aria-label="{{ c.title }} chart. Use the left and right arrow keys to read values, or open the table below.">
+              <noscript><p class="pt-8 text-center text-sm text-muted">Open the table below to see these figures.</p></noscript>
+            </div>
+
+            <details class="group/t mt-auto border-t border-line pt-3">
+              <summary class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800">
+                {{ icon('chevron-right', 'size-4 transition group-open/t:rotate-90') }} Show as table
+              </summary>
+              <div class="mt-2 overflow-x-auto">{{ chartTable(c) }}</div>
+            </details>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="mt-8 grid gap-4 lg:grid-cols-[1.5fr_1fr] lg:gap-5">
     {% if recentActivity.length %}
-      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft lg:row-span-2">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-bold">Recent activity</h2>
           <a href="/portal/audit" class="text-sm font-semibold text-brand-700 hover:text-brand-800">Full audit log &rarr;</a>
@@ -37,9 +172,9 @@
         </ul>
       </section>
     {% else %}
-      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
-        <h2 class="text-lg font-bold">Welcome to the new staff portal</h2>
-        <p class="mt-2 text-muted">More tools are on the way: appointments, schedules, messages, jobs and announcements will appear in the menu as each one is ready.</p>
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft lg:row-span-2">
+        <h2 class="text-lg font-bold">Welcome to the staff portal</h2>
+        <p class="mt-2 text-muted">Use the menu to reach appointments and your schedule. Messages, jobs and announcements will appear in the menu as each one is ready.</p>
       </section>
     {% endif %}
 
@@ -49,18 +184,29 @@
         <li class="flex items-center gap-3">
           {% if security.mfaEnabled %}
             <span class="grid size-8 place-items-center rounded-full bg-brand-100 text-brand-800">{{ icon('check', 'size-4') }}</span>
-            <span>Two-step sign-in is on{% if security.mfaEnabled %} · {{ security.recoveryLeft }} recovery codes left{% endif %}</span>
+            <span>Two-step sign-in is on · {{ security.recoveryLeft }} recovery codes left</span>
           {% else %}
             <span class="grid size-8 place-items-center rounded-full bg-amber-100 text-amber-900">{{ icon('exclamation', 'size-4') }}</span>
             <span>Two-step sign-in is off. <a href="/portal/account/two-step" class="link">Turn it on</a></span>
           {% endif %}
         </li>
         <li class="flex items-center gap-3">
-          <span class="grid size-8 place-items-center rounded-full bg-surface text-muted ring-1 ring-line">{{ icon('clock', 'size-4') }}</span>
+          <span class="hidden size-8 shrink-0 place-items-center rounded-full bg-surface sm:grid text-muted ring-1 ring-line">{{ icon('clock', 'size-4') }}</span>
           <span>Previous sign-in: {{ previousLogin | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) if previousLogin else 'this is your first' }}</span>
         </li>
       </ul>
       <a href="/portal/account" class="btn-secondary mt-5 w-full">Manage my account</a>
+    </section>
+
+    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="shift-h">
+      <h2 id="shift-h" class="text-lg font-bold">My next shift</h2>
+      {% if nextShift %}
+        <p class="mt-3 font-display text-xl font-bold text-ink">{{ nextShift.start_at | dateTime }}</p>
+        <p class="text-[15px] text-muted">{{ 'Time off' if nextShift.kind == 'time_off' else (nextShift.label or 'Shift') }}{% if nextShift.location %} · {{ nextShift.location }}{% endif %} · until {{ nextShift.end_at | time }}</p>
+      {% else %}
+        <p class="mt-2 text-[15px] text-muted">Nothing scheduled.</p>
+      {% endif %}
+      <a href="/portal/schedule?view=mine" class="btn-secondary mt-5 w-full">My schedule</a>
     </section>
   </div>
 {% endblock %}

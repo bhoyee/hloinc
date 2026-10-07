@@ -37,6 +37,8 @@ router.use('/', require('./dashboard'));
 router.use('/account', require('./account'));
 router.use('/search', require('./search'));
 router.use('/notifications', require('./notifications'));
+router.use('/appointments', requirePermission(['appointments.view', 'appointments.log']), require('./appointments'));
+router.use('/schedule', require('./schedule')); // everyone sees their own shifts
 router.use('/accounts', requirePermission('accounts.view'), require('./accounts'));
 router.use('/roles', requirePermission('roles.view'), require('./roles'));
 router.use('/audit', requirePermission('audit.view'), require('./audit'));

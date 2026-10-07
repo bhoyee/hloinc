@@ -205,3 +205,14 @@
     box-shadow: 0 0 0 3px var(--color-accent-100);
   }
 }
+
+/* Dashboard: a number that just changed (silent refresh) gives a small pulse. */
+@keyframes tile-bump {
+  0% { transform: scale(1); color: var(--color-ink); }
+  30% { transform: scale(1.12); color: var(--color-accent-600); }
+  100% { transform: scale(1); color: var(--color-ink); }
+}
+@utility tile-bump {
+  animation: tile-bump 0.9s ease-out;
+  transform-origin: left center;
+}

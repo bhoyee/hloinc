@@ -1,0 +1,108 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% macro entry(s, editable) %}
+  {% set off = s.kind == 'time_off' %}
+  {% if editable %}<a href="/portal/schedule/{{ s.id }}"{% else %}<div{% endif %}
+    class="block rounded-lg border-l-4 px-2 py-1.5 text-left {{ 'border-amber-400 bg-amber-50' if off else 'border-brand-600 bg-brand-50' }} {{ 'hover:brightness-95' if editable }}">
+    <span class="block text-xs font-semibold text-ink">{{ s.range }}</span>
+    <span class="block truncate text-xs text-muted">{{ s.label or ('Time off' if off else 'Shift') }}{% if s.location %} · {{ s.location }}{% endif %}</span>
+  {% if editable %}</a>{% else %}</div>{% endif %}
+{% endmacro %}
+
+{% block actions %}
+  <div class="flex flex-wrap gap-2">
+    {% if teamAllowed %}
+      <div class="flex rounded-xl bg-white p-1 ring-1 ring-line" role="group" aria-label="Whose schedule">
+        <a href="?view=team&week={{ week }}" {% if view == 'team' %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold {{ 'bg-brand-700 text-white' if view == 'team' else 'text-muted hover:text-ink' }}">Team</a>
+        <a href="?view=mine&week={{ week }}" {% if view == 'mine' %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold {{ 'bg-brand-700 text-white' if view == 'mine' else 'text-muted hover:text-ink' }}">Mine</a>
+      </div>
+    {% endif %}
+    {% if can('schedule.edit') %}<a href="/portal/schedule/new" class="btn-primary">{{ icon('plus', 'size-4') }} Add shift or time off</a>{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  {% set editable = can('schedule.edit') %}
+  <section class="rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="week-h">
+    <div class="flex flex-wrap items-center gap-2 border-b border-line p-4 sm:p-5">
+      <a href="?view={{ view }}&week={{ prevWeek }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5 rotate-180') }}<span class="sr-only">Previous week</span></a>
+      <a href="?view={{ view }}&week={{ thisWeek }}" class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-line hover:bg-surface">This week</a>
+      <a href="?view={{ view }}&week={{ nextWeek }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5') }}<span class="sr-only">Next week</span></a>
+      <h2 id="week-h" class="ml-2 font-display text-lg font-bold">{{ weekLabel }}</h2>
+      <span class="ml-auto flex items-center gap-4 text-sm text-muted">
+        <span class="flex items-center gap-1.5"><span class="h-4 w-1.5 rounded bg-brand-600"></span> Shift</span>
+        <span class="flex items-center gap-1.5"><span class="h-4 w-1.5 rounded bg-amber-400"></span> Time off</span>
+      </span>
+    </div>
+
+    {% if view == 'team' %}
+      {# Wide screens: staff × days grid. #}
+      <div class="hidden overflow-x-auto lg:block" tabindex="0" role="region" aria-label="Team schedule">
+        <table class="w-full min-w-[960px] table-fixed text-left">
+          <caption class="sr-only">Staff schedule for {{ weekLabel }}</caption>
+          <thead class="border-b border-line bg-surface text-xs text-muted">
+            <tr>
+              <th scope="col" class="w-48 px-4 py-3 font-semibold uppercase">Staff</th>
+              {% for d in days %}
+                <th scope="col" class="px-2 py-3 text-center font-semibold {{ 'text-accent-700' if d.isToday }}">
+                  <span class="block uppercase">{{ d.dow }}</span><span class="block text-sm text-ink">{{ d.label }}</span>
+                </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            {% for p in people %}
+              <tr class="align-top">
+                <th scope="row" class="px-4 py-3 text-sm font-semibold text-ink">{{ p.name }}</th>
+                {% for d in days %}
+                  {% set items = cell[p.id + '|' + d.date] %}
+                  <td class="group px-1.5 py-2 {{ 'bg-brand-50/30' if d.isToday }}">
+                    <div class="space-y-1">
+                      {% for s in items %}{{ entry(s, editable) }}{% endfor %}
+                      {% if editable %}
+                        <a href="/portal/schedule/new?user={{ p.id }}&date={{ d.date }}" class="block rounded-lg py-1 text-center text-xs font-semibold text-brand-700 opacity-0 ring-1 ring-dashed ring-brand-200 group-hover:opacity-100 focus:opacity-100">+ Add<span class="sr-only"> for {{ p.name }} on {{ d.label }}</span></a>
+                      {% endif %}
+                    </div>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {# Phones and tablets: day by day, people under each day. #}
+      <ol class="divide-y divide-line lg:hidden">
+        {% for d in days %}
+          <li class="p-4 {{ 'bg-brand-50/40' if d.isToday }}">
+            <p class="font-semibold text-ink">{{ d.dow }}, {{ d.label }}{% if d.isToday %} <span class="text-sm text-accent-700">· today</span>{% endif %}</p>
+            <ul class="mt-2 space-y-2">
+              {% for p in people %}
+                {% set items = cell[p.id + '|' + d.date] %}
+                {% if items %}
+                  <li><p class="text-sm font-medium text-muted">{{ p.name }}</p><div class="mt-1 space-y-1">{% for s in items %}{{ entry(s, editable) }}{% endfor %}</div></li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+            {% if not cell['me|' + d.date] %}<p class="mt-1 text-sm text-muted">Nobody scheduled.</p>{% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <ol class="grid grid-cols-1 divide-y divide-line md:grid-cols-7 md:divide-x md:divide-y-0">
+        {% for d in days %}
+          {% set items = cell['me|' + d.date] %}
+          <li class="min-h-20 p-3 md:min-h-64 {{ 'bg-brand-50/40' if d.isToday }}">
+            <p class="mb-2 text-sm font-semibold {{ 'text-accent-700' if d.isToday else 'text-ink' }}">{{ d.dow }} <span class="font-normal text-muted">{{ d.label }}</span></p>
+            {% if items %}<div class="space-y-1.5">{% for s in items %}{{ entry(s, editable) }}{% endfor %}</div>
+            {% else %}<p class="text-sm text-muted">Off</p>{% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    {% endif %}
+  </section>
+
+  {% if view == 'mine' and not totalEntries %}
+    <p class="mt-4 text-[15px] text-muted">Nothing on your schedule this week. Your manager adds shifts here; you’ll get a notification when they do.</p>
+  {% endif %}
+{% endblock %}

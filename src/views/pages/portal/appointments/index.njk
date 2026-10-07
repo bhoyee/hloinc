@@ -1,0 +1,103 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/portal-badges.njk" as badges %}
+
+{% block actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="/portal/appointments/calendar" class="btn-secondary">{{ icon('calendar', 'size-4') }} Calendar</a>
+    {% if can('appointments.manage_types') %}<a href="/portal/appointments/types" class="btn-secondary">Types</a>{% endif %}
+    {% if can('appointments.log') %}<a href="/portal/appointments/new" class="btn-primary">{{ icon('plus', 'size-4') }} Log walk-in / phone</a>{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <nav aria-label="Appointment lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+    {% for t in tabs %}
+      <a href="/portal/appointments?tab={{ t.key }}" {% if t.key == tab %}aria-current="page"{% endif %}
+         class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
+        {{ t.label }}
+        {% if counts[t.key] is defined %}
+          <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white/20' if t.key == tab else ('bg-accent-600 text-white' if t.key == 'requests' and counts[t.key] else 'bg-surface ring-1 ring-line') }}">{{ counts[t.key] }}</span>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </nav>
+
+  <form method="get" action="/portal/appointments" role="search" aria-label="Filter appointments" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto]">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="relative sm:col-span-2 xl:col-span-1">
+      <label for="f-q" class="sr-only">Search by name, email or phone</label>
+      <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Name, email or phone" class="form-control !pl-12" maxlength="100">
+    </div>
+    <div>
+      <label for="f-type" class="sr-only">Type</label>
+      <select id="f-type" name="type" class="form-control">
+        <option value="">All types</option>
+        {% for t in types %}<option value="{{ t.id }}" {% if filters.type == t.id | string %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="f-source" class="sr-only">Source</label>
+      <select id="f-source" name="source" class="form-control">
+        <option value="">Any source</option>
+        {% for key, label in sourceLabels %}<option value="{{ key }}" {% if filters.source == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="f-status" class="sr-only">Status</label>
+      <select id="f-status" name="status" class="form-control" {% if tab != 'all' %}disabled title="Status filter applies to the All tab"{% endif %}>
+        <option value="">Any status</option>
+        {% for key, label in statusLabels %}<option value="{{ key }}" {% if filters.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-green">Filter</button>
+  </form>
+
+  {% if items.length %}
+    <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+      {% for a in items %}
+        <li class="group relative transition-colors hover:bg-surface focus-within:bg-surface">
+          <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:gap-6">
+            <div class="min-w-0 flex-1">
+              <p class="flex flex-wrap items-center gap-2">
+                <a href="/portal/appointments/{{ a.id }}" class="font-semibold text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ a.name }}</a>
+                {{ badges.status(a.status, statusLabels[a.status]) }}
+              </p>
+              <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                <span>{{ a.type_name }}</span>
+                {{ badges.source(a.source, sourceLabels[a.source]) }}
+                {% if a.assigned_name %}<span>With {{ a.assigned_name }}</span>{% endif %}
+              </p>
+            </div>
+            <div class="text-sm lg:w-64 lg:text-right">
+              {% if a.scheduled_at %}
+                <p class="font-semibold text-ink">{{ a.scheduled_at | dateTime }}</p>
+                <p class="text-muted">{{ a.duration_minutes or a.type_duration }} min</p>
+              {% else %}
+                <p class="font-semibold text-ink">Prefers {{ a.requested_date | date({ weekday: 'short', month: 'short', day: 'numeric' }) }}</p>
+                <p class="text-muted">{{ windowLabels[a.requested_window] }} · requested {{ a.created_at | date({ month: 'short', day: 'numeric' }) }}</p>
+              {% endif %}
+            </div>
+          </div>
+          <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if pages > 1 %}
+      <nav aria-label="Appointment pages" class="mt-6 flex items-center justify-between">
+        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
+        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
+        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+      <span class="icon-tile mx-auto">{{ icon('calendar', 'size-6') }}</span>
+      <p class="mt-4 text-lg font-semibold text-ink">
+        {% if tab == 'requests' %}No requests waiting{% elif tab == 'upcoming' %}Nothing coming up{% elif tab == 'outcome' %}Nothing needs an outcome{% else %}No appointments found{% endif %}
+      </p>
+      <p class="mt-1 text-muted">{% if tab == 'requests' %}New website requests will appear here.{% elif tab == 'outcome' %}Past appointments needing “Completed” or “No-show” appear here.{% else %}Try another tab or filter.{% endif %}</p>
+    </div>
+  {% endif %}
+{% endblock %}

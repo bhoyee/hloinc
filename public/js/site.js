@@ -398,6 +398,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Log appointment: picking a type fills in its usual length.
+  const typeSelect = document.querySelector('select[name="type_id"] option[data-duration]') && document.querySelector('select[name="type_id"]');
+  const durationInput = document.querySelector('input[name="duration_minutes"]');
+  if (typeSelect && durationInput) {
+    typeSelect.addEventListener('change', () => {
+      const opt = typeSelect.selectedOptions[0];
+      if (opt && opt.dataset.duration) durationInput.value = opt.dataset.duration;
+    });
+  }
+
+  // Schedule form: "All day" hides the start/end times.
+  const allDay = document.querySelector('[data-all-day]');
+  if (allDay) {
+    const toggle = () => document.querySelectorAll('[data-time-field]').forEach((f) => {
+      f.closest('div').classList.toggle('opacity-40', allDay.checked);
+      f.disabled = allDay.checked;
+    });
+    allDay.addEventListener('change', toggle);
+    toggle();
+  }
+
   // "Print" buttons (e.g. recovery codes).
   document.querySelectorAll('[data-print]').forEach((btn) => btn.addEventListener('click', () => window.print()));
 

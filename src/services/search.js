@@ -62,6 +62,25 @@ const providers = [
     },
   },
   {
+    label: 'Appointments',
+    permission: 'appointments.view',
+    async run(user, q, limit) {
+      const rows = await db('appointments as a')
+        .leftJoin('appointment_types as t', 't.id', 'a.type_id')
+        .select('a.id', 'a.name', 'a.status', 'a.scheduled_at', 'a.requested_date', 't.name as type_name')
+        .where((w) => w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q)))
+        .orderBy('a.created_at', 'desc')
+        .limit(limit);
+      const fmt = (d) => new Date(d).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+      return rows.map((a) => ({
+        title: a.name,
+        subtitle: `${a.type_name} · ${a.status.replace('_', '-')}${a.scheduled_at ? ` · ${fmt(a.scheduled_at)}` : ''}`,
+        href: `/portal/appointments/${a.id}`,
+        icon: 'calendar',
+      }));
+    },
+  },
+  {
     label: 'Jobs',
     permission: 'jobs.view',
     async run(user, q, limit) {

@@ -1,0 +1,185 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/portal-badges.njk" as badges %}
+
+{% block actions %}
+  <a href="/portal/appointments/calendar{% if calendarDate %}?date={{ calendarDate }}{% endif %}" class="btn-secondary shrink-0">{{ icon('calendar', 'size-4') }} Calendar</a>
+{% endblock %}
+
+{% block content %}
+  {% set canEdit = can('appointments.edit') %}
+  {% set schedulable = a.status == 'requested' or a.status == 'confirmed' %}
+
+  <div class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+    <div class="min-w-0 space-y-6">
+
+      {# Who and what #}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="who-h">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="who-h" class="text-lg font-bold">Visitor</h2>
+          {{ badges.source(a.source, sourceLabels[a.source]) }}
+        </div>
+        <dl class="mt-5 grid gap-5 text-[15px] sm:grid-cols-2">
+          <div><dt class="text-sm font-semibold text-muted">Name</dt><dd class="mt-0.5 font-medium text-ink">{{ a.name }}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Prefers contact by</dt><dd class="mt-0.5 font-medium text-ink">{{ 'Phone' if a.preferred_contact == 'phone' else 'Email' }}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Email</dt><dd class="mt-0.5 font-medium">{% if a.email %}<a href="mailto:{{ a.email }}" class="link">{{ a.email }}</a>{% else %}<span class="text-muted">Not given</span>{% endif %}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Phone</dt><dd class="mt-0.5 font-medium">{% if a.phone %}<a href="{{ a.phone | telHref }}" class="link">{{ a.phone }}</a>{% else %}<span class="text-muted">Not given</span>{% endif %}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Appointment type</dt><dd class="mt-0.5 font-medium text-ink">{{ a.type_name }}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Received</dt><dd class="mt-0.5 font-medium text-ink">{{ a.created_at | dateTime }}</dd></div>
+          {% if a.requested_date %}
+            <div class="sm:col-span-2 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+              <dt class="text-sm font-semibold text-amber-900">They asked for</dt>
+              <dd class="mt-0.5 font-medium text-ink">{{ a.requested_date | date({ weekday: 'long', month: 'long', day: 'numeric' }) }} · {{ windowLabels[a.requested_window] }}</dd>
+            </div>
+          {% endif %}
+          {% if a.notes %}
+            <div class="sm:col-span-2"><dt class="text-sm font-semibold text-muted">What they told us</dt><dd class="mt-1 rounded-2xl bg-surface p-4 whitespace-pre-line text-ink ring-1 ring-line">{{ a.notes }}</dd></div>
+          {% endif %}
+        </dl>
+      </section>
+
+      {# Schedule / reschedule #}
+      {% if canEdit and schedulable %}
+        <section id="schedule" class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="sched-h">
+          <h2 id="sched-h" class="text-lg font-bold">{{ 'Change time or staff' if a.status == 'confirmed' else 'Confirm this appointment' }}</h2>
+          <p class="mt-1 text-[15px] text-muted">Times are Maryland time.</p>
+          <form method="post" action="/portal/appointments/{{ a.id }}/schedule" class="mt-6 space-y-5" novalidate data-once>
+            {{ ui.errorSummary(scheduleErrors) }}
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <div class="grid gap-5 sm:grid-cols-3">
+              {{ ui.input('date', 'Date', scheduleValues, scheduleErrors, type='date') }}
+              {{ ui.input('time', 'Start time', scheduleValues, scheduleErrors, type='time', attrs='step="300"') }}
+              {{ ui.input('duration_minutes', 'Length (minutes)', scheduleValues, scheduleErrors, type='number', attrs='min="5" max="480" step="5"') }}
+            </div>
+            <div>
+              <label for="f-assigned_to" class="form-label">With <span class="font-normal text-muted">(optional)</span></label>
+              <select id="f-assigned_to" name="assigned_to" class="form-control">
+                <option value="">Not assigned</option>
+                {% for s in staff %}<option value="{{ s.id }}" {% if scheduleValues.assigned_to == s.id | string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+              </select>
+            </div>
+            {% if a.email %}
+              <label class="flex items-start gap-3">
+                <input type="checkbox" name="notify" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" {% if scheduleValues.notify == 'yes' %}checked{% endif %}>
+                <span><span class="font-semibold text-ink">Email {{ a.email }}</span><span class="block text-sm text-muted">Sends the confirmed time, or the new time if it changed.</span></span>
+              </label>
+              {{ ui.textarea('message', 'Add a note to the email', scheduleValues, scheduleErrors, required=false, rows=2, maxlength=500, hint='For example, who they’ll meet or what to bring.') }}
+            {% else %}
+              <p class="flex gap-3 rounded-2xl bg-surface p-4 text-sm text-muted ring-1 ring-line">{{ icon('phone', 'mt-0.5 size-4 shrink-0') }} No email address — call {{ a.phone or 'the visitor' }} to confirm the time.</p>
+            {% endif %}
+            {% if problems.length %}
+              <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4" role="alert" tabindex="-1" data-focus-on-load>
+                <p class="font-semibold text-amber-900">Check this time</p>
+                <ul class="mt-1 list-disc pl-5 text-[15px] text-amber-900">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
+                <label class="mt-3 flex items-center gap-3 font-semibold text-ink">
+                  <input type="checkbox" name="override" value="yes" class="size-5 accent-brand-700"> I understand — book it anyway
+                </label>
+              </div>
+            {% endif %}
+            <button type="submit" class="btn-primary">{{ icon('check', 'size-4') }} {{ 'Save changes' if a.status == 'confirmed' else 'Confirm appointment' }}</button>
+          </form>
+        </section>
+      {% endif %}
+
+      {# Staff notes #}
+      <section id="notes" class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="notes-h">
+        <h2 id="notes-h" class="text-lg font-bold">Staff notes</h2>
+        <p class="mt-1 text-[15px] text-muted">Only staff see these. Don’t record diagnoses or medication details.</p>
+        {% if canEdit %}
+          <form method="post" action="/portal/appointments/{{ a.id }}/notes" class="mt-4 space-y-3">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <label for="f-staff_notes" class="sr-only">Staff notes</label>
+            <textarea id="f-staff_notes" name="staff_notes" rows="4" maxlength="2000" class="form-control">{{ a.staff_notes }}</textarea>
+            <button type="submit" class="btn-green">Save notes</button>
+          </form>
+        {% else %}
+          <p class="mt-4 rounded-2xl bg-surface p-4 whitespace-pre-line text-ink ring-1 ring-line">{{ a.staff_notes or 'No notes.' }}</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="space-y-6">
+      {# Status #}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="status-h">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="status-h" class="text-lg font-bold">Status</h2>
+          {{ badges.status(a.status, statusLabels[a.status]) }}
+        </div>
+        {% if a.scheduled_at %}
+          <p class="mt-4 font-display text-2xl font-extrabold text-ink">{{ a.scheduled_at | date({ weekday: 'long', month: 'long', day: 'numeric' }) }}</p>
+          <p class="text-lg text-ink">{{ a.scheduled_at | time }} · {{ a.duration_minutes or a.type_duration }} minutes</p>
+          {% if a.assigned_name %}<p class="mt-2 text-[15px] text-muted">With {{ a.assigned_name }}</p>{% endif %}
+        {% elif a.status == 'requested' %}
+          <p class="mt-4 text-[15px] text-muted">Not scheduled yet.{% if canEdit %} Choose a time to confirm it.{% endif %}</p>
+        {% endif %}
+        {% if a.status == 'cancelled' and a.cancel_reason %}<p class="mt-3 rounded-2xl bg-surface p-3 text-sm text-ink ring-1 ring-line">Reason: {{ a.cancel_reason }}</p>{% endif %}
+
+        {% if canEdit %}
+          <div class="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            {% if a.status == 'confirmed' %}
+              {% for act in [{ k: 'complete', l: 'Mark completed', i: 'check' }, { k: 'no_show', l: 'Mark no-show', i: 'close' }] %}
+                <form method="post" action="/portal/appointments/{{ a.id }}/status">
+                  <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                  <input type="hidden" name="action" value="{{ act.k }}">
+                  <button type="submit" class="btn-secondary w-full !rounded-2xl" {% if not isPast %}title="Usually done after the appointment time"{% endif %}>{{ icon(act.i, 'size-4') }} {{ act.l }}</button>
+                </form>
+              {% endfor %}
+            {% elif a.status in ['completed', 'no_show', 'cancelled'] %}
+              <form method="post" action="/portal/appointments/{{ a.id }}/status" class="sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <input type="hidden" name="action" value="reopen">
+                <button type="submit" class="btn-secondary w-full !rounded-2xl">{{ icon('refresh', 'size-4') }} Reopen</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endif %}
+      </section>
+
+      {% if can('appointments.archive') and (a.status == 'requested' or a.status == 'confirmed') %}
+        <section class="rounded-3xl border border-accent-200 bg-white p-6 shadow-soft" aria-labelledby="cancel-h">
+          <h2 id="cancel-h" class="text-lg font-bold text-accent-700">Cancel appointment</h2>
+          <form method="post" action="/portal/appointments/{{ a.id }}/cancel" class="mt-4 space-y-4">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <div>
+              <label for="f-reason" class="form-label">Reason <span class="font-normal text-muted">(optional, included in the email)</span></label>
+              <input id="f-reason" name="reason" maxlength="255" class="form-control">
+            </div>
+            {% if a.email %}
+              <label class="flex items-center gap-3 text-[15px]"><input type="checkbox" name="notify" value="yes" checked class="size-5 accent-brand-700"> Email {{ a.email }}</label>
+            {% endif %}
+            <button type="submit" class="btn w-full bg-accent-600 text-white hover:bg-accent-700">Cancel appointment</button>
+          </form>
+        </section>
+      {% endif %}
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="hist-h">
+        <h2 id="hist-h" class="text-lg font-bold">History</h2>
+        {% if history.length %}
+          <ol class="mt-4 space-y-4 border-l-2 border-line pl-5">
+            {% for h in history %}
+              <li class="relative">
+                <span class="absolute top-1.5 -left-[1.6rem] size-2.5 rounded-full bg-brand-500 ring-4 ring-white" aria-hidden="true"></span>
+                <p class="text-[15px] text-ink">{{ h.summary }}</p>
+                <p class="text-sm text-muted">{{ h.created_at | dateTime }}</p>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="mt-2 text-[15px] text-muted">{{ 'Received from the website. No changes yet.' if a.source == 'website' else 'No changes yet.' }}</p>
+        {% endif %}
+      </section>
+
+      {% if can('appointments.delete') %}
+        <details class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+          <summary class="cursor-pointer font-semibold text-accent-700">Delete permanently</summary>
+          <form method="post" action="/portal/appointments/{{ a.id }}/delete" class="mt-4 space-y-3">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <p class="text-sm text-muted">Removes this appointment and its personal details for good. Use for records past their retention period. The audit log keeps a note that it existed.</p>
+            <label class="flex items-center gap-3 text-[15px]"><input type="checkbox" name="confirm" value="yes" class="size-5 accent-accent-600"> I understand this can’t be undone</label>
+            <button type="submit" class="btn w-full bg-accent-600 text-white hover:bg-accent-700">{{ icon('trash', 'size-4') }} Delete permanently</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

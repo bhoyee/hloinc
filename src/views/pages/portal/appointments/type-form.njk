@@ -1,0 +1,33 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <section class="max-w-2xl rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+    <form method="post" action="{{ '/portal/appointments/types/' + type.id if type else '/portal/appointments/types' }}" class="space-y-5" novalidate data-once>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      {{ ui.input('name', 'Name', values, errors, autocomplete='off', attrs='maxlength="120"', hint='Shown to visitors on the appointment request form.') }}
+      {{ ui.textarea('description', 'Short description', values, errors, required=false, rows=2, maxlength=500) }}
+      <div class="grid gap-5 sm:grid-cols-3">
+        {{ ui.input('duration_minutes', 'Length (minutes)', values, errors, type='number', attrs='min="5" max="480" step="5"') }}
+        {{ ui.input('capacity', 'How many at once', values, errors, type='number', attrs='min="1" max="50"', hint='Bookings of this type that can overlap.') }}
+        {{ ui.input('sort_order', 'Order on the form', values, errors, type='number', required=false, attrs='min="0" max="999"') }}
+      </div>
+      <label class="flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line">
+        <input type="checkbox" name="active" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" {% if values.active == 'yes' %}checked{% endif %}>
+        <span><span class="block font-semibold text-ink">Available on the website</span><span class="block text-sm text-muted">Untick to stop new requests for this type. Existing appointments aren’t affected.</span></span>
+      </label>
+      <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn-primary">{{ 'Save' if type else 'Add type' }}</button>
+        <a href="/portal/appointments/types" class="btn-secondary">Cancel</a>
+      </div>
+    </form>
+    {% if type %}
+      <form method="post" action="/portal/appointments/types/{{ type.id }}/delete" class="mt-6 border-t border-line pt-5">
+        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+        <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete this type</button>
+        <span class="ml-2 text-sm text-muted">Only possible if it has never been used.</span>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

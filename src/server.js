@@ -30,6 +30,17 @@ function createApp() {
   env.addFilter('telHref', (phone) => `tel:+1${String(phone).replace(/\D/g, '').replace(/^1/, '')}`);
   env.addFilter('richText', (text) => new nunjucks.runtime.SafeString(richText(text)));
   env.addFilter('highlight', (text, query) => new nunjucks.runtime.SafeString(highlight(text, query)));
+  // Maryland-time display helpers: "9:30 a.m." and "Thu, Oct 8 · 9:30 a.m."
+  const ampm = (t) => t.replace(':00', '').replace(' AM', ' a.m.').replace(' PM', ' p.m.');
+  env.addFilter('time', (value) =>
+    value ? ampm(new Date(value).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })) : ''
+  );
+  env.addFilter('dateTime', (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    const day = d.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
+    return `${day} · ${ampm(d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }))}`;
+  });
   // First paragraph of staff-written text, shortened for cards.
   env.addFilter('excerpt', (text, max = 170) => {
     const first = String(text || '').split(/\n{2,}/)[0].replace(/\s+/g, ' ').trim();

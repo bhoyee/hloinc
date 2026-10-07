@@ -1,0 +1,14 @@
+{# Status badges for the portal. Import with: {% import "partials/portal-badges.njk" as badges %} #}
+
+{% macro status(key, label) %}
+  {% if key == 'requested' %}{% set tone = 'bg-amber-50 text-amber-900 ring-amber-200' %}
+  {% elif key == 'confirmed' %}{% set tone = 'bg-brand-50 text-brand-800 ring-brand-200' %}
+  {% elif key == 'completed' %}{% set tone = 'bg-surface text-ink ring-line' %}
+  {% elif key == 'no_show' %}{% set tone = 'bg-accent-50 text-accent-700 ring-accent-200' %}
+  {% else %}{% set tone = 'bg-surface text-muted ring-line' %}{% endif %}
+  <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ring-1 {{ tone }}">{{ label }}</span>
+{% endmacro %}
+
+{% macro source(key, label) %}
+  <span class="inline-flex items-center gap-1 text-xs font-medium text-muted">{{ icon('phone' if key == 'phone' else ('users' if key == 'walk_in' else 'external'), 'size-3.5') }} {{ label }}</span>
+{% endmacro %}
