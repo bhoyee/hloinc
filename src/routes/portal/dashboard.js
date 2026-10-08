@@ -4,6 +4,7 @@ const express = require('express');
 const db = require('../../db/knex');
 const { can } = require('../../auth/permissions');
 const dashboard = require('../../services/dashboard');
+const announcements = require('../../services/announcements');
 
 const router = express.Router();
 
@@ -35,6 +36,7 @@ router.get('/', async (req, res) => {
     heading: `${greeting}, ${user.name.split(' ')[0]}`,
     subheading: 'Here’s what’s happening at HLO.',
     live,
+    board: await announcements.activeInternal(5),
     clock: {
       date: new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(now),
       time: new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: 'numeric', minute: '2-digit' }).format(now),

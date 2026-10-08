@@ -8,7 +8,7 @@
         {% for a in announcements %}
           <div class="flex items-start gap-3 py-0.5 text-[15px]">
             {{ icon('megaphone', 'mt-0.5 size-5 shrink-0') }}
-            <p><strong class="font-semibold">{{ a.title }}</strong> <span class="text-accent-50">— {{ a.body }}</span></p>
+            <p><strong class="font-semibold">{{ a.title }}</strong> <span class="text-accent-50">— {{ a.body }}</span>{% if a.link_url %} <a href="{{ a.link_url }}" class="font-semibold whitespace-nowrap text-white underline decoration-white/50 underline-offset-4 hover:decoration-white" {% if a.link_url.startsWith('https://') %}target="_blank" rel="noopener"{% endif %}>{{ a.link_label or 'Learn more' }} &rarr;</a>{% endif %}</p>
           </div>
         {% endfor %}
       </div>

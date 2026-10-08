@@ -1,9 +1,10 @@
 {# Status badges for the portal. Import with: {% import "partials/portal-badges.njk" as badges %} #}
 
 {% macro status(key, label) %}
-  {% if key == 'requested' %}{% set tone = 'bg-amber-50 text-amber-900 ring-amber-200' %}
-  {% elif key == 'confirmed' %}{% set tone = 'bg-brand-50 text-brand-800 ring-brand-200' %}
-  {% elif key == 'completed' %}{% set tone = 'bg-surface text-ink ring-line' %}
+  {% if key in ['requested', 'new', 'scheduled'] %}{% set tone = 'bg-amber-50 text-amber-900 ring-amber-200' %}
+  {% elif key in ['confirmed', 'published', 'live'] %}{% set tone = 'bg-brand-50 text-brand-800 ring-brand-200' %}
+  {% elif key in ['in_progress', 'draft'] %}{% set tone = 'bg-sky-50 text-sky-900 ring-sky-200' %}
+  {% elif key in ['completed', 'resolved'] %}{% set tone = 'bg-surface text-ink ring-line' %}
   {% elif key == 'no_show' %}{% set tone = 'bg-accent-50 text-accent-700 ring-accent-200' %}
   {% else %}{% set tone = 'bg-surface text-muted ring-line' %}{% endif %}
   <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ring-1 {{ tone }}">{{ label }}</span>

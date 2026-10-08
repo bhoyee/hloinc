@@ -68,6 +68,16 @@ async function loadUser(req, res, next) {
   next();
 }
 
+/** Path of the page a form was sent from, if it's on this site. */
+function refererPath(req) {
+  try {
+    const url = new URL(req.get('referer') || '');
+    return url.host === req.get('host') ? url.pathname + url.search : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Only allow a same-site portal path as a post-login destination. */
 function safeNext(next) {
   return typeof next === 'string' && /^\/portal(\/|$|\?)/.test(next) && !next.startsWith('//') ? next : '/portal';
@@ -76,9 +86,14 @@ function safeNext(next) {
 function requireAuth(req, res, next) {
   if (req.user) return next();
   if (req.method !== 'GET') {
-    const err = new Error('Your session has ended. Please sign in again.');
-    err.status = 401;
-    return next(err);
+    // Background requests get a plain 401; a form goes to sign-in, then back to the page it was on.
+    if ((req.get('accept') || '').includes('application/json') || req.get('x-csrf-token')) {
+      const err = new Error('Your session has ended. Please sign in again.');
+      err.status = 401;
+      return next(err);
+    }
+    const params = new URLSearchParams({ ended: req.authEnded || 'expired', next: refererPath(req) || '/portal' });
+    return res.redirect(303, `/portal/login?${params}`);
   }
   const params = new URLSearchParams({ next: req.originalUrl });
   if (req.authEnded) params.set('ended', req.authEnded);

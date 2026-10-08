@@ -1,0 +1,134 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/portal-badges.njk" as badges %}
+
+{% set editable = can('jobs.edit') %}
+{% set textHint = 'Start a line with “- ” for a bullet point. Leave a blank line between paragraphs.' %}
+
+{% block actions %}
+  {% if job %}
+    <div class="flex flex-wrap gap-2">
+      <a href="/portal/jobs/{{ job.id }}/preview" class="btn-secondary">{{ icon('eye', 'size-4') }} Preview</a>
+      {% if job.status == 'published' %}<a href="/careers/{{ job.slug }}" target="_blank" rel="noopener" class="btn-secondary">{{ icon('external', 'size-4') }} View live</a>{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <form method="post" action="{{ '/portal/jobs/' + job.id if job else '/portal/jobs' }}" class="min-w-0 space-y-6" novalidate data-once>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <fieldset class="space-y-6" {% if not editable %}disabled{% endif %}>
+        <legend class="sr-only">Job details</legend>
+
+        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="basics-h">
+          <h2 id="basics-h" class="text-lg font-bold">The role</h2>
+          {{ ui.input('title', 'Job title', values, errors, autocomplete='off', attrs='maxlength="160"', hint='For example “Direct Support Professional (DSP)”.') }}
+          <div class="grid gap-5 sm:grid-cols-2">
+            {{ ui.input('department', 'Department', values, errors, required=false, autocomplete='off', attrs='maxlength="120"') }}
+            {{ ui.input('location', 'Location', values, errors, required=false, autocomplete='off', attrs='maxlength="160"', hint='Town or area, e.g. “Catonsville, MD”.') }}
+          </div>
+          <div class="sm:w-1/2 sm:pr-2.5">
+            <label for="f-employment_type" class="form-label">Schedule <span class="font-normal text-muted">(optional)</span></label>
+            <select id="f-employment_type" name="employment_type" class="form-control" {% if errors.employment_type %}aria-invalid="true" aria-describedby="f-employment_type-error"{% endif %}>
+              <option value="">Not stated</option>
+              {% for t in employmentTypes %}<option {% if values.employment_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+            </select>
+            {{ ui.fieldError('employment_type', errors) }}
+          </div>
+        </section>
+
+        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="pay-h">
+          <div>
+            <h2 id="pay-h" class="text-lg font-bold">Pay and benefits</h2>
+            <p class="mt-1 text-sm text-muted">Maryland’s Wage Range Transparency Act requires both on public job postings, so a job can’t be published without them.</p>
+          </div>
+          {{ ui.input('pay_range', 'Pay range', values, errors, required=false, autocomplete='off', attrs='maxlength="120"', hint='For example “$17.00 – $19.00 per hour”. This format also lets Google show the pay in job search.') }}
+          {{ ui.textarea('benefits', 'Benefits', values, errors, required=false, rows=4, maxlength=4000, hint=textHint) }}
+        </section>
+
+        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="desc-h">
+          <h2 id="desc-h" class="text-lg font-bold">Description</h2>
+          {{ ui.textarea('description', 'About the role', values, errors, rows=10, maxlength=10000, hint=textHint) }}
+          {{ ui.textarea('requirements', 'Requirements', values, errors, required=false, rows=6, maxlength=6000, hint=textHint) }}
+        </section>
+
+        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="apply-h">
+          <div>
+            <h2 id="apply-h" class="text-lg font-bold">Applications</h2>
+            <p class="mt-1 text-sm text-muted">The “Apply” button opens this link in ADP. Applications are never collected on the HLO site.</p>
+          </div>
+          {{ ui.input('apply_url', 'ADP apply link', values, errors, type='url', autocomplete='off', attrs='maxlength="500" inputmode="url"', hint='Paste the job’s link from ADP Workforce Now. It must start with https://') }}
+        </section>
+      </fieldset>
+
+      {% if editable %}
+        <div class="sticky bottom-0 z-10 -mx-4 flex flex-wrap gap-3 border-t border-line bg-surface/95 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:bg-white/95 sm:px-5 sm:shadow-soft">
+          {% if not job %}
+            <button type="submit" name="intent" value="publish" class="btn-primary">{{ icon('check', 'size-4') }} Publish now</button>
+            <button type="submit" name="intent" value="draft" class="btn-secondary">Save as draft</button>
+          {% elif job.status == 'published' %}
+            <button type="submit" name="intent" value="save" class="btn-primary">Save changes</button>
+          {% else %}
+            <button type="submit" name="intent" value="save" class="btn-secondary">Save {{ 'draft' if job.status == 'draft' else '' }}</button>
+            <button type="submit" name="intent" value="publish" class="btn-primary">{{ icon('check', 'size-4') }} Save &amp; publish</button>
+          {% endif %}
+          <a href="/portal/jobs" class="btn-secondary !ring-0">Cancel</a>
+        </div>
+      {% endif %}
+    </form>
+
+    {% if job %}
+      <aside class="min-w-0 space-y-4 xl:sticky xl:top-24" aria-label="Job status">
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-bold">Status</h2>
+            {{ badges.status(job.status, statusLabels[job.status]) }}
+          </div>
+          <p class="mt-2 text-sm text-muted">
+            {% if job.status == 'published' %}Live on the careers page{% if job.published_at %} since {{ job.published_at | date }}{% endif %}.
+            {% elif job.status == 'draft' %}Only staff can see drafts. Publish to put it on the careers page.
+            {% else %}Archived jobs are hidden everywhere but kept for your records.{% endif %}
+          </p>
+
+          <div class="mt-5 space-y-2">
+            {% macro move(job, action, label, style, iconName, token) %}
+              <form method="post" action="/portal/jobs/{{ job.id }}/status">
+                <input type="hidden" name="_csrf" value="{{ token }}">
+                <input type="hidden" name="action" value="{{ action }}">
+                <button type="submit" class="{{ style }} w-full">{{ icon(iconName, 'size-4') }} {{ label }}</button>
+              </form>
+            {% endmacro %}
+            {% if job.status == 'published' and can('jobs.edit') %}{{ move(job, 'unpublish', 'Unpublish (back to draft)', 'btn-secondary', 'eye', csrfToken()) }}{% endif %}
+            {% if job.status != 'archived' and can('jobs.archive') %}{{ move(job, 'archive', 'Archive', 'btn-secondary', 'archive', csrfToken()) }}{% endif %}
+            {% if job.status == 'archived' and can('jobs.archive') %}{{ move(job, 'restore', 'Restore to drafts', 'btn-secondary', 'refresh', csrfToken()) }}{% endif %}
+            {% if can('jobs.edit') %}
+              <form method="post" action="/portal/jobs/{{ job.id }}/copy">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <button type="submit" class="btn-secondary w-full">{{ icon('copy', 'size-4') }} Copy into a new draft</button>
+              </form>
+            {% endif %}
+          </div>
+
+          {% if job.status == 'archived' and can('jobs.delete') %}
+            <form method="post" action="/portal/jobs/{{ job.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm="Delete “{{ job.title }}” permanently? This can’t be undone.">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
+            </form>
+          {% endif %}
+        </section>
+
+        <section class="rounded-3xl border border-line bg-white p-6 text-sm shadow-soft">
+          <h2 class="font-semibold text-ink">Details</h2>
+          <dl class="mt-3 space-y-2 text-muted">
+            <div><dt>Web address</dt><dd class="mt-0.5 font-mono text-xs break-all text-ink">/careers/{{ job.slug }}</dd></div>
+            <div class="flex justify-between gap-3"><dt>Created</dt><dd class="text-right text-ink">{{ job.created_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }}{% if job.created_by_name %} by {{ job.created_by_name }}{% endif %}</dd></div>
+            <div class="flex justify-between gap-3"><dt>Last updated</dt><dd class="text-right text-ink">{{ job.updated_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }}{% if job.updated_by_name %} by {{ job.updated_by_name }}{% endif %}</dd></div>
+          </dl>
+          {% if job.published_at %}<p class="mt-3 text-xs text-muted">The web address stays the same once a job has been published, so links people have shared keep working.</p>{% endif %}
+        </section>
+      </aside>
+    {% endif %}
+  </div>
+{% endblock %}

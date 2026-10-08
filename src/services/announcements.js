@@ -2,15 +2,37 @@
 
 const db = require('../db/knex');
 
+/*
+ * Announcements (requirements §5.4): shown on the public website, on the
+ * internal staff board (portal dashboard), or both, between their start and
+ * end dates. Archived ones are hidden everywhere but can be restored.
+ */
+
+const AUDIENCE_LABELS = { public: 'Website', internal: 'Staff only', both: 'Website and staff' };
+const STATE_LABELS = { live: 'Live', scheduled: 'Scheduled', expired: 'Ended', archived: 'Archived' };
+
+/** Live right now: started, not ended, not archived. */
+function live(query, now = new Date()) {
+  return query
+    .whereNull('archived_at')
+    .where('starts_at', '<=', now)
+    .where((q) => q.whereNull('ends_at').orWhere('ends_at', '>', now));
+}
+
+const TABS = {
+  live: { label: 'Live', where: (q, now) => live(q, now) },
+  scheduled: { label: 'Scheduled', where: (q, now) => q.whereNull('archived_at').where('starts_at', '>', now) },
+  expired: { label: 'Ended', where: (q, now) => q.whereNull('archived_at').whereNotNull('ends_at').where('ends_at', '<=', now) },
+  archived: { label: 'Archived', where: (q) => q.whereNotNull('archived_at') },
+  all: { label: 'All', where: (q) => q },
+};
+
 /** Public announcements currently within their start/end dates (§5.4). */
 async function activePublic(limit = 3) {
-  const now = new Date();
   try {
-    return await db('announcements')
-      .select('id', 'title', 'body', 'starts_at')
+    return await live(db('announcements'))
+      .select('id', 'title', 'body', 'link_url', 'link_label', 'starts_at')
       .whereIn('audience', ['public', 'both'])
-      .where('starts_at', '<=', now)
-      .where((q) => q.whereNull('ends_at').orWhere('ends_at', '>', now))
       .orderBy('starts_at', 'desc')
       .limit(limit);
   } catch (err) {
@@ -19,4 +41,104 @@ async function activePublic(limit = 3) {
   }
 }
 
-module.exports = { activePublic };
+/** The staff board: live internal announcements, newest first. */
+function activeInternal(limit = 5) {
+  return live(db('announcements as a'))
+    .leftJoin('users as u', 'u.id', 'a.created_by')
+    .select('a.id', 'a.title', 'a.body', 'a.link_url', 'a.link_label', 'a.starts_at', 'a.ends_at', 'u.name as author')
+    .whereIn('a.audience', ['internal', 'both'])
+    .orderBy('a.starts_at', 'desc')
+    .limit(limit);
+}
+
+function stateOf(a, now = new Date()) {
+  if (a.archived_at) return 'archived';
+  if (new Date(a.starts_at) > now) return 'scheduled';
+  if (a.ends_at && new Date(a.ends_at) <= now) return 'expired';
+  return 'live';
+}
+
+async function tabCounts() {
+  const now = new Date();
+  const counts = {};
+  for (const [key, t] of Object.entries(TABS)) {
+    counts[key] = Number((await t.where(db('announcements'), now).count({ n: '*' }).first()).n);
+  }
+  return counts;
+}
+
+const PER_PAGE = 20;
+
+async function list({ tab = 'live', q = '', page = 1 } = {}) {
+  const now = new Date();
+  const query = TABS[tab].where(db('announcements as a'), now);
+  const keyword = String(q).trim().slice(0, 100);
+  if (keyword) {
+    const like = `%${keyword.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    query.where((w) => w.where('a.title', 'like', like).orWhere('a.body', 'like', like));
+  }
+  const { total } = await query.clone().count({ total: '*' }).first();
+  const pages = Math.max(1, Math.ceil(Number(total) / PER_PAGE));
+  const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
+  const items = await query
+    .leftJoin('users as u', 'u.id', 'a.created_by')
+    .select('a.*', 'u.name as author')
+    .orderBy(tab === 'scheduled' ? 'a.starts_at' : 'a.updated_at', tab === 'scheduled' ? 'asc' : 'desc')
+    .orderBy('a.id', 'desc')
+    .limit(PER_PAGE)
+    .offset((current - 1) * PER_PAGE);
+  return { items: items.map((a) => ({ ...a, state: stateOf(a, now) })), total: Number(total), page: current, pages };
+}
+
+async function get(id) {
+  const a = await db('announcements as a')
+    .leftJoin('users as c', 'c.id', 'a.created_by')
+    .leftJoin('users as u', 'u.id', 'a.updated_by')
+    .select('a.*', 'c.name as author', 'u.name as updated_by_name')
+    .where('a.id', id)
+    .first();
+  return a ? { ...a, state: stateOf(a) } : null;
+}
+
+async function create(data, user) {
+  const [id] = await db('announcements').insert({ ...data, created_by: user.id, updated_by: user.id });
+  return get(id);
+}
+
+async function update(id, data, user) {
+  await db('announcements').where({ id }).update({ ...data, updated_by: user.id, updated_at: new Date() });
+  return get(id);
+}
+
+/** End now: stays on record under "Ended". */
+async function endNow(id, user) {
+  // A second in the past: MySQL rounds to whole seconds, which could otherwise keep it live briefly.
+  await db('announcements').where({ id }).update({ ends_at: new Date(Date.now() - 1000), updated_by: user.id, updated_at: new Date() });
+  return get(id);
+}
+
+async function setArchived(id, archived, user) {
+  await db('announcements').where({ id }).update({ archived_at: archived ? new Date() : null, updated_by: user.id, updated_at: new Date() });
+  return get(id);
+}
+
+function remove(id) {
+  return db('announcements').where({ id }).del();
+}
+
+module.exports = {
+  AUDIENCE_LABELS,
+  STATE_LABELS,
+  TABS,
+  activePublic,
+  activeInternal,
+  stateOf,
+  tabCounts,
+  list,
+  get,
+  create,
+  update,
+  endNow,
+  setArchived,
+  remove,
+};

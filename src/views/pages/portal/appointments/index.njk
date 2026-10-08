@@ -17,7 +17,7 @@
          class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
         {{ t.label }}
         {% if counts[t.key] is defined %}
-          <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white/20' if t.key == tab else ('bg-accent-600 text-white' if t.key == 'requests' and counts[t.key] else 'bg-surface ring-1 ring-line') }}">{{ counts[t.key] }}</span>
+          <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == tab else ('bg-accent-600 text-white' if t.key == 'requests' and counts[t.key] else 'bg-surface ring-1 ring-line') }}">{{ counts[t.key] }}</span>
         {% endif %}
       </a>
     {% endfor %}

@@ -1,0 +1,200 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/portal-badges.njk" as badges %}
+
+{% set editable = can('messages.edit') %}
+
+{% block actions %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% if m.type == 'referral' %}<span class="rounded-full bg-accent-50 px-3 py-1 text-sm font-semibold text-accent-700 ring-1 ring-accent-200">Referral</span>{% endif %}
+    {{ badges.status(m.status, statusLabels[m.status]) }}
+    {% if m.archived_at %}<span class="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-muted ring-1 ring-line">Archived</span>{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="min-w-0 space-y-6">
+
+      {# The message #}
+      <article class="rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="msg-h">
+        <header class="flex flex-col gap-4 border-b border-line p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+          <div class="flex min-w-0 items-start gap-4">
+            <span class="grid size-12 shrink-0 place-items-center rounded-full bg-brand-700 font-display text-lg font-bold text-white" aria-hidden="true">{{ m.name | first | upper }}</span>
+            <div class="min-w-0">
+              <h2 id="msg-h" class="text-lg font-bold">{{ m.name }}{% if m.type == 'referral' %} <span class="font-normal text-muted">· {{ referrerRoles[m.details.referrer_role] if m.details else 'Referrer' }}</span>{% endif %}</h2>
+              <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
+                <a href="mailto:{{ m.email }}" class="link">{{ m.email }}</a>
+                {% if m.phone %}<a href="{{ m.phone | telHref }}" class="link">{{ m.phone }}</a>{% endif %}
+              </p>
+              {% if m.type == 'referral' and m.details and m.details.organization %}<p class="mt-1 text-sm text-muted">{{ m.details.organization }}</p>{% endif %}
+            </div>
+          </div>
+          <dl class="shrink-0 text-sm text-muted sm:text-right">
+            <dt class="sr-only">Received</dt><dd>{{ m.created_at | dateTime }}</dd>
+            <dt class="sr-only">Sent to</dt><dd>To <strong class="font-semibold text-ink">{{ recipientLabels[m.recipient] or m.recipient }}</strong></dd>
+            <dt class="sr-only">Reference</dt><dd>Ref #{{ m.id }}</dd>
+          </dl>
+        </header>
+
+        {% if m.type == 'referral' and m.details %}
+          <section class="border-b border-line bg-accent-50/40 p-6 sm:p-8" aria-labelledby="ref-h">
+            <h3 id="ref-h" class="flex items-center gap-2 font-display font-bold text-ink">{{ icon('heart', 'size-5 text-accent-600') }} Person being referred</h3>
+            <dl class="mt-4 grid gap-x-6 gap-y-4 text-[15px] sm:grid-cols-2">
+              <div><dt class="text-sm text-muted">Name</dt><dd class="font-semibold text-ink">{{ m.details.person_name }}</dd></div>
+              <div><dt class="text-sm text-muted">County</dt><dd class="font-semibold text-ink">{{ m.details.county }}</dd></div>
+              <div><dt class="text-sm text-muted">Phone</dt><dd class="text-ink">{% if m.details.person_phone %}<a href="{{ m.details.person_phone | telHref }}" class="link">{{ m.details.person_phone }}</a>{% else %}Not given{% endif %}</dd></div>
+              <div><dt class="text-sm text-muted">Email</dt><dd class="text-ink">{% if m.details.person_email %}<a href="mailto:{{ m.details.person_email }}" class="link">{{ m.details.person_email }}</a>{% else %}Not given{% endif %}</dd></div>
+              <div class="sm:col-span-2">
+                <dt class="text-sm text-muted">Services of interest</dt>
+                <dd class="mt-1 flex flex-wrap gap-2">
+                  {% for s in m.details.services or [] %}<span class="rounded-full bg-white px-3 py-1 text-sm font-medium text-ink ring-1 ring-line">{{ serviceNames[s] or s }}</span>{% else %}<span class="text-ink">Not sure yet</span>{% endfor %}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        {% endif %}
+
+        <div class="p-6 sm:p-8">
+          <h3 class="text-sm font-semibold text-muted">{{ 'Notes from the referrer' if m.type == 'referral' else 'Message' }}</h3>
+          <p class="mt-2 text-[17px] leading-relaxed whitespace-pre-line text-ink">{{ m.message }}</p>
+        </div>
+      </article>
+
+      {# Reply #}
+      {% if editable %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="reply-h">
+          <h2 id="reply-h" class="flex items-center gap-2 text-lg font-bold">{{ icon('reply', 'size-5 text-brand-700') }} Reply by email</h2>
+          <p class="mt-1 text-sm text-muted">Sent to {{ m.email }} as plain text, with their original message quoted. Their answer comes back to the {{ recipientLabels[m.recipient] or 'team' }} inbox.</p>
+          <form method="post" action="/portal/messages/{{ m.id }}/reply" class="mt-4 space-y-4" novalidate data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <div>
+              <label for="f-reply" class="sr-only">Your reply</label>
+              <textarea id="f-reply" name="reply" rows="5" maxlength="5000" class="form-control" placeholder="Hello {{ m.name }}, thank you for reaching out…" {% if errors.reply %}aria-invalid="true" aria-describedby="f-reply-error"{% endif %}>{{ values.reply }}</textarea>
+              {{ ui.fieldError('reply', errors) }}
+            </div>
+            <p class="text-xs text-muted">Don’t include health or other sensitive details in email. Ask them to call instead.</p>
+            <button type="submit" class="btn-primary">{{ icon('mail', 'size-4') }} Send reply</button>
+          </form>
+        </section>
+      {% endif %}
+
+      {# History #}
+      <section id="history" class="scroll-mt-24 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="hist-h">
+        <h2 id="hist-h" class="text-lg font-bold">Notes and history</h2>
+        {% if editable %}
+          <form method="post" action="/portal/messages/{{ m.id }}/note" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start" novalidate data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <div class="flex-1">
+              <label for="f-note" class="sr-only">Internal note</label>
+              <textarea id="f-note" name="note" rows="2" maxlength="2000" class="form-control" placeholder="Add an internal note (staff only)" {% if errors.note %}aria-invalid="true" aria-describedby="f-note-error"{% endif %}>{{ values.note }}</textarea>
+              {{ ui.fieldError('note', errors) }}
+            </div>
+            <button type="submit" class="btn-secondary shrink-0">Add note</button>
+          </form>
+        {% endif %}
+
+        {% if events.length %}
+          <ol class="mt-6 space-y-5 border-l-2 border-line pl-6">
+            {% for e in events %}
+              <li class="relative">
+                <span class="absolute top-0.5 -left-[2.1rem] grid size-6 place-items-center rounded-full ring-4 ring-white {{ 'bg-brand-700 text-white' if e.kind == 'reply' else ('bg-amber-100 text-amber-900' if e.kind == 'note' else 'bg-surface text-muted ring-line') }}" aria-hidden="true">
+                  {{ icon('mail' if e.kind == 'reply' else ('pencil' if e.kind == 'note' else ('users' if e.kind == 'assign' else 'check')), 'size-3.5') }}
+                </span>
+                <p class="text-sm text-muted">
+                  <strong class="font-semibold text-ink">{{ e.user_name or 'Someone' }}</strong>
+                  {% if e.kind == 'reply' %}emailed a reply{% elif e.kind == 'note' %}added a note{% elif e.kind == 'assign' %}{{ e.body | lower }}{% else %}changed the status: {{ e.body }}{% endif %}
+                  · {{ e.created_at | dateTime }}
+                  {% if e.kind == 'reply' and e.email_status == 'failed' %}<span class="ml-1 inline-flex items-center gap-1 font-semibold text-accent-700">{{ icon('exclamation', 'size-3.5') }} Not delivered</span>{% endif %}
+                </p>
+                {% if e.kind in ['reply', 'note'] %}
+                  <p class="mt-1.5 rounded-2xl px-4 py-3 text-[15px] whitespace-pre-line text-ink {{ 'bg-brand-50' if e.kind == 'reply' else 'bg-amber-50' }}">{{ e.body }}</p>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="mt-4 text-sm text-muted">No notes or replies yet.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="min-w-0 space-y-4 xl:sticky xl:top-24" aria-label="Handling">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="status-h">
+        <h2 id="status-h" class="text-lg font-bold">Status</h2>
+        {% if editable %}
+          <div class="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-surface p-1 ring-1 ring-line" role="group" aria-labelledby="status-h">
+            {% for key, label in statusLabels %}
+              <form method="post" action="/portal/messages/{{ m.id }}/status">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <input type="hidden" name="status" value="{{ key }}">
+                <button type="submit" {% if key == m.status %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}
+                        class="w-full rounded-xl px-2 py-2 text-sm font-semibold transition {{ 'bg-white text-ink shadow-sm ring-1 ring-line' if key == m.status else 'text-muted hover:text-ink' }}">{{ label }}</button>
+              </form>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="mt-2">{{ badges.status(m.status, statusLabels[m.status]) }}</p>
+          <p class="mt-2 text-sm text-muted">Your role can read the inbox but not change it.</p>
+        {% endif %}
+
+        <h3 class="mt-6 text-sm font-semibold text-ink">Handled by</h3>
+        {% if editable %}
+          <form method="post" action="/portal/messages/{{ m.id }}/assign" class="mt-2 flex gap-2">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <label for="f-assign" class="sr-only">Assign to</label>
+            <select id="f-assign" name="assigned_to" class="form-control !py-2">
+              <option value="">Nobody yet</option>
+              {% for s in staff %}<option value="{{ s.id }}" {% if m.assigned_to == s.id %}selected{% endif %}>{{ s.name }}{% if s.id == user.id %} (me){% endif %}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn-secondary shrink-0 !px-4 !py-2">Save</button>
+          </form>
+          {% if m.assigned_to != user.id %}
+            <form method="post" action="/portal/messages/{{ m.id }}/assign" class="mt-2">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <input type="hidden" name="assigned_to" value="me">
+              <button type="submit" class="text-sm font-semibold text-brand-700 hover:text-brand-800">Assign to me</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <p class="mt-1 text-sm text-muted">{{ m.assigned_name or 'Nobody yet' }}</p>
+        {% endif %}
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 text-sm shadow-soft" aria-labelledby="email-h">
+        <h2 id="email-h" class="font-semibold text-ink">Email to the team</h2>
+        {% if m.email_status == 'sent' %}
+          <p class="mt-2 flex items-center gap-2 text-muted">{{ icon('check', 'size-4 text-brand-700') }} Delivered to the {{ recipientLabels[m.recipient] or 'team' }} inbox.</p>
+        {% elif m.email_status == 'failed' %}
+          <p class="mt-2 flex items-start gap-2 text-accent-700">{{ icon('exclamation', 'mt-0.5 size-4 shrink-0') }} The email copy couldn’t be sent, so this message is only in the portal.</p>
+          {% if editable %}
+            <form method="post" action="/portal/messages/{{ m.id }}/resend" class="mt-3">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <button type="submit" class="btn-secondary w-full !py-2">{{ icon('refresh', 'size-4') }} Try sending again</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <p class="mt-2 text-muted">Sending…</p>
+        {% endif %}
+      </section>
+
+      {% if can('messages.archive') or can('messages.delete') %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+          {% if can('messages.archive') %}
+            <form method="post" action="/portal/messages/{{ m.id }}/archive">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <input type="hidden" name="action" value="{{ 'restore' if m.archived_at else 'archive' }}">
+              <button type="submit" class="btn-secondary w-full">{{ icon('refresh' if m.archived_at else 'archive', 'size-4') }} {{ 'Restore to inbox' if m.archived_at else 'Archive' }}</button>
+            </form>
+          {% endif %}
+          {% if m.archived_at and can('messages.delete') %}
+            <form method="post" action="/portal/messages/{{ m.id }}/delete" class="mt-4 border-t border-line pt-4" data-confirm="Delete this {{ m.type }} and its notes permanently? This can’t be undone.">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
+            </form>
+          {% endif %}
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

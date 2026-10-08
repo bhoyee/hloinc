@@ -130,6 +130,7 @@ router.get('/careers', async (req, res) => {
   res.render(view, {
     title: result.page > 1 ? `Careers – page ${result.page}` : 'Careers',
     description: 'Join the HLO team and help adults in Maryland live independent, connected lives.',
+    copy: await content.getPage('careers'),
     ...result,
     criteria,
     options,

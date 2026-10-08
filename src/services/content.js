@@ -47,10 +47,11 @@ async function getPage(key) {
   return { ...pages[key], ...(s[`page.${key}`] || {}) };
 }
 
-async function getRecipientEmail(recipientKey) {
+/** Where a contact form choice is emailed. Falls back to the main business email unless `fallback: false`. */
+async function getRecipientEmail(recipientKey, { fallback = true } = {}) {
   const s = await loadSettings();
   const emails = s['contact.recipient_emails'] || {};
-  return emails[recipientKey] || (await getBusiness()).email;
+  return emails[recipientKey] || (fallback ? (await getBusiness()).email : '');
 }
 
 module.exports = { getBusiness, getPage, getRecipientEmail, clearCache };

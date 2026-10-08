@@ -162,6 +162,22 @@ describe('dashboard data (silent refresh)', () => {
     }
   });
 
+  it('sends a form posted after the idle timeout to sign-in, then back', async () => {
+    const agent = await signIn(await makeUser('admin'));
+    const page = await agent.get('/portal/account');
+    const token = csrfFrom(page.text);
+    const original = config.session.idleMinutes;
+    config.session.idleMinutes = 1 / 600; // 0.1 second
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      const res = await agent.post('/portal/account/sign-out-others').type('form').set('Referer', 'http://127.0.0.1/portal/account').set('Host', '127.0.0.1').send({ _csrf: token });
+      expect(res.status).toBe(303);
+      expect(res.headers.location).toBe('/portal/login?ended=expired&next=%2Fportal%2Faccount');
+    } finally {
+      config.session.idleMinutes = original;
+    }
+  });
+
   it('requires sign-in', async () => {
     const res = await request(app).get('/portal/dashboard/data');
     expect(res.status).toBe(302);

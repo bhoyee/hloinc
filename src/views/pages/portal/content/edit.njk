@@ -1,0 +1,131 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{# One field of a page section. Group items are named "<field>__<index>__<part>". #}
+{% macro field(name, label, value, errors, type, max, hint='') %}
+  <div>
+    <label for="f-{{ name }}" class="form-label">{{ label }}</label>
+    {% if type == 'text' %}
+      <input id="f-{{ name }}" name="{{ name }}" type="text" value="{{ value }}" maxlength="{{ max }}" class="form-control" {% if errors[name] %}aria-invalid="true" aria-describedby="f-{{ name }}-error"{% endif %}>
+    {% else %}
+      <textarea id="f-{{ name }}" name="{{ name }}" rows="{{ 8 if type == 'lines' else (4 if max > 400 else 3) }}" maxlength="{{ max * 40 if type == 'lines' else max }}" class="form-control" {% if errors[name] %}aria-invalid="true" aria-describedby="f-{{ name }}-error"{% elif hint %}aria-describedby="f-{{ name }}-hint"{% endif %}>{{ value | join('\n') if type == 'lines' else value }}</textarea>
+    {% endif %}
+    {% if hint %}<p id="f-{{ name }}-hint" class="form-hint">{{ hint }}</p>{% endif %}
+    {% if errors[name] %}<p id="f-{{ name }}-error" class="form-error">{{ errors[name] }}</p>{% endif %}
+  </div>
+{% endmacro %}
+
+{% block actions %}
+  {% if section.href %}<a href="{{ section.href }}" target="_blank" rel="noopener" class="btn-secondary">{{ icon('external', 'size-4') }} View page</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="max-w-4xl">
+    {% if not editable %}
+      <p class="mb-6 flex items-start gap-3 rounded-2xl border border-line bg-white p-4 text-[15px] text-muted">{{ icon('lock', 'mt-0.5 size-5 shrink-0') }} Your role can see this section but not change it.</p>
+    {% endif %}
+
+    <form method="post" action="/portal/content/{{ section.key }}" class="space-y-6" novalidate data-once>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <fieldset class="space-y-6" {% if not editable %}disabled{% endif %}>
+        <legend class="sr-only">{{ section.label }}</legend>
+
+        {% if section.key == 'contact' %}
+          <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+            <div class="grid gap-5 sm:grid-cols-2">
+              {{ ui.input('phone', 'Main phone number', values, errors, type='tel', autocomplete='off') }}
+              {{ ui.input('email', 'Main email address', values, errors, type='email', autocomplete='off', hint='Also used for any contact form choice without its own address.') }}
+            </div>
+            {{ ui.input('street', 'Street address', values, errors, autocomplete='off', attrs='maxlength="160"') }}
+            <div class="grid gap-5 sm:grid-cols-[2fr_1fr_1fr]">
+              {{ ui.input('city', 'City', values, errors, autocomplete='off', attrs='maxlength="80"') }}
+              {{ ui.input('state', 'State', values, errors, autocomplete='off', attrs='maxlength="2"') }}
+              {{ ui.input('zip', 'ZIP code', values, errors, required=false, autocomplete='off', attrs='maxlength="10" inputmode="numeric"') }}
+            </div>
+          </section>
+
+        {% elif section.key == 'hours' %}
+          <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="sched-h">
+            <div>
+              <h2 id="sched-h" class="text-lg font-bold">Opening times</h2>
+              <p class="mt-1 text-sm text-muted">Maryland time. Used for the “Open now” badge and to check appointment times.</p>
+            </div>
+            <fieldset>
+              <legend class="form-label">Open on</legend>
+              <div class="mt-1 flex flex-wrap gap-2">
+                {% for d in [1, 2, 3, 4, 5, 6, 0] %}
+                  <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm font-medium has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                    <input type="checkbox" name="days" value="{{ d }}" {% if loop.first %}id="f-days"{% endif %} class="size-4 accent-brand-700" {% if d | string in values.days %}checked{% endif %}> {{ dayNames[d] }}
+                  </label>
+                {% endfor %}
+              </div>
+              {% if errors.days %}<p class="form-error">{{ errors.days }}</p>{% endif %}
+            </fieldset>
+            <div class="grid gap-5 sm:grid-cols-2">
+              {% for key, label in { open: 'Opens at', close: 'Closes at' } %}
+                <div>
+                  <label for="f-{{ key }}" class="form-label">{{ label }}</label>
+                  <select id="f-{{ key }}" name="{{ key }}" class="form-control" {% if errors[key] %}aria-invalid="true" aria-describedby="f-{{ key }}-error"{% endif %}>
+                    {% for h in hours %}{% if (key == 'open' and h.value != '24') or (key == 'close' and h.value != '0') %}<option value="{{ h.value }}" {% if values[key] == h.value %}selected{% endif %}>{{ h.label }}</option>{% endif %}{% endfor %}
+                  </select>
+                  {% if errors[key] %}<p id="f-{{ key }}-error" class="form-error">{{ errors[key] }}</p>{% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+          <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="words-h">
+            <h2 id="words-h" class="text-lg font-bold">Wording on the website</h2>
+            {{ ui.input('hours', 'Office hours', values, errors, autocomplete='off', attrs='maxlength="120"', hint='Shown in the header, footer and contact page, e.g. “Monday to Friday, 9 a.m. to 5 p.m.” Keep it in step with the times above.') }}
+            {{ ui.textarea('walkIn', 'Walk-in note', values, errors, rows=3, maxlength=400) }}
+          </section>
+
+        {% elif section.key == 'recipients' %}
+          <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+            <p class="text-[15px] text-muted">When someone sends the contact form, they choose who it’s for. Each choice is emailed to the address below, and always appears in the portal inbox. Leave one blank to use the main email ({{ mainEmail }}).</p>
+            {% for r in recipients %}
+              {{ ui.input(r.key, r.label, values, errors, type='email', required=false, autocomplete='off', attrs='maxlength="191" placeholder="' + mainEmail + '"') }}
+            {% endfor %}
+          </section>
+
+        {% else %}
+          {% for f in fields %}
+            <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
+              {% if f.type == 'group' %}
+                <h2 class="text-lg font-bold">{{ f.label }}</h2>
+                <ol class="grid gap-4 {{ 'md:grid-cols-2' if values[f.key].length % 2 == 0 }}">
+                  {% for item in values[f.key] %}
+                    {% set i = loop.index0 %}
+                    <li class="space-y-4 rounded-2xl bg-surface p-4 ring-1 ring-line">
+                      <p class="text-xs font-semibold tracking-wide text-muted uppercase">{{ loop.index }}</p>
+                      {% for sub in f.fields %}
+                        {{ field(f.key + '__' + i + '__' + sub.key, sub.label, item[sub.key], errors, sub.type, sub.max) }}
+                      {% endfor %}
+                    </li>
+                  {% endfor %}
+                </ol>
+              {% else %}
+                {{ field(f.key, f.label, values[f.key], errors, f.type, f.max, f.hint or ('Up to ' + f.max + ' characters.' if f.type == 'area' else '')) }}
+              {% endif %}
+            </section>
+          {% endfor %}
+        {% endif %}
+      </fieldset>
+
+      {% if editable %}
+        <div class="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-line bg-surface/95 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:bg-white/95 sm:px-5 sm:shadow-soft">
+          <button type="submit" class="btn-primary">Save and publish</button>
+          <a href="/portal/content" class="btn-secondary !ring-0">Cancel</a>
+          <span class="text-sm text-muted">Changes appear on the website straight away.</span>
+        </div>
+      {% endif %}
+    </form>
+
+    {% if section.page and editable and customised %}
+      <form method="post" action="/portal/content/{{ section.key }}/reset" class="mt-6" data-confirm="Put the {{ section.label | lower }} back to its original text? Your changes will be lost.">
+        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+        <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('refresh', 'inline size-4') }} Put back the original text</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}

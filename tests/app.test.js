@@ -36,9 +36,30 @@ describe('security', () => {
     expect(res.headers['x-powered-by']).toBeUndefined();
   });
 
-  it('rejects form posts without a CSRF token', async () => {
-    const res = await request(app).post('/contact').type('form').send({ message: 'hi' });
+  it('rejects form posts without a CSRF token, explaining instead of erroring', async () => {
+    const agent = request.agent(app);
+    const res = await agent.post('/contact').type('form').set('Referer', 'http://127.0.0.1/contact').set('Host', '127.0.0.1').send({ message: 'hi' });
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toBe('/contact');
+    const page = await agent.get('/contact').set('Host', '127.0.0.1');
+    expect(page.text).toContain('for your security nothing was sent');
+  });
+
+  it('gives background requests a plain 403 for a bad token', async () => {
+    const res = await request(app).post('/contact').set('Accept', 'application/json').type('form').send({ message: 'hi' });
     expect(res.status).toBe(403);
+  });
+
+  it('never sends people back to another site after a stale form', async () => {
+    const res = await request(app).post('/contact').type('form').set('Referer', 'https://evil.example/phish').send({});
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toBe('/');
+  });
+
+  it('sends a signed-out portal form to sign-in, then back to the page', async () => {
+    const res = await request(app).post('/portal/jobs/5').type('form').set('Host', '127.0.0.1').set('Referer', 'http://127.0.0.1/portal/jobs/5').send({ _csrf: 'old' });
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toBe('/portal/login?ended=expired&next=%2Fportal%2Fjobs%2F5');
   });
 
   it('keeps the staff portal out of search engines', async () => {

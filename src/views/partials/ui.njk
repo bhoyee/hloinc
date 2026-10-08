@@ -47,9 +47,10 @@
   {% if flash %}
     {% if flash.type == 'success' %}{% set tone = 'border-brand-200 bg-brand-50 text-brand-900' %}
     {% elif flash.type == 'warning' %}{% set tone = 'border-amber-200 bg-amber-50 text-amber-900' %}
+    {% elif flash.type == 'info' %}{% set tone = 'border-line bg-white text-ink' %}
     {% else %}{% set tone = 'border-accent-100 bg-accent-50 text-accent-700' %}{% endif %}
     <div role="status" class="mb-8 flex gap-3 rounded-2xl border p-4 {{ tone }}">
-      {{ icon('check' if flash.type == 'success' else 'exclamation', 'size-6 shrink-0') }}
+      {{ icon('check' if flash.type == 'success' else ('info' if flash.type == 'info' else 'exclamation'), 'size-6 shrink-0') }}
       <p class="font-medium">{{ flash.message }}</p>
     </div>
   {% endif %}

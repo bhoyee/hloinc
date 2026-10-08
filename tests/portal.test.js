@@ -179,7 +179,10 @@ describe('permissions', () => {
   it('requires CSRF tokens on portal forms', async () => {
     const { agent } = await signIn(await makeUser('admin'));
     const res = await agent.post('/portal/account/sign-out-others').type('form').send({});
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(303); // back to the page with "nothing was sent"
+    expect(await db('audit_log').where({ action: 'profile.sign_out_others' }).first()).toBeUndefined();
+    const json = await agent.post('/portal/account/sign-out-others').set('Accept', 'application/json').type('form').send({});
+    expect(json.status).toBe(403);
   });
 });
 

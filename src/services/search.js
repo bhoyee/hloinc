@@ -18,6 +18,10 @@ const EXTRA_PAGES = [
   { label: 'Two-step sign-in', href: '/portal/account/two-step', icon: 'device', keywords: 'mfa authenticator security recovery codes' },
   { label: 'Notifications', href: '/portal/notifications', icon: 'megaphone', keywords: 'alerts' },
   { label: 'Add a staff account', href: '/portal/accounts/new', icon: 'plus', permission: 'accounts.edit', keywords: 'invite new user staff' },
+  { label: 'New job', href: '/portal/jobs/new', icon: 'plus', permission: 'jobs.edit', keywords: 'post job position career vacancy opening' },
+  { label: 'New announcement', href: '/portal/announcements/new', icon: 'plus', permission: 'announcements.edit', keywords: 'post news notice closure banner' },
+  { label: 'Office hours', href: '/portal/content/hours', icon: 'clock', permission: ['site_content.edit', 'site_content.edit_limited'], keywords: 'opening times closed holiday walk-in website' },
+  { label: 'Contact details', href: '/portal/content/contact', icon: 'phone', permission: 'site_content.edit', keywords: 'phone email address zip website' },
   { label: 'New role', href: '/portal/roles/new', icon: 'plus', permission: 'roles.edit', keywords: 'create role permissions' },
 ];
 
@@ -85,16 +89,54 @@ const providers = [
     permission: 'jobs.view',
     async run(user, q, limit) {
       const rows = await db('jobs')
-        .select('title', 'slug', 'location', 'status')
+        .select('id', 'title', 'location', 'status')
         .where((w) => w.where('title', 'like', likeOf(q)).orWhere('location', 'like', likeOf(q)).orWhere('department', 'like', likeOf(q)))
-        .orderBy('published_at', 'desc')
+        .orderByRaw("FIELD(status, 'published', 'draft', 'archived')")
+        .orderBy('updated_at', 'desc')
         .limit(limit);
-      // The jobs manager arrives in Phase 4; until then published roles open on the careers page.
+      const labels = { published: 'Published', draft: 'Draft', archived: 'Archived' };
       return rows.map((j) => ({
         title: j.title,
-        subtitle: `${j.location || 'Job'} · ${j.status}`,
-        href: j.status === 'published' ? `/careers/${j.slug}` : null,
+        subtitle: `${j.location || 'Job'} · ${labels[j.status]}`,
+        href: `/portal/jobs/${j.id}`,
         icon: 'briefcase',
+      }));
+    },
+  },
+  {
+    label: 'Messages',
+    permission: ['messages.view', 'messages.view_intake'],
+    async run(user, q, limit) {
+      const msgs = require('./messages');
+      const scope = msgs.scopeFor(user);
+      const rows = await scope(db('contact_messages as m'))
+        .select('m.id', 'm.type', 'm.name', 'm.recipient', 'm.status', 'm.created_at')
+        .where((w) => w.where('m.name', 'like', likeOf(q)).orWhere('m.email', 'like', likeOf(q)).orWhere('m.phone', 'like', likeOf(q)))
+        .orderBy('m.created_at', 'desc')
+        .limit(limit);
+      return rows.map((m) => ({
+        title: m.name,
+        subtitle: `${msgs.TYPE_LABELS[m.type]} to ${msgs.RECIPIENT_LABELS[m.recipient] || m.recipient} · ${msgs.STATUS_LABELS[m.status]}`,
+        href: `/portal/messages/${m.id}`,
+        icon: m.type === 'referral' ? 'document' : 'mail',
+      }));
+    },
+  },
+  {
+    label: 'Announcements',
+    permission: 'announcements.view',
+    async run(user, q, limit) {
+      const ann = require('./announcements');
+      const rows = await db('announcements')
+        .select('id', 'title', 'audience', 'starts_at', 'ends_at', 'archived_at')
+        .where((w) => w.where('title', 'like', likeOf(q)).orWhere('body', 'like', likeOf(q)))
+        .orderBy('starts_at', 'desc')
+        .limit(limit);
+      return rows.map((a) => ({
+        title: a.title,
+        subtitle: `${ann.AUDIENCE_LABELS[a.audience]} · ${ann.STATE_LABELS[ann.stateOf(a)]}`,
+        href: `/portal/announcements/${a.id}`,
+        icon: 'megaphone',
       }));
     },
   },
@@ -116,7 +158,7 @@ async function search(user, query, { limit = 5 } = {}) {
   if (q.length < 2) return [];
   const groups = [];
   for (const p of providers) {
-    if (p.permission && !can(user, p.permission)) continue;
+    if (p.permission && ![].concat(p.permission).some((perm) => can(user, perm))) continue;
     const items = (await p.run(user, q, limit)).slice(0, limit);
     if (items.length) groups.push({ label: p.label, items });
   }

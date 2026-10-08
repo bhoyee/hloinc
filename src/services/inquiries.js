@@ -45,6 +45,7 @@ async function submitContact(data, { ip }) {
     type: 'message',
     title: `New message from ${data.name}`,
     body: `Sent to ${recipient.label} from the website.`,
+    link: `/portal/messages/${id}`,
   });
   return { id, emailed: result.ok };
 }
@@ -107,6 +108,7 @@ async function submitReferral(data, { ip, roleLabel, serviceNames }) {
     type: 'referral',
     title: `New referral for ${data.person_name}`,
     body: `From ${data.referrer_name} (${roleLabel}) · ${data.county}`,
+    link: `/portal/messages/${id}`,
   });
   return { id, emailed: result.ok };
 }

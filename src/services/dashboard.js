@@ -48,15 +48,17 @@ async function tiles(user, today) {
       key: 'messages',
       label: 'New messages',
       icon: 'inbox',
-      value: await count(scope(db('contact_messages').where({ status: 'new', type: 'message' }))),
+      value: await count(scope(db('contact_messages').where({ status: 'new', type: 'message' }).whereNull('archived_at'))),
       note: 'From the website contact form',
+      href: '/portal/messages?tab=new&type=message',
     });
     list.push({
       key: 'referrals',
       label: 'New referrals',
       icon: 'document',
-      value: await count(scope(db('contact_messages').where({ status: 'new', type: 'referral' }))),
+      value: await count(scope(db('contact_messages').where({ status: 'new', type: 'referral' }).whereNull('archived_at'))),
       note: 'Waiting for the intake team',
+      href: '/portal/messages?tab=new&type=referral',
     });
   }
   if (can(user, 'appointments.view')) {
@@ -83,7 +85,7 @@ async function tiles(user, today) {
     });
   }
   if (can(user, 'jobs.view')) {
-    list.push({ key: 'jobs', label: 'Open jobs', icon: 'briefcase', value: await count(db('jobs').where({ status: 'published' })), note: 'Live on the careers page' });
+    list.push({ key: 'jobs', label: 'Open jobs', icon: 'briefcase', value: await count(db('jobs').where({ status: 'published' })), note: 'Live on the careers page', href: '/portal/jobs' });
   }
   if (can(user, 'accounts.view')) {
     list.push({

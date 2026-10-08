@@ -127,4 +127,160 @@ function toJobPosting(job, site) {
   };
 }
 
-module.exports = { listPublished, searchPublished, filterOptions, findPublishedBySlug, toJobPosting, parsePay, PER_PAGE };
+// --- Portal: the jobs manager (requirements §5.3) ------------------------------------
+
+const STATUS_LABELS = { draft: 'Draft', published: 'Published', archived: 'Archived' };
+const EMPLOYMENT_TYPE_OPTIONS = ['Full-time', 'Part-time', 'Contract', 'Temporary'];
+const TABS = {
+  published: { label: 'Published', where: (q) => q.where('j.status', 'published') },
+  draft: { label: 'Drafts', where: (q) => q.where('j.status', 'draft') },
+  archived: { label: 'Archived', where: (q) => q.where('j.status', 'archived') },
+  all: { label: 'All', where: (q) => q },
+};
+const PORTAL_PER_PAGE = 20;
+
+/** "Direct Support Professional (DSP)" -> "direct-support-professional-dsp". */
+function slugify(text) {
+  return (
+    String(text)
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 160) || 'job'
+  );
+}
+
+/** A slug no other job uses: "title", then "title-2", "title-3"… */
+async function uniqueSlug(title, excludeId = null) {
+  const base = slugify(title);
+  const taken = new Set(
+    await db('jobs')
+      .where((w) => w.where('slug', base).orWhere('slug', 'like', `${base}-%`))
+      .modify((q) => excludeId && q.whereNot({ id: excludeId }))
+      .pluck('slug')
+  );
+  if (!taken.has(base)) return base;
+  for (let i = 2; ; i++) if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
+}
+
+async function tabCounts() {
+  const rows = await db('jobs').select('status').count({ n: '*' }).groupBy('status');
+  const by = Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
+  return { published: by.published || 0, draft: by.draft || 0, archived: by.archived || 0, all: Object.values(by).reduce((a, b) => a + b, 0) };
+}
+
+async function portalList({ tab = 'published', q = '', page = 1 } = {}) {
+  const query = TABS[tab].where(db('jobs as j'));
+  const keyword = String(q).trim().slice(0, 100);
+  if (keyword) {
+    const like = `%${likeEscape(keyword)}%`;
+    query.where((w) => w.where('j.title', 'like', like).orWhere('j.department', 'like', like).orWhere('j.location', 'like', like));
+  }
+  const { total } = await query.clone().count({ total: '*' }).first();
+  const pages = Math.max(1, Math.ceil(Number(total) / PORTAL_PER_PAGE));
+  const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
+  const items = await query
+    .leftJoin('users as u', 'u.id', 'j.updated_by')
+    .select('j.id', 'j.title', 'j.slug', 'j.department', 'j.location', 'j.employment_type', 'j.pay_range', 'j.status', 'j.published_at', 'j.updated_at', 'u.name as updated_by_name')
+    .orderByRaw("FIELD(j.status, 'published', 'draft', 'archived')")
+    .orderBy('j.updated_at', 'desc')
+    .orderBy('j.id', 'desc')
+    .limit(PORTAL_PER_PAGE)
+    .offset((current - 1) * PORTAL_PER_PAGE);
+  return { items, total: Number(total), page: current, pages };
+}
+
+function get(id) {
+  return db('jobs as j')
+    .leftJoin('users as c', 'c.id', 'j.created_by')
+    .leftJoin('users as u', 'u.id', 'j.updated_by')
+    .select('j.*', 'c.name as created_by_name', 'u.name as updated_by_name')
+    .where('j.id', id)
+    .first();
+}
+
+/** What's still needed before a job can go live (Maryland pay transparency law). */
+function publishProblems(job) {
+  const errors = {};
+  if (!job.pay_range) errors.pay_range = 'Add the pay range before publishing. Maryland law requires it on public job postings.';
+  if (!job.benefits) errors.benefits = 'Add a short description of benefits before publishing. Maryland law requires it.';
+  return errors;
+}
+
+const blankToNull = (data) => Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v === '' ? null : v]));
+
+async function create(data, user, { publish = false } = {}) {
+  const [id] = await db('jobs').insert({
+    ...blankToNull(data),
+    slug: await uniqueSlug(data.title),
+    status: publish ? 'published' : 'draft',
+    published_at: publish ? new Date() : null,
+    created_by: user.id,
+    updated_by: user.id,
+  });
+  return get(id);
+}
+
+/** Save edits. The web address (slug) stays fixed once a job has been published, so shared links keep working. */
+async function update(job, data, user) {
+  const changes = { ...blankToNull(data), updated_by: user.id, updated_at: new Date() };
+  if (!job.published_at && data.title !== job.title) changes.slug = await uniqueSlug(data.title, job.id);
+  await db('jobs').where({ id: job.id }).update(changes);
+  return get(job.id);
+}
+
+const MOVES = {
+  publish: { from: ['draft', 'archived'], to: 'published' },
+  unpublish: { from: ['published'], to: 'draft' },
+  archive: { from: ['draft', 'published'], to: 'archived' },
+  restore: { from: ['archived'], to: 'draft' },
+};
+
+/** Change status; returns the updated job, or null if the move isn't allowed from its current status. */
+async function move(job, action, user) {
+  const m = MOVES[action];
+  if (!m || !m.from.includes(job.status)) return null;
+  const changes = { status: m.to, updated_by: user.id, updated_at: new Date() };
+  // Re-publishing counts as a fresh posting date on the careers page.
+  if (m.to === 'published') changes.published_at = new Date();
+  await db('jobs').where({ id: job.id }).update(changes);
+  return get(job.id);
+}
+
+async function copy(job, user) {
+  const fields = ['department', 'location', 'employment_type', 'pay_range', 'description', 'requirements', 'benefits', 'apply_url'];
+  const title = `${job.title} (copy)`.slice(0, 160);
+  return create({ title, ...Object.fromEntries(fields.map((f) => [f, job[f] ?? ''])) }, user);
+}
+
+function remove(id) {
+  return db('jobs').where({ id }).del();
+}
+
+module.exports = {
+  listPublished,
+  searchPublished,
+  filterOptions,
+  findPublishedBySlug,
+  toJobPosting,
+  parsePay,
+  PER_PAGE,
+  STATUS_LABELS,
+  EMPLOYMENT_TYPE_OPTIONS,
+  TABS,
+  MOVES,
+  slugify,
+  uniqueSlug,
+  tabCounts,
+  portalList,
+  get,
+  publishProblems,
+  create,
+  update,
+  move,
+  copy,
+  remove,
+};

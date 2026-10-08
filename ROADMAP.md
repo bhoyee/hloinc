@@ -104,12 +104,12 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - New permission "Dashboard analytics → See charts" (Admin and Program Director by default); charts only cover areas the role can already see
 - Tests: 8 more (209 total)
 
-## Phase 4 — Jobs, announcements, contacts, site content
-- [ ] Jobs: create/edit/publish/unpublish/archive; fields title, department, description, requirements, location, status, ADP link (validate ADP link is https://), **pay range + benefits** (Maryland Wage Range Transparency Act); text supports "- " bullet lines
-- [ ] Announcements: public / internal / both, start & end dates (auto-expire)
-- [ ] Contacts inbox: show referral details (`type = referral`, `details` JSON) alongside messages; routed by recipient, statuses New / In progress / Resolved, internal notes; Intake Specialist sees intake & referral only; Reception view-only
-- [ ] Contact submissions emailed (plain text) to the matching HLO address; honest failure messages
-- [ ] Site content editor: page text, office hours, address, contact details (Program Director limited to announcements, careers text, office hours **(CONFIRM)**)
+## Phase 4 — Jobs, announcements, contacts, site content ✅ done
+- [x] Jobs: create, edit, publish, unpublish, archive, restore, copy, preview, permanent delete (archived only). ADP link must be https://. **Pay range + benefits required to publish** (Maryland Wage Range Transparency Act). Web address fixed once published. "- " bullet lines supported
+- [x] Announcements: website / staff only / both, start and end dates in Maryland time (auto-expire), optional link, end now, archive, delete. Staff board on the dashboard; staff notified when a staff announcement goes live. Website ones show in the home page banner **(CONFIRM placement, client Q6)**
+- [x] Contacts inbox: messages and referrals (with referral details), routed by recipient; New / In progress / Resolved; assign (notifies), internal notes, email replies (plain text, kept in history), honest "email not delivered" with resend; archive and permanent delete; viewing is audited. Intake Specialist sees intake & referrals only; Reception is read-only
+- [x] Site content editor: contact details, office hours (drives the "Open now" badge), contact form email addresses, and the text of the Home, About, Services, Getting started and Careers pages. Every change is audited with old and new text; pages can be put back to the original text. Program Director limited to careers text and office hours **(CONFIRM)**
+- Tests: 47 new (248 total); axe clean on all Phase 4 screens, desktop and phone
 
 ## Phase 5 — Testing & launch
 - [ ] Automated tests: validation, permissions matrix, form handling

@@ -2,9 +2,17 @@
 {% import "partials/ui.njk" as ui %}
 
 {# Lets Google list this role in its job search. #}
-{% block meta %}<script type="application/ld+json">{{ structuredData | jsonld }}</script>{% endblock %}
+{% block meta %}{% if structuredData %}<script type="application/ld+json">{{ structuredData | jsonld }}</script>{% endif %}{% endblock %}
 
 {% block content %}
+  {% if preview %}
+    <div class="sticky top-0 z-50 bg-amber-100 text-amber-950 ring-1 ring-amber-300">
+      <div class="container-page flex flex-wrap items-center justify-between gap-3 py-3 text-[15px]">
+        <p class="flex items-center gap-2">{{ icon('exclamation', 'size-5 shrink-0') }} <span><strong>Preview</strong> · This job is <strong>{{ preview.status | lower }}</strong>. This is how it looks on the careers page.</span></p>
+        <a href="{{ preview.back }}" class="btn-secondary !py-2">Back to the portal</a>
+      </div>
+    </div>
+  {% endif %}
   {% call ui.pageHero(job.department or 'Careers', job.title, null, [{ label: 'Careers', href: '/careers' }, { label: job.title }]) %}
     <ul class="mt-6 flex flex-wrap gap-2 text-sm font-medium">
       {% if job.location %}<li class="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-ink ring-1 ring-line">{{ icon('map-pin', 'size-4 text-accent-600') }} {{ job.location }}</li>{% endif %}

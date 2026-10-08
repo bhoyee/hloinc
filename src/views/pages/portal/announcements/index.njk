@@ -1,0 +1,67 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/portal-badges.njk" as badges %}
+
+{% block actions %}
+  {% if can('announcements.edit') %}<a href="/portal/announcements/new" class="btn-primary">{{ icon('plus', 'size-4') }} New announcement</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+  <nav aria-label="Announcement lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+    {% for t in tabs %}
+      <a href="/portal/announcements?tab={{ t.key }}" {% if t.key == tab %}aria-current="page"{% endif %}
+         class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
+        {{ t.label }}
+        <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == tab else 'bg-surface ring-1 ring-line' }}">{{ counts[t.key] }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <form method="get" action="/portal/announcements" role="search" aria-label="Search announcements" class="mb-5 flex gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="relative flex-1">
+      <label for="f-q" class="sr-only">Search announcements</label>
+      <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+      <input id="f-q" type="search" name="q" value="{{ q }}" placeholder="Search headlines and text" class="form-control !pl-12" maxlength="100">
+    </div>
+    <button type="submit" class="btn-green">Search</button>
+  </form>
+
+  {% if items.length %}
+    <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+      {% for a in items %}
+        <li class="group relative transition-colors hover:bg-surface focus-within:bg-surface">
+          <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:gap-6">
+            <span class="hidden size-11 shrink-0 place-items-center rounded-2xl sm:grid {{ 'bg-accent-50 text-accent-600 ring-1 ring-accent-100' if a.state == 'live' else 'bg-surface text-muted ring-1 ring-line' }}">{{ icon('megaphone', 'size-5') }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="flex flex-wrap items-center gap-2">
+                <a href="/portal/announcements/{{ a.id }}" class="font-semibold text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ a.title }}</a>
+                {{ badges.status(a.state, stateLabels[a.state]) }}
+              </p>
+              <p class="mt-1 line-clamp-1 text-sm text-muted">{{ a.body }}</p>
+            </div>
+            <div class="shrink-0 text-sm text-muted lg:w-64 lg:text-right">
+              <p class="inline-flex items-center gap-1.5 font-semibold text-ink">{{ icon('users' if a.audience == 'internal' else ('external' if a.audience == 'public' else 'megaphone'), 'size-4 text-muted') }} {{ audienceLabels[a.audience] }}</p>
+              <p>{{ a.starts_at | dateTime }}{% if a.ends_at %} → {{ a.ends_at | date({ month: 'short', day: 'numeric' }) }}{% else %} · no end date{% endif %}</p>
+            </div>
+          </div>
+          <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if pages > 1 %}
+      <nav aria-label="Announcement pages" class="mt-6 flex items-center justify-between">
+        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
+        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
+        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+      <span class="icon-tile mx-auto">{{ icon('megaphone', 'size-6') }}</span>
+      <p class="mt-4 text-lg font-semibold text-ink">{% if q %}Nothing matches “{{ q }}”{% elif tab == 'live' %}No announcements are live{% elif tab == 'scheduled' %}Nothing scheduled{% elif tab == 'expired' %}Nothing has ended yet{% elif tab == 'archived' %}Nothing archived{% else %}No announcements yet{% endif %}</p>
+      <p class="mt-1 text-muted">Live announcements appear on the home page banner, the staff board on the dashboard, or both.</p>
+      {% if can('announcements.edit') and not q %}<a href="/portal/announcements/new" class="btn-primary mt-5">{{ icon('plus', 'size-4') }} New announcement</a>{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

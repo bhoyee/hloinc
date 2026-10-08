@@ -360,6 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!notifBtn) return;
     try {
       const res = await fetch('/portal/notifications/summary', { headers: { Accept: 'application/json' } });
+      // Signed out (idle timeout): reload so the sign-in page explains, instead of letting forms fail later.
+      if (res.redirected) { window.location.reload(); return; }
       if (!res.ok) return;
       const data = await res.json();
       const count = document.querySelector('[data-notif-count]');
@@ -391,6 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (notifBtn) {
     setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 60000);
+    // Coming back to a tab: check straight away (the session may have ended while it was hidden).
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadNotifications(); });
     const readAll = document.querySelector('[data-notif-read-all]');
     readAll.addEventListener('click', async () => {
       await fetch('/portal/notifications/read-all', { method: 'POST', headers: { Accept: 'application/json', 'x-csrf-token': csrf ? csrf.content : '' } });
@@ -426,9 +430,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const summary = document.querySelector('[data-focus-on-load]');
   if (summary) summary.focus();
 
+  // Announcement form: live banner preview.
+  document.querySelectorAll('[data-preview-out]').forEach((out) => {
+    const field = document.getElementById(`f-${out.dataset.previewOut}`);
+    if (!field) return;
+    const fallback = out.textContent;
+    const update = () => { out.textContent = field.value.trim() || fallback; };
+    field.addEventListener('input', update);
+    update();
+  });
+
+  // Ask before permanent, can't-undo actions.
+  document.querySelectorAll('form[data-confirm]').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+    });
+  });
+
   // Disable submit buttons after the first click to avoid double submissions.
   document.querySelectorAll('form[data-once]').forEach((form) => {
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', (e) => {
+      // Disabled buttons aren't sent, so keep the clicked button's name/value (e.g. "Save" vs "Publish").
+      if (e.submitter && e.submitter.name) {
+        const keep = document.createElement('input');
+        keep.type = 'hidden';
+        keep.name = e.submitter.name;
+        keep.value = e.submitter.value;
+        form.appendChild(keep);
+      }
       form.querySelectorAll('button[type="submit"]').forEach((b) => {
         b.disabled = true;
         b.dataset.label = b.textContent;

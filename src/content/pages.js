@@ -95,4 +95,22 @@ module.exports = {
     referralText:
       'Coordinators, case managers, families and other professionals can contact our intake team directly. Please share only contact details and the type of support being considered. Do not send diagnoses or medication details through the website.',
   },
+
+  careers: {
+    title: 'Do work that matters',
+    intro: 'Join a team that helps adults across Maryland live independent, connected lives. We value kindness, reliability and respect.',
+    whyTitle: 'A place to grow while helping others',
+    why: [
+      { title: 'Meaningful work', text: 'Help people live the lives they choose, every single day.' },
+      { title: 'Training from day one', text: 'Paid training and ongoing support to build your skills.' },
+      { title: 'A team that listens', text: 'Supportive colleagues and leaders who value every voice.' },
+      { title: 'Close to home', text: 'Roles across ten counties in Central and Southern Maryland.' },
+    ],
+    steps: [
+      { title: 'Find a role', text: 'Search or browse open positions and read the full details.' },
+      { title: 'Apply on ADP', text: 'Select “Apply on ADP”. Our secure ADP careers portal opens in a new tab.' },
+      { title: 'Hear from us', text: 'Our team reviews your application and contacts you about next steps.' },
+    ],
+    applyNote: 'Applications are handled securely by ADP, our recruitment provider. HLO will never ask for payment to apply.',
+  },
 };

@@ -1,0 +1,118 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/portal-badges.njk" as badges %}
+
+{% set editable = can('announcements.edit') %}
+
+{% macro audienceOption(key, title, text, iconName, values) %}
+  <label class="group relative flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-white p-4 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:ring-1 has-[:checked]:ring-brand-600 has-[:disabled]:cursor-default">
+    <input type="radio" name="audience" value="{{ key }}" class="mt-1 size-4 shrink-0 accent-brand-700" {% if values.audience == key %}checked{% endif %}>
+    <span>
+      <span class="flex items-center gap-1.5 font-semibold text-ink">{{ icon(iconName, 'size-4 text-brand-700') }} {{ title }}</span>
+      <span class="mt-0.5 block text-sm text-muted">{{ text }}</span>
+    </span>
+  </label>
+{% endmacro %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+    <form method="post" action="{{ '/portal/announcements/' + a.id if a else '/portal/announcements' }}" class="min-w-0 space-y-6" novalidate data-once>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <fieldset class="space-y-6" {% if not editable %}disabled{% endif %}>
+        <legend class="sr-only">Announcement</legend>
+
+        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="msg-h">
+          <h2 id="msg-h" class="text-lg font-bold">Message</h2>
+          {{ ui.input('title', 'Headline', values, errors, autocomplete='off', attrs='maxlength="160"', hint='Short and clear, e.g. “Office closed on Thanksgiving Day”.') }}
+          {{ ui.textarea('body', 'Announcement', values, errors, rows=4, maxlength=1000, hint='One or two sentences work best. The website shows it in a banner on the home page.') }}
+          <div class="grid gap-5 sm:grid-cols-[2fr_1fr]">
+            {{ ui.input('link_url', 'Link', values, errors, required=false, autocomplete='off', attrs='maxlength="500"', hint='A page on this site like /careers, or a full https:// link.') }}
+            {{ ui.input('link_label', 'Link text', values, errors, required=false, autocomplete='off', attrs='maxlength="60"') }}
+          </div>
+        </section>
+
+        <section class="space-y-4 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="aud-h">
+          <h2 id="aud-h" class="text-lg font-bold">Who should see it?</h2>
+          {% if errors.audience %}{{ ui.fieldError('audience', errors) }}{% endif %}
+          <div class="grid gap-3 md:grid-cols-3" role="radiogroup" aria-labelledby="aud-h">
+            {{ audienceOption('public', 'Website', 'Home page banner for visitors.', 'external', values) }}
+            {{ audienceOption('internal', 'Staff only', 'The staff board on the portal dashboard.', 'users', values) }}
+            {{ audienceOption('both', 'Both', 'Website banner and the staff board.', 'megaphone', values) }}
+          </div>
+          <p class="text-sm text-muted">Staff get an in-app notification when a staff announcement goes live.</p>
+        </section>
+
+        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="when-h">
+          <div>
+            <h2 id="when-h" class="text-lg font-bold">When</h2>
+            <p class="mt-1 text-sm text-muted">Maryland time. It appears at the start and disappears on its own at the end.</p>
+          </div>
+          <div class="grid gap-5 sm:grid-cols-2">
+            {{ ui.input('start_date', 'Starts on', values, errors, type='date') }}
+            {{ ui.input('start_time', 'At', values, errors, type='time', required=false) }}
+            {{ ui.input('end_date', 'Ends on', values, errors, type='date', required=false, hint='Leave blank to keep it up until you end it.') }}
+            {{ ui.input('end_time', 'At', values, errors, type='time', required=false, hint='Blank means the end of that day.') }}
+          </div>
+        </section>
+      </fieldset>
+
+      {% if editable %}
+        <div class="sticky bottom-0 z-10 -mx-4 flex flex-wrap gap-3 border-t border-line bg-surface/95 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:bg-white/95 sm:px-5 sm:shadow-soft">
+          <button type="submit" class="btn-primary">{{ 'Save changes' if a else 'Post announcement' }}</button>
+          <a href="/portal/announcements" class="btn-secondary !ring-0">Cancel</a>
+        </div>
+      {% endif %}
+    </form>
+
+    <aside class="min-w-0 space-y-4 xl:sticky xl:top-24" aria-label="Preview and status">
+      <section class="overflow-hidden rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="prev-h">
+        <h2 id="prev-h" class="px-6 pt-5 text-lg font-bold">Preview</h2>
+        <p class="px-6 text-sm text-muted">How the website banner will look.</p>
+        <div class="mt-4 bg-accent-700 px-5 py-3 text-white">
+          <div class="flex items-start gap-3 text-[15px]">
+            {{ icon('megaphone', 'mt-0.5 size-5 shrink-0') }}
+            <p><strong class="font-semibold" data-preview-out="title">{{ values.title or 'Your headline' }}</strong> <span class="text-accent-50">— <span data-preview-out="body">{{ values.body or 'Your announcement text.' }}</span></span></p>
+          </div>
+        </div>
+      </section>
+
+      {% if a %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-bold">Status</h2>
+            {{ badges.status(a.state, stateLabels[a.state]) }}
+          </div>
+          <dl class="mt-3 space-y-2 text-sm text-muted">
+            <div class="flex justify-between gap-3"><dt>Shown to</dt><dd class="text-right font-medium text-ink">{{ audienceLabels[a.audience] }}</dd></div>
+            <div class="flex justify-between gap-3"><dt>Starts</dt><dd class="text-right text-ink">{{ a.starts_at | dateTime }}</dd></div>
+            <div class="flex justify-between gap-3"><dt>Ends</dt><dd class="text-right text-ink">{{ a.ends_at | dateTime if a.ends_at else 'Not set' }}</dd></div>
+            <div class="flex justify-between gap-3"><dt>Posted by</dt><dd class="text-right text-ink">{{ a.author or '—' }}</dd></div>
+            {% if a.updated_by_name %}<div class="flex justify-between gap-3"><dt>Last change</dt><dd class="text-right text-ink">{{ a.updated_by_name }}, {{ a.updated_at | date({ month: 'short', day: 'numeric' }) }}</dd></div>{% endif %}
+          </dl>
+          <div class="mt-5 space-y-2">
+            {% if a.state == 'live' and can('announcements.edit') %}
+              <form method="post" action="/portal/announcements/{{ a.id }}/end">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <button type="submit" class="btn-secondary w-full">{{ icon('clock', 'size-4') }} End now</button>
+              </form>
+            {% endif %}
+            {% if can('announcements.archive') %}
+              <form method="post" action="/portal/announcements/{{ a.id }}/archive">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <input type="hidden" name="action" value="{{ 'restore' if a.state == 'archived' else 'archive' }}">
+                <button type="submit" class="btn-secondary w-full">{{ icon('refresh' if a.state == 'archived' else 'archive', 'size-4') }} {{ 'Restore' if a.state == 'archived' else 'Archive' }}</button>
+              </form>
+            {% endif %}
+          </div>
+          {% if a.state == 'archived' and can('announcements.delete') %}
+            <form method="post" action="/portal/announcements/{{ a.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm="Delete this announcement permanently? This can’t be undone.">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
+            </form>
+          {% endif %}
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

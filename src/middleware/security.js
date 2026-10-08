@@ -62,12 +62,35 @@ function csrf() {
       crypto.timingSafeEqual(Buffer.from(sent), Buffer.from(expected));
 
     if (!ok) {
-      const err = new Error('Invalid or missing form token. Please reload the page and try again.');
-      err.status = 403;
-      return next(err);
+      // Background requests from our own scripts get a plain error.
+      if (req.get('x-csrf-token') || (req.get('accept') || '').includes('application/json')) {
+        const err = new Error('Invalid or missing form token. Please reload the page and try again.');
+        err.status = 403;
+        return next(err);
+      }
+      // Usually a page left open so long that the session ended (or a tab from
+      // before signing in again). Nothing is saved; explain instead of erroring.
+      const back = sameSiteReferer(req) || (req.originalUrl.startsWith('/portal') ? '/portal' : '/');
+      if (req.originalUrl.startsWith('/portal') && !req.originalUrl.startsWith('/portal/login') && !req.session.userId) {
+        return res.redirect(303, `/portal/login?${new URLSearchParams({ ended: 'expired', next: back })}`);
+      }
+      req.session.flash = { type: 'warning', message: STALE_FORM };
+      return res.redirect(303, back);
     }
     return next();
   };
+}
+
+const STALE_FORM = 'This page had been open for a while, so for your security nothing was sent. Please try again.';
+
+/** The page the form was on, if it's on this site (path and query only). */
+function sameSiteReferer(req) {
+  try {
+    const url = new URL(req.get('referer') || '');
+    return url.host === req.get('host') && !url.pathname.startsWith('//') ? url.pathname + url.search : null;
+  } catch {
+    return null;
+  }
 }
 
 // Automated tests submit many forms quickly; limits are exercised manually.

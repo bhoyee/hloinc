@@ -41,6 +41,16 @@ async function notifyPermission(permissions, payload) {
   }
 }
 
+/** Notify every active staff member (except `exceptId`, usually whoever caused it). */
+async function notifyAllStaff(payload, { exceptId = null } = {}) {
+  try {
+    const ids = await db('users').where({ status: 'active' }).modify((q) => exceptId && q.whereNot({ id: exceptId })).pluck('id');
+    await insert(ids, payload);
+  } catch (err) {
+    console.error('Notification fan-out failed:', err.message);
+  }
+}
+
 function unreadCount(userId) {
   return db('notifications').where({ user_id: userId }).whereNull('read_at').count({ n: '*' }).first().then((r) => Number(r.n));
 }
@@ -69,4 +79,4 @@ function markAllRead(userId) {
   return db('notifications').where({ user_id: userId }).whereNull('read_at').update({ read_at: db.fn.now() });
 }
 
-module.exports = { notifyUser, notifyPermission, unreadCount, latest, page, markRead, markAllRead };
+module.exports = { notifyUser, notifyPermission, notifyAllStaff, unreadCount, latest, page, markRead, markAllRead };
