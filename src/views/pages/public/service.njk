@@ -2,53 +2,62 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {{ ui.pageHero('Services', service.name, service.summary, [{ label: 'Services', href: '/services' }, { label: service.name }], service.slug, service.imageAlt) }}
+  {% set k = 'service-' + service.slug %}
+  {% for sec in cms.sections(k, { hero: 'Top banner', details: 'Details', cta: 'Call to action' }) %}
+  <div {{ sec.attrs }}>
+  {% if sec.key == 'hero' %}
+    {{ ui.pageHero(cms.text(k + '.hero.eyebrow', 'Services'), cms.text(k + '.name', service.name), cms.text(k + '.summary', service.summary), [{ label: 'Services', href: '/services' }, { label: service.name }], cms.image(k + '.image', service.slug, service.imageAlt)) }}
 
-  <section class="section">
-    <div class="container-page grid gap-12 lg:grid-cols-[1.6fr_1fr]">
-      <div>
-        <div class="prose-hlo text-lg">
-          {% for p in service.intro %}<p>{{ p }}</p>{% endfor %}
-        </div>
+  {% elif sec.key == 'details' %}
+    {% set startLink = cms.link(k + '.cta.start', 'Start intake', '/getting-started') %}
+    {% set askLink = cms.link(k + '.cta.ask', 'Ask a question', '/contact?to=intake') %}
+    <section class="section">
+      <div class="container-page grid gap-12 lg:grid-cols-[1.6fr_1fr]">
+        <div>
+          <div class="prose-hlo text-lg">{{ cms.rich(k + '.intro', service.intro | join('\n\n')) }}</div>
 
-        <h2 class="mt-12 text-2xl font-bold">What support can include</h2>
-        <ul class="mt-6 grid gap-3 sm:grid-cols-2">
-          {% for item in service.includes %}
-            <li class="flex gap-3 rounded-2xl bg-surface p-4 text-ink ring-1 ring-line">
-              <span class="grid size-6 shrink-0 place-items-center rounded-full bg-accent-50 text-accent-600 ring-1 ring-accent-100">{{ icon('check', 'size-3.5') }}</span>
-              {{ item }}
-            </li>
-          {% endfor %}
-        </ul>
-        <p class="mt-6 text-[15px] text-muted">The exact support each person receives depends on their person-centered plan.</p>
-      </div>
-
-      <aside class="space-y-6 lg:sticky lg:top-28 lg:self-start">
-        <div class="card !p-6">
-          <dl class="space-y-5">
-            <div>
-              <dt class="text-sm font-semibold tracking-wide text-muted uppercase">Where</dt>
-              <dd class="mt-1 font-medium text-ink">{{ service.setting }}</dd>
-            </div>
-            <div>
-              <dt class="text-sm font-semibold tracking-wide text-muted uppercase">May suit</dt>
-              <dd class="mt-1 text-ink">{{ service.suitedFor }}</dd>
-            </div>
-          </dl>
-          <a href="/getting-started" class="btn-primary mt-6 w-full">Start intake</a>
-          <a href="/contact?to=intake" class="btn-secondary mt-3 w-full">Ask a question</a>
-        </div>
-        <div class="rounded-3xl bg-surface p-6 ring-1 ring-line">
-          <h2 class="text-base font-bold">Other services</h2>
-          <ul class="mt-3 space-y-1">
-            {% for o in others %}
-              <li><a href="/services/{{ o.slug }}" class="flex items-center justify-between rounded-xl px-3 py-2 text-[15px] font-medium text-ink hover:bg-white">{{ o.name }} {{ icon('chevron-right', 'size-4 text-muted') }}</a></li>
+          <h2 class="mt-12 text-2xl font-bold">{{ cms.text(k + '.includesTitle', 'What support can include') }}</h2>
+          <ul class="mt-6 grid gap-3 sm:grid-cols-2">
+            {% for item in cms.list(k + '.includes', cms.objects(service.includes)) %}
+              <li class="flex gap-3 rounded-2xl bg-surface p-4 text-ink ring-1 ring-line" {{ item.attrs }}>
+                <span class="grid size-6 shrink-0 place-items-center rounded-full bg-accent-50 text-accent-600 ring-1 ring-accent-100">{{ icon('check', 'size-3.5') }}</span>
+                <span>{{ item.text('label') }}</span>
+              </li>
             {% endfor %}
           </ul>
+          <p class="mt-6 text-[15px] text-muted">{{ cms.text(k + '.planNote', 'The exact support each person receives depends on their person-centered plan.') }}</p>
         </div>
-      </aside>
-    </div>
-  </section>
 
-  {{ ui.ctaBand(site) }}
+        <aside class="space-y-6 lg:sticky lg:top-28 lg:self-start">
+          <div class="card !p-6">
+            <dl class="space-y-5">
+              <div>
+                <dt class="text-sm font-semibold tracking-wide text-muted uppercase">{{ cms.text(k + '.whereLabel', 'Where') }}</dt>
+                <dd class="mt-1 font-medium text-ink">{{ cms.text(k + '.setting', service.setting) }}</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-semibold tracking-wide text-muted uppercase">{{ cms.text(k + '.suitsLabel', 'May suit') }}</dt>
+                <dd class="mt-1 text-ink">{{ cms.text(k + '.suitedFor', service.suitedFor) }}</dd>
+              </div>
+            </dl>
+            <a href="{{ startLink.href }}" {{ startLink.attrs }} class="btn-primary mt-6 w-full">{{ startLink.label }}</a>
+            <a href="{{ askLink.href }}" {{ askLink.attrs }} class="btn-secondary mt-3 w-full">{{ askLink.label }}</a>
+          </div>
+          <div class="rounded-3xl bg-surface p-6 ring-1 ring-line">
+            <h2 class="text-base font-bold">{{ cms.text(k + '.othersTitle', 'Other services') }}</h2>
+            <ul class="mt-3 space-y-1">
+              {% for o in others %}
+                <li><a href="/services/{{ o.slug }}" class="flex items-center justify-between rounded-xl px-3 py-2 text-[15px] font-medium text-ink hover:bg-white">{{ o.name }} {{ icon('chevron-right', 'size-4 text-muted') }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+  {% elif sec.key == 'cta' %}
+    {{ ui.ctaBand(site) }}
+  {% endif %}
+  </div>
+  {% endfor %}
 {% endblock %}

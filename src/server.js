@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const express = require('express');
 const nunjucks = require('nunjucks');
 const compression = require('compression');
@@ -10,6 +11,7 @@ const { sessionMiddleware } = require('./middleware/session');
 const { notFound, errorHandler } = require('./middleware/errors');
 const { flashMiddleware } = require('./lib/forms');
 const content = require('./services/content');
+const cms = require('./services/cms');
 const { icon } = require('./lib/icons');
 const { richText, highlight } = require('./lib/text');
 
@@ -26,6 +28,7 @@ function createApp() {
     noCache: !config.isProd,
   });
   env.addGlobal('currentYear', new Date().getFullYear());
+  env.addGlobal('cms', cms.helpers);
   env.addGlobal('icon', (name, className) => new nunjucks.runtime.SafeString(icon(name, className)));
   env.addFilter('telHref', (phone) => `tel:+1${String(phone).replace(/\D/g, '').replace(/^1/, '')}`);
   env.addFilter('richText', (text) => new nunjucks.runtime.SafeString(richText(text)));
@@ -67,6 +70,8 @@ function createApp() {
       index: false,
     })
   );
+  // Images uploaded in the page editor (kept outside the code, in storage/uploads).
+  app.use('/uploads', express.static(path.join(config.paths.storage, 'uploads'), { maxAge: config.isProd ? '30d' : 0, index: false, dotfiles: 'ignore' }));
   app.use(limiters.global);
   app.use(async (req, res, next) => {
     res.locals.site = await content.getBusiness();
@@ -81,6 +86,8 @@ function createApp() {
   app.use(sessionMiddleware());
   app.use(csrf());
   app.use(flashMiddleware);
+  // Page content for the templates (published, or drafts in the visual editor).
+  app.use(cms.middleware());
 
   app.use('/', require('./routes/public'));
   app.use('/portal', require('./routes/portal'));

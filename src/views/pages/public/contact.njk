@@ -2,7 +2,10 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% call ui.pageHero('Contact', 'We’re here to help', 'Call, email, visit our office or send a message, and we will get back to you as soon as we can.', [{ label: 'Contact' }], 'contact', 'Three colleagues having a friendly conversation') %}
+  {% for sec in cms.sections('contact', { hero: 'Top banner', ways: 'Ways to reach us', form: 'Message form', visit: 'Visit us' }) %}
+  <div {{ sec.attrs }}>
+  {% if sec.key == 'hero' %}
+  {% call ui.pageHero(cms.text('contact.hero.eyebrow', 'Contact'), cms.text('contact.hero.title', 'We’re here to help'), cms.text('contact.hero.intro', 'Call, email, visit our office or send a message, and we will get back to you as soon as we can.'), [{ label: 'Contact' }], cms.image('contact.hero.image', 'contact', 'Three colleagues having a friendly conversation')) %}
     <p class="mt-6 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-sm font-semibold ring-1 {{ 'bg-brand-50 text-brand-800 ring-brand-200' if office.open else 'bg-white text-ink ring-line' }}">
       <span class="relative flex size-2.5" aria-hidden="true">
         {% if office.open %}<span class="absolute inline-flex size-full animate-ping rounded-full bg-brand-500 opacity-60 motion-reduce:animate-none"></span>{% endif %}
@@ -12,15 +15,16 @@
     </p>
   {% endcall %}
 
+  {% elif sec.key == 'ways' %}
   {# Quick ways to reach us #}
   <section class="container-page relative z-10 -mt-8">
     <h2 class="sr-only">Ways to reach us</h2>
     <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {% for c in [
-        { href: site.phone | telHref, icon: 'phone', title: 'Call us', text: site.phone, red: true },
-        { href: 'mailto:' + site.email, icon: 'mail', title: 'Email us', text: site.email },
-        { href: '#visit', icon: 'map-pin', title: 'Visit us', text: site.address.city + ', ' + site.address.state, red: true },
-        { href: '/referrals', icon: 'document', title: 'Send a referral', text: 'Refer someone' }
+        { href: site.phone | telHref, icon: 'phone', title: cms.text('contact.ways.call', 'Call us'), text: site.phone, red: true },
+        { href: 'mailto:' + site.email, icon: 'mail', title: cms.text('contact.ways.email', 'Email us'), text: site.email },
+        { href: '#visit', icon: 'map-pin', title: cms.text('contact.ways.visit', 'Visit us'), text: site.address.city + ', ' + site.address.state, red: true },
+        { href: '/referrals', icon: 'document', title: cms.text('contact.ways.referral', 'Send a referral'), text: cms.text('contact.ways.referralText', 'Refer someone') }
       ] %}
         <li>
           <a href="{{ c.href }}" class="group flex h-full flex-col gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift sm:flex-row sm:items-center sm:gap-4 sm:p-5">
@@ -35,6 +39,8 @@
     </ul>
   </section>
 
+  {% elif sec.key == 'form' %}
+  {% set apptCard = cms.link('contact.form.appointment', 'Request an appointment', '/appointments/request') %}
   {# Message form + who to contact #}
   <section class="section">
     <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
@@ -42,11 +48,11 @@
         {{ ui.flash(flash) }}
         <p class="mb-6 flex gap-3 rounded-2xl border border-accent-100 bg-accent-50 p-4 text-[15px] text-accent-800">
           {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }}
-          <span><strong>Not for emergencies.</strong> This form is not monitored around the clock. In an emergency, call 911. For a mental health crisis, call or text 988.</span>
+          <span><strong>{{ cms.text('contact.form.emergencyTitle', 'Not for emergencies.') }}</strong> {{ cms.text('contact.form.emergencyText', 'This form is not monitored around the clock. In an emergency, call 911. For a mental health crisis, call or text 988.') }}</span>
         </p>
         <div class="card">
-          <h2 class="text-2xl font-bold">Send us a message</h2>
-          <p class="mt-2 text-[15px] text-muted">Fields marked as optional can be left blank. Please don’t include diagnoses or medication details. See our <a href="/privacy" class="link">Privacy Policy</a>.</p>
+          <h2 class="text-2xl font-bold">{{ cms.text('contact.form.title', 'Send us a message') }}</h2>
+          <p class="mt-2 text-[15px] text-muted">{{ cms.text('contact.form.intro', 'Fields marked as optional can be left blank. Please don’t include diagnoses or medication details. See our') }} <a href="/privacy" class="link">Privacy Policy</a>.</p>
 
           <form method="post" action="/contact" class="relative mt-8 space-y-6" novalidate data-once>
             {{ ui.errorSummary(errors) }}
@@ -79,8 +85,8 @@
 
       <aside class="space-y-5 lg:sticky lg:top-28 lg:self-start">
         <div class="card !p-6 sm:!p-7">
-          <h2 class="text-lg font-bold">Who should I contact?</h2>
-          <p class="mt-1 text-[15px] text-muted">Choose the best fit and we’ll route your message.</p>
+          <h2 class="text-lg font-bold">{{ cms.text('contact.who.title', 'Who should I contact?') }}</h2>
+          <p class="mt-1 text-[15px] text-muted">{{ cms.text('contact.who.intro', 'Choose the best fit and we’ll route your message.') }}</p>
           <ul class="mt-5 space-y-2">
             {% for r in recipients %}
               {% set red = loop.index is odd %}
@@ -90,7 +96,7 @@
                   <span class="grid size-10 shrink-0 place-items-center rounded-xl transition group-hover:text-white {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }}">{{ icon(r.icon, 'size-5') }}</span>
                   <span class="min-w-0 flex-1">
                     <span class="block font-semibold text-ink">{{ r.label }}</span>
-                    <span class="block text-sm text-muted">{{ r.description }}</span>
+                    <span class="block text-sm text-muted">{{ cms.text('contact.who.' + r.key, r.description) }}</span>
                   </span>
                   {{ icon('chevron-right', 'mt-3 size-4 shrink-0 text-muted transition group-hover:translate-x-0.5') }}
                 </a>
@@ -99,11 +105,11 @@
           </ul>
         </div>
 
-        <a href="/appointments/request" class="group flex items-center gap-4 rounded-3xl bg-brand-900 p-6 text-white shadow-lift transition hover:-translate-y-1">
+        <a href="{{ apptCard.href }}" {{ apptCard.attrs }} class="group flex items-center gap-4 rounded-3xl bg-brand-900 p-6 text-white shadow-lift transition hover:-translate-y-1">
           <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/20">{{ icon('calendar', 'size-6') }}</span>
           <span class="flex-1">
-            <span class="block font-display font-bold">Request an appointment</span>
-            <span class="block text-[15px] text-brand-100">Book a time with our team in advance</span>
+            <span class="block font-display font-bold">{{ apptCard.label }}</span>
+            <span class="block text-[15px] text-brand-100">{{ cms.text('contact.form.appointmentText', 'Book a time with our team in advance') }}</span>
           </span>
           {{ icon('arrow-right', 'size-5 transition group-hover:translate-x-1') }}
         </a>
@@ -111,34 +117,35 @@
     </div>
   </section>
 
+  {% elif sec.key == 'visit' %}
   {# Visit — map loads only on request, so Google sets no cookies unless the visitor chooses. #}
   <section id="visit" class="section bg-cream scroll-mt-20">
     <div class="container-page grid gap-8 lg:grid-cols-[1fr_1.5fr] lg:gap-12">
       <div class="reveal">
-        <p class="eyebrow">Visit us</p>
-        <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Our office in Catonsville</h2>
+        <p class="eyebrow">{{ cms.text('contact.visit.eyebrow', 'Visit us') }}</p>
+        <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">{{ cms.text('contact.visit.title', 'Our office in Catonsville') }}</h2>
         <dl class="mt-8 space-y-6">
           <div>
-            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('map-pin', 'size-5 text-accent-600') }} Address</dt>
+            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('map-pin', 'size-5 text-accent-600') }} {{ cms.text('contact.visit.addressLabel', 'Address') }}</dt>
             <dd class="mt-1.5 pl-7.5 text-lg text-ink"><address class="not-italic">{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</address></dd>
           </div>
           <div>
-            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('clock', 'size-5 text-accent-600') }} Office hours</dt>
+            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('clock', 'size-5 text-accent-600') }} {{ cms.text('contact.visit.hoursLabel', 'Office hours') }}</dt>
             <dd class="mt-1.5 pl-7.5 text-lg text-ink">
               {{ site.hours }}
-              <span class="mt-1 block text-sm text-muted">{{ office.label }} (hours may differ on public holidays)</span>
+              <span class="mt-1 block text-sm text-muted">{{ office.label }} {{ cms.text('contact.visit.holidayNote', '(hours may differ on public holidays)') }}</span>
             </dd>
           </div>
           <div>
-            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('users', 'size-5 text-accent-600') }} Walk-ins</dt>
+            <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('users', 'size-5 text-accent-600') }} {{ cms.text('contact.visit.walkInLabel', 'Walk-ins') }}</dt>
             <dd class="mt-1.5 pl-7.5 text-ink">{{ site.walkIn }}</dd>
           </div>
         </dl>
         <div class="mt-8 flex flex-wrap gap-3">
           <a href="{{ directionsUrl }}" target="_blank" rel="noopener noreferrer" class="btn-primary">
-            {{ icon('map-pin', 'size-4') }} Get directions<span class="sr-only"> (opens Google Maps in a new tab)</span>
+            {{ icon('map-pin', 'size-4') }} {{ cms.text('contact.visit.directions', 'Get directions') }}<span class="sr-only"> (opens Google Maps in a new tab)</span>
           </a>
-          <a href="{{ site.phone | telHref }}" class="btn-secondary">{{ icon('phone', 'size-4') }} Call ahead</a>
+          <a href="{{ site.phone | telHref }}" class="btn-secondary">{{ icon('phone', 'size-4') }} {{ cms.text('contact.visit.callAhead', 'Call ahead') }}</a>
         </div>
       </div>
 
@@ -169,4 +176,7 @@
       </div>
     </div>
   </section>
+  {% endif %}
+  </div>
+  {% endfor %}
 {% endblock %}

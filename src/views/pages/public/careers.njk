@@ -2,20 +2,27 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% call ui.pageHero('Careers', copy.title, copy.intro, [{ label: 'Careers' }], 'careers-team', 'Colleagues smiling and talking around a meeting table') %}
+  {% for sec in cms.sections('careers', { hero: 'Top banner', positions: 'Open positions', why: 'Why work at HLO', apply: 'How to apply' }) %}
+  <div {{ sec.attrs }}>
+  {% if sec.key == 'hero' %}
+  {% set careersCta1 = cms.link('careers.hero.cta1', 'See open positions', '#positions') %}
+  {% set careersCta2 = cms.link('careers.hero.cta2', 'How to apply', '#how-to-apply') %}
+  {% call ui.pageHero(cms.text('careers.hero.eyebrow', 'Careers'), cms.text('careers.hero.title', copy.title), cms.text('careers.hero.intro', copy.intro), [{ label: 'Careers' }], cms.image('careers.hero.image', 'careers-team', 'Colleagues smiling and talking around a meeting table')) %}
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href="#positions" class="btn-primary">See open positions {{ icon('arrow-right', 'size-4') }}</a>
-      <a href="#how-to-apply" class="btn-secondary">How to apply</a>
+      <a href="{{ careersCta1.href }}" {{ careersCta1.attrs }} class="btn-primary">{{ careersCta1.label }} {{ icon('arrow-right', 'size-4') }}</a>
+      <a href="{{ careersCta2.href }}" {{ careersCta2.attrs }} class="btn-secondary">{{ careersCta2.label }}</a>
     </div>
   {% endcall %}
+
+  {% elif sec.key == 'positions' %}
 
   {# Open positions: search, filters, list, pagination. Plain GET form, so it works without JS. #}
   <section id="positions" class="section">
     <div class="container-page">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="eyebrow">Join our team</p>
-          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">Open positions</h2>
+          <p class="eyebrow">{{ cms.text('careers.positions.eyebrow', 'Join our team') }}</p>
+          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('careers.positions.title', 'Open positions') }}</h2>
         </div>
       </div>
 
@@ -52,36 +59,39 @@
     </div>
   </section>
 
+  {% elif sec.key == 'why' %}
   {# Why work at HLO #}
   <section class="section bg-brand-900 text-white">
     <div class="container-page">
       <div class="max-w-2xl">
-        <p class="eyebrow !text-accent-100 before:!bg-accent-500">Why work at HLO</p>
-        <h2 class="mt-4 text-3xl font-extrabold text-white sm:text-4xl">{{ copy.whyTitle }}</h2>
+        <p class="eyebrow !text-accent-100 before:!bg-accent-500">{{ cms.text('careers.why.eyebrow', 'Why work at HLO') }}</p>
+        <h2 class="mt-4 text-3xl font-extrabold text-white sm:text-4xl">{{ cms.text('careers.why.title', copy.whyTitle) }}</h2>
       </div>
       <ul class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {% set whyIcons = ['heart', 'document', 'users', 'map-pin'] %}
-        {% for p in copy.why %}
-          <li class="reveal group rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:bg-white/10">
+        {% for p in cms.list('careers.why.items', copy.why) %}
+          <li class="reveal group rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:bg-white/10" {{ p.attrs }}>
             <span class="grid size-12 place-items-center rounded-2xl transition duration-300 {{ 'bg-accent-600' if loop.index is odd else 'bg-brand-500' }} text-white group-hover:scale-110">{{ icon(whyIcons[loop.index0] or 'heart', 'size-6') }}</span>
-            <h3 class="mt-5 text-lg font-bold text-white">{{ p.title }}</h3>
-            <p class="mt-1.5 text-[15px] text-brand-100">{{ p.text }}</p>
+            <h3 class="mt-5 text-lg font-bold text-white">{{ p.text('title') }}</h3>
+            <p class="mt-1.5 text-[15px] text-brand-100">{{ p.text('text') }}</p>
           </li>
         {% endfor %}
       </ul>
     </div>
   </section>
 
+  {% elif sec.key == 'apply' %}
+  {% set applyContact = cms.link('careers.apply.contact', 'Questions? Contact us', '/contact') %}
   {# How to apply #}
   <section id="how-to-apply" class="section">
     <div class="container-page">
-      {{ ui.sectionHeading('How to apply', 'Three simple steps', null, true) }}
+      {{ ui.sectionHeading(cms.text('careers.apply.eyebrow', 'How to apply'), cms.text('careers.apply.title', 'Three simple steps'), null, true) }}
       <ol class="mt-12 grid gap-5 md:grid-cols-3">
-        {% for step in copy.steps %}
-          <li class="reveal card relative !p-6 sm:!p-7">
+        {% for step in cms.list('careers.apply.steps', copy.steps) %}
+          <li class="reveal card relative !p-6 sm:!p-7" {{ step.attrs }}>
             <span class="grid size-11 place-items-center rounded-full font-display text-lg font-bold text-white {{ 'bg-accent-600' if loop.index is odd else 'bg-brand-700' }}">{{ loop.index }}</span>
-            <h3 class="mt-5 text-lg font-bold">{{ step.title }}</h3>
-            <p class="mt-1.5 text-[15px] text-muted">{{ step.text }}</p>
+            <h3 class="mt-5 text-lg font-bold">{{ step.text('title') }}</h3>
+            <p class="mt-1.5 text-[15px] text-muted">{{ step.text('text') }}</p>
           </li>
         {% endfor %}
       </ol>
@@ -89,10 +99,13 @@
       <div class="mt-8 flex flex-col gap-5 rounded-3xl bg-surface p-6 ring-1 ring-line sm:p-7 md:flex-row md:items-center md:justify-between">
         <p class="flex items-start gap-3 text-[15px] text-muted">
           {{ icon('shield', 'mt-0.5 size-5 shrink-0 text-brand-700') }}
-          <span>{{ copy.applyNote }}</span>
+          <span>{{ cms.text('careers.apply.note', copy.applyNote) }}</span>
         </p>
-        <a href="/contact" class="btn-secondary shrink-0">{{ icon('mail', 'size-4') }} Questions? Contact us</a>
+        <a href="{{ applyContact.href }}" {{ applyContact.attrs }} class="btn-secondary shrink-0">{{ icon('mail', 'size-4') }} {{ applyContact.label }}</a>
       </div>
     </div>
   </section>
+  {% endif %}
+  </div>
+  {% endfor %}
 {% endblock %}

@@ -26,9 +26,14 @@
       {% if image %}
         <div class="relative">
           <div class="absolute -right-3 -bottom-3 hidden h-full w-full rounded-3xl bg-brand-100 sm:block" aria-hidden="true"></div>
-          <img src="/img/photos/{{ image }}.webp" srcset="/img/photos/{{ image }}-sm.webp 560w, /img/photos/{{ image }}.webp 960w"
-               sizes="(min-width: 1024px) 40vw, 100vw" alt="{{ imageAlt }}" width="960" height="640"
-               class="photo relative aspect-[3/2] shadow-lift">
+          {% if image.src %}
+            <img src="{{ image.src }}" srcset="{{ image.srcset }}" sizes="(min-width: 1024px) 40vw, 100vw" alt="{{ image.alt }}" width="{{ image.w }}" height="{{ image.h }}"
+                 class="photo relative aspect-[3/2] shadow-lift" {{ image.attrs }}>
+          {% else %}
+            <img src="/img/photos/{{ image }}.webp" srcset="/img/photos/{{ image }}-sm.webp 560w, /img/photos/{{ image }}.webp 960w"
+                 sizes="(min-width: 1024px) 40vw, 100vw" alt="{{ imageAlt }}" width="960" height="640"
+                 class="photo relative aspect-[3/2] shadow-lift">
+          {% endif %}
         </div>
       {% endif %}
     </div>
@@ -136,16 +141,17 @@
 {% endmacro %}
 
 {% macro ctaBand(site) %}
+  {% set ctaPrimary = cms.link('site.cta.primary', 'Start intake', '/getting-started') %}
   <section class="container-page section">
     <div class="relative overflow-hidden rounded-[2rem] bg-accent-700 px-6 py-14 text-white sm:px-14 sm:py-16">
       <svg class="pointer-events-none absolute -right-10 -bottom-16 size-80 text-white/10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-9-4.78-9-12a4.5 4.5 0 0 1 9-1.27A4.5 4.5 0 0 1 21 9c0 7.22-9 12-9 12z"/></svg>
       <div class="relative grid items-center gap-8 lg:grid-cols-[1fr_auto]">
         <div>
-          <h2 class="text-3xl font-extrabold text-white sm:text-4xl">Ready to talk about support?</h2>
-          <p class="mt-3 max-w-xl text-lg text-accent-50">Our team is available {{ site.hours | replace(r/\.$/, "") }}. Reach out and we will walk you through your options.</p>
+          <h2 class="text-3xl font-extrabold text-white sm:text-4xl">{{ cms.text('site.cta.title', 'Ready to talk about support?') }}</h2>
+          <p class="mt-3 max-w-xl text-lg text-accent-50">{{ cms.text('site.cta.before', 'Our team is available') }} {{ site.hours | replace(r/\.$/, "") }}. {{ cms.text('site.cta.after', 'Reach out and we will walk you through your options.') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
-          <a href="/getting-started" class="btn-light !text-accent-800">Start intake {{ icon('arrow-right', 'size-4') }}</a>
+          <a href="{{ ctaPrimary.href }}" {{ ctaPrimary.attrs }} class="btn-light !text-accent-800">{{ ctaPrimary.label }} {{ icon('arrow-right', 'size-4') }}</a>
           <a href="{{ site.phone | telHref }}" class="btn-ghost-light">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
         </div>
       </div>

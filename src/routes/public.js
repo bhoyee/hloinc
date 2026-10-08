@@ -26,14 +26,22 @@ const spam = require('../lib/spam');
 const { verifyTurnstile } = require('../lib/turnstile');
 const { officeStatus } = require('../lib/hours');
 const { limiters } = require('../middleware/security');
+const cms = require('../services/cms');
+
+/** Page title and description: editable in the page editor's "Page settings". */
+function meta(doc, title, description) {
+  return {
+    title: cms.helpers.plain(`${doc}.meta.title`, title, 'Page title (browser tab and search results)'),
+    description: cms.helpers.plain(`${doc}.meta.description`, description, 'Page description (shown in search results)'),
+  };
+}
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   const [page, news] = await Promise.all([content.getPage('home'), announcements.activePublic()]);
   res.render('pages/public/home.njk', {
-    title: 'Community supports in Maryland',
-    description: page.intro,
+    ...meta('home', 'Community supports in Maryland', page.intro),
     page,
     services,
     areas,
@@ -43,14 +51,13 @@ router.get('/', async (req, res) => {
 
 router.get('/about', async (req, res) => {
   const page = await content.getPage('about');
-  res.render('pages/public/about.njk', { title: page.title, description: page.intro, page });
+  res.render('pages/public/about.njk', { ...meta('about', page.title, page.intro), page });
 });
 
 router.get('/services', async (req, res) => {
   res.render('pages/public/services.njk', {
     page: await content.getPage('services'),
-    title: 'Services',
-    description: 'Community-based supports for adults with intellectual and developmental disabilities in Maryland.',
+    ...meta('services', 'Services', 'Community-based supports for adults with intellectual and developmental disabilities in Maryland.'),
     services,
     serviceBySlug: Object.fromEntries(services.map((s) => [s.slug, s])),
   });
@@ -60,8 +67,7 @@ router.get('/services/:slug', (req, res, next) => {
   const service = services.find((s) => s.slug === req.params.slug);
   if (!service) return next();
   res.render('pages/public/service.njk', {
-    title: service.name,
-    description: service.summary,
+    ...meta(`service-${service.slug}`, service.name, service.summary),
     service,
     others: services.filter((s) => s !== service),
   });
@@ -69,8 +75,7 @@ router.get('/services/:slug', (req, res, next) => {
 
 router.get('/service-areas', (req, res) => {
   res.render('pages/public/service-areas.njk', {
-    title: 'Service areas',
-    description: 'HLO serves ten counties across Central and Southern Maryland.',
+    ...meta('service-areas', 'Service areas', 'HLO serves ten counties across Central and Southern Maryland.'),
     areas,
   });
 });
@@ -78,8 +83,7 @@ router.get('/service-areas', (req, res) => {
 router.get('/getting-started', async (req, res) => {
   const page = await content.getPage('gettingStarted');
   res.render('pages/public/getting-started.njk', {
-    title: page.title,
-    description: page.intro,
+    ...meta('getting-started', page.title, page.intro),
     page,
     services,
     whereLabels: services.WHERE_LABELS,
@@ -88,9 +92,10 @@ router.get('/getting-started', async (req, res) => {
 
 router.get('/resources', (req, res) => {
   res.render('pages/public/resources.njk', {
-    title: 'Resources',
-    description: 'Independent organizations and Maryland planning resources for people with disabilities and their families.',
-    resources,
+    ...meta('resources', 'Resources', 'Independent organizations and Maryland planning resources for people with disabilities and their families.'),
+    // Built-in groups; staff can change, add and remove them in the page editor.
+    resourceGroups: resources.map((g, i) => ({ id: `group${i + 1}`, title: g.group })),
+    resourceItems: Object.fromEntries(resources.map((g, i) => [`group${i + 1}`, g.items.map((r) => ({ name: r.name, href: r.url, description: r.description }))])),
   });
 });
 
@@ -128,8 +133,8 @@ router.get('/careers', async (req, res) => {
   const view = req.query.partial === '1' ? 'partials/careers-results.njk' : 'pages/public/careers.njk';
   if (req.query.partial === '1') res.set('X-Robots-Tag', 'noindex');
   res.render(view, {
-    title: result.page > 1 ? `Careers – page ${result.page}` : 'Careers',
-    description: 'Join the HLO team and help adults in Maryland live independent, connected lives.',
+    ...meta('careers', 'Careers', 'Join the HLO team and help adults in Maryland live independent, connected lives.'),
+    ...(result.page > 1 ? { title: `Careers – page ${result.page}` } : {}),
     copy: await content.getPage('careers'),
     ...result,
     criteria,
@@ -191,8 +196,7 @@ function mapLinks(site) {
 function renderContact(req, res, { values = {}, errors = {} } = {}) {
   spam.issueForm(req, 'contact');
   res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/contact.njk', {
-    title: 'Contact us',
-    description: 'Call, email, visit or send a message to Healthy Living Option Inc. in Catonsville, Maryland.',
+    ...meta('contact', 'Contact us', 'Call, email, visit or send a message to Healthy Living Option Inc. in Catonsville, Maryland.'),
     recipients,
     office: officeStatus(res.locals.site.schedule),
     ...mapLinks(res.locals.site),
@@ -231,8 +235,7 @@ function renderReferral(req, res, { values = {}, errors = {} } = {}) {
   spam.issueForm(req, 'referral');
   const selected = [].concat(values.services || []);
   res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/referral.njk', {
-    title: 'Send a referral',
-    description: 'Refer someone to Healthy Living Option Inc. for community-based supports in Maryland.',
+    ...meta('referrals', 'Send a referral', 'Refer someone to Healthy Living Option Inc. for community-based supports in Maryland.'),
     roles: REFERRER_ROLES,
     counties: COUNTIES,
     services,
@@ -281,8 +284,7 @@ async function renderAppointment(req, res, { values = {}, errors = {} } = {}) {
   spam.issueForm(req, 'appointment');
   const today = todayInMaryland();
   res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/appointment.njk', {
-    title: 'Request an appointment',
-    description: 'Request an appointment with Healthy Living Option Inc. in advance.',
+    ...meta('appointment-request', 'Request an appointment', 'Request an appointment with Healthy Living Option Inc. in advance.'),
     types: await activeTypes(),
     minDate: addDays(today, 1),
     maxDate: addDays(today, 90),
@@ -323,8 +325,16 @@ const legalLinks = Object.values(legal).map(({ slug, title }) => ({ slug, title 
 router.get(['/privacy', '/terms', '/data-protection', '/cookies'], (req, res) => {
   const features = { turnstile: config.turnstile.enabled };
   const page = legal[req.path.slice(1)];
-  const doc = { ...page, sections: page.sections.filter((s) => !s.onlyIf || features[s.onlyIf]) };
-  res.render('pages/public/legal.njk', { title: doc.title, description: doc.summary, doc, legalLinks });
+  // Built-in sections, as editable items: paragraphs and "- " bullet lines in one text.
+  // Tables (the cookie list) stay in code; sections that depend on a feature carry `onlyIf`.
+  const sections = page.sections.map((s) => ({
+    id: s.id,
+    heading: s.heading,
+    body: [...(s.paragraphs || []), ...(s.list ? [s.list.map((l) => `- ${l}`).join('\n')] : [])].join('\n\n'),
+    ...(s.onlyIf ? { onlyIf: s.onlyIf } : {}),
+  }));
+  const tables = Object.fromEntries(page.sections.filter((s) => s.table).map((s) => [s.id, s.table]));
+  res.render('pages/public/legal.njk', { ...meta(page.slug, page.title, page.summary), doc: page, sections, tables, features, legalLinks });
 });
 
 // --- SEO -----------------------------------------------------------------

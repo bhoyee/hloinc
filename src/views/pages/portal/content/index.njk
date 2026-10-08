@@ -6,22 +6,57 @@
 {% endblock %}
 
 {% block content %}
-  <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-    {% for s in sections %}
-      <li>
-        <a href="/portal/content/{{ s.key }}" class="group relative flex h-full flex-col rounded-3xl border border-line bg-white p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift">
-          <span class="flex items-start justify-between gap-3">
-            <span class="icon-tile size-12 transition duration-300 group-hover:bg-brand-700 group-hover:text-white group-hover:ring-brand-700">{{ icon(s.icon, 'size-6') }}</span>
-            {% if not s.editable %}<span class="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted ring-1 ring-line">{{ icon('lock', 'inline size-3.5') }} View only</span>{% endif %}
-          </span>
-          <span class="mt-4 font-display text-lg font-bold text-ink group-hover:text-brand-700">{{ s.label }}</span>
-          <span class="mt-1 text-[15px] text-muted">{{ s.description }}</span>
-          <span class="mt-auto pt-4 text-xs text-muted">
-            {% if lastChanged[s.key] %}Last changed {{ lastChanged[s.key].at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }} by {{ lastChanged[s.key].by }}{% else %}Original text{% endif %}
-          </span>
-        </a>
-      </li>
-    {% endfor %}
-  </ul>
-  <p class="mt-6 flex items-start gap-2 text-sm text-muted">{{ icon('info', 'mt-0.5 size-4 shrink-0') }} Every change is recorded in the audit log with the old and new text. Job postings and announcements have their own sections in the menu.</p>
+  {% for g in groups %}
+    <section class="{{ 'mt-10' if not loop.first }}" aria-labelledby="group-{{ loop.index }}">
+      <h2 id="group-{{ loop.index }}" class="mb-3 text-base font-bold text-ink">{{ g.label }}</h2>
+      <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {% for p in g.pages %}
+          {% set st = status[p.key] %}
+          <li>
+            <a href="/portal/content/pages/{{ p.key }}" class="group relative flex h-full items-start gap-4 rounded-3xl border border-line bg-white p-5 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift">
+              <span class="icon-tile size-12 transition duration-300 group-hover:bg-brand-700 group-hover:text-white group-hover:ring-brand-700">{{ icon('home' if p.key == 'home' else ('shield' if g.label == 'Legal' else 'document'), 'size-6') }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="flex flex-wrap items-center gap-2">
+                  <span class="font-display text-lg font-bold text-ink group-hover:text-brand-700">{{ p.label }}</span>
+                  {% if st and st.has_draft %}<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">Draft</span>{% endif %}
+                  {% if not p.editable %}<span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted ring-1 ring-line">View only</span>{% endif %}
+                </span>
+                <span class="mt-0.5 block font-mono text-xs text-muted">{{ p.path }}</span>
+                <span class="mt-2 block text-xs text-muted">
+                  {% if st and st.published_at %}Published {{ st.published_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }}{% if st.published_by_name %} by {{ st.published_by_name }}{% endif %}{% else %}Original design{% endif %}
+                </span>
+              </span>
+              {{ icon('chevron-right', 'mt-1 size-5 shrink-0 text-muted transition group-hover:translate-x-1 group-hover:text-brand-700') }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+
+  {% if settings.length %}
+    <section class="mt-10" aria-labelledby="settings-h">
+      <h2 id="settings-h" class="mb-1 text-base font-bold text-ink">Business details</h2>
+      <p class="mb-3 text-sm text-muted">Used on every page. Changes go live as soon as you save.</p>
+      <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {% for s in settings %}
+          <li>
+            <a href="/portal/content/{{ s.key }}" class="group flex h-full items-start gap-4 rounded-3xl border border-line bg-white p-5 shadow-soft transition duration-300 hover:-translate-y-1 hover:border-accent-200 hover:shadow-lift">
+              <span class="icon-tile-red size-12 transition duration-300 group-hover:bg-accent-600 group-hover:text-white group-hover:ring-accent-600">{{ icon(s.icon, 'size-6') }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="flex flex-wrap items-center gap-2">
+                  <span class="font-display text-lg font-bold text-ink group-hover:text-accent-700">{{ s.label }}</span>
+                  {% if not s.editable %}<span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted ring-1 ring-line">View only</span>{% endif %}
+                </span>
+                <span class="mt-1 block text-[15px] text-muted">{{ s.description }}</span>
+                {% if lastChanged[s.key] %}<span class="mt-2 block text-xs text-muted">Last changed {{ lastChanged[s.key].at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }} by {{ lastChanged[s.key].by }}</span>{% endif %}
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <p class="mt-8 flex items-start gap-2 text-sm text-muted">{{ icon('info', 'mt-0.5 size-4 shrink-0') }} Publishing, restoring and every business-details change are recorded in the audit log. Job postings and announcements have their own sections in the menu.</p>
 {% endblock %}

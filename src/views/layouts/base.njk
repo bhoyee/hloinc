@@ -13,9 +13,14 @@
   <link rel="stylesheet" href="/css/app.css">
   <script src="/js/site.js" defer></script>
   {% block scripts %}{% endblock %}
+  {% if cmsMode == 'edit' %}
+    <meta name="csrf-token" content="{{ csrfToken() }}">
+    <script src="/js/cms-frame.js" defer></script>
+  {% endif %}
 </head>
-<body class="{% block bodyClass %}{% endblock %}">
+<body class="{% block bodyClass %}{% endblock %}{{ ' cms-editing' if cmsMode == 'edit' }}">
   <a href="#main" class="skip-link">Skip to main content</a>
   {% block body %}{% endblock %}
+  {% if cmsMode == 'edit' %}<script type="application/json" id="cms-registry">{{ cms.registry() | jsonld }}</script>{% endif %}
 </body>
 </html>

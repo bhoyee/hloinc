@@ -69,5 +69,6 @@ touch tmp/restart.txt   # or press Restart in cPanel
 ## Notes for shared hosting
 - The DB pool is capped at 5 connections (`knexfile.js`) to stay inside host limits.
 - Sessions are stored in the `sessions` table, so restarts don't log staff out.
-- `storage/` holds private files and is never served publicly.
+- `storage/` holds files that aren't part of the code. Only `storage/uploads/` (images uploaded in the page editor) is served, at `/uploads/`; the rest of `storage/` is never served. `git pull` doesn't touch it, but **include `storage/uploads/` in backups** alongside the database.
+- Image uploads use `sharp`, which downloads a ready-made Linux build during `npm ci`. If `npm ci` reports a sharp error, run `npm rebuild sharp` once in the cPanel terminal.
 - Back up the database via cPanel *Backup* or a cron job running `mysqldump` (retention period: client question 8).

@@ -1,22 +1,8 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 
-{# One field of a page section. Group items are named "<field>__<index>__<part>". #}
-{% macro field(name, label, value, errors, type, max, hint='') %}
-  <div>
-    <label for="f-{{ name }}" class="form-label">{{ label }}</label>
-    {% if type == 'text' %}
-      <input id="f-{{ name }}" name="{{ name }}" type="text" value="{{ value }}" maxlength="{{ max }}" class="form-control" {% if errors[name] %}aria-invalid="true" aria-describedby="f-{{ name }}-error"{% endif %}>
-    {% else %}
-      <textarea id="f-{{ name }}" name="{{ name }}" rows="{{ 8 if type == 'lines' else (4 if max > 400 else 3) }}" maxlength="{{ max * 40 if type == 'lines' else max }}" class="form-control" {% if errors[name] %}aria-invalid="true" aria-describedby="f-{{ name }}-error"{% elif hint %}aria-describedby="f-{{ name }}-hint"{% endif %}>{{ value | join('\n') if type == 'lines' else value }}</textarea>
-    {% endif %}
-    {% if hint %}<p id="f-{{ name }}-hint" class="form-hint">{{ hint }}</p>{% endif %}
-    {% if errors[name] %}<p id="f-{{ name }}-error" class="form-error">{{ errors[name] }}</p>{% endif %}
-  </div>
-{% endmacro %}
-
 {% block actions %}
-  {% if section.href %}<a href="{{ section.href }}" target="_blank" rel="noopener" class="btn-secondary">{{ icon('external', 'size-4') }} View page</a>{% endif %}
+  <a href="/contact" target="_blank" rel="noopener" class="btn-secondary">{{ icon('external', 'size-4') }} View contact page</a>
 {% endblock %}
 
 {% block content %}
@@ -88,27 +74,6 @@
             {% endfor %}
           </section>
 
-        {% else %}
-          {% for f in fields %}
-            <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
-              {% if f.type == 'group' %}
-                <h2 class="text-lg font-bold">{{ f.label }}</h2>
-                <ol class="grid gap-4 {{ 'md:grid-cols-2' if values[f.key].length % 2 == 0 }}">
-                  {% for item in values[f.key] %}
-                    {% set i = loop.index0 %}
-                    <li class="space-y-4 rounded-2xl bg-surface p-4 ring-1 ring-line">
-                      <p class="text-xs font-semibold tracking-wide text-muted uppercase">{{ loop.index }}</p>
-                      {% for sub in f.fields %}
-                        {{ field(f.key + '__' + i + '__' + sub.key, sub.label, item[sub.key], errors, sub.type, sub.max) }}
-                      {% endfor %}
-                    </li>
-                  {% endfor %}
-                </ol>
-              {% else %}
-                {{ field(f.key, f.label, values[f.key], errors, f.type, f.max, f.hint or ('Up to ' + f.max + ' characters.' if f.type == 'area' else '')) }}
-              {% endif %}
-            </section>
-          {% endfor %}
         {% endif %}
       </fieldset>
 
@@ -121,11 +86,5 @@
       {% endif %}
     </form>
 
-    {% if section.page and editable and customised %}
-      <form method="post" action="/portal/content/{{ section.key }}/reset" class="mt-6" data-confirm="Put the {{ section.label | lower }} back to its original text? Your changes will be lost.">
-        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
-        <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('refresh', 'inline size-4') }} Put back the original text</button>
-      </form>
-    {% endif %}
   </div>
 {% endblock %}

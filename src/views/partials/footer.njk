@@ -1,15 +1,16 @@
+{% set footerCta = cms.link('site.footer.cta', 'Start intake', '/getting-started') %}
 <footer class="bg-brand-950 text-brand-100">
   <div class="container-page grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-12">
     <div class="lg:col-span-4">
       <p class="font-display text-xl font-bold text-white">{{ site.legalName }}</p>
       <p class="mt-4 max-w-sm text-[15px] leading-relaxed text-brand-200">
-        Community-based supports for adults with intellectual and developmental disabilities across Central and Southern Maryland.
+        {{ cms.text('site.footer.blurb', 'Community-based supports for adults with intellectual and developmental disabilities across Central and Southern Maryland.') }}
       </p>
-      <a href="/getting-started" class="btn-light mt-6">Start intake {{ icon('arrow-right', 'size-4') }}</a>
+      <a href="{{ footerCta.href }}" {{ footerCta.attrs }} class="btn-light mt-6">{{ footerCta.label }} {{ icon('arrow-right', 'size-4') }}</a>
     </div>
 
     <div class="lg:col-span-3">
-      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">Visit</h2>
+      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">{{ cms.text('site.footer.visitHeading', 'Visit') }}</h2>
       <address class="mt-4 space-y-3 text-[15px] not-italic text-brand-200">
         <p class="flex gap-3">{{ icon('map-pin', 'mt-0.5 size-5 shrink-0 text-brand-400') }}
           <span>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</span></p>
@@ -18,7 +19,7 @@
     </div>
 
     <div class="lg:col-span-2">
-      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">Contact</h2>
+      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">{{ cms.text('site.footer.contactHeading', 'Contact') }}</h2>
       <ul class="mt-4 space-y-3 text-[15px]">
         <li><a class="flex items-center gap-3 text-brand-200 hover:text-white" href="{{ site.phone | telHref }}">{{ icon('phone', 'size-5 text-brand-400') }} {{ site.phone }}</a></li>
         <li><a class="flex items-center gap-3 text-brand-200 hover:text-white" href="mailto:{{ site.email }}">{{ icon('mail', 'size-5 text-brand-400') }} {{ site.email }}</a></li>
@@ -26,31 +27,30 @@
     </div>
 
     <div class="lg:col-span-3">
-      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">Explore</h2>
+      <h2 class="text-sm font-semibold tracking-wide text-white uppercase">{{ cms.text('site.footer.exploreHeading', 'Explore') }}</h2>
       <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[15px] text-brand-200">
-        <li><a class="hover:text-white" href="/about">About HLO</a></li>
-        <li><a class="hover:text-white" href="/services">Services</a></li>
-        <li><a class="hover:text-white" href="/service-areas">Service areas</a></li>
-        <li><a class="hover:text-white" href="/getting-started">Getting started</a></li>
-        <li><a class="hover:text-white" href="/resources">Resources</a></li>
-        <li><a class="hover:text-white" href="/careers">Careers</a></li>
-        <li><a class="hover:text-white" href="/appointments/request">Appointments</a></li>
-        <li><a class="hover:text-white" href="/referrals">Send a referral</a></li>
-        <li><a class="hover:text-white" href="/contact">Contact</a></li>
+        {% for l in cms.list('site.footer.links', [
+          { label: 'About HLO', href: '/about' }, { label: 'Services', href: '/services' }, { label: 'Service areas', href: '/service-areas' },
+          { label: 'Getting started', href: '/getting-started' }, { label: 'Resources', href: '/resources' }, { label: 'Careers', href: '/careers' },
+          { label: 'Appointments', href: '/appointments/request' }, { label: 'Send a referral', href: '/referrals' }, { label: 'Contact', href: '/contact' }
+        ]) %}
+          <li {{ l.attrs }}><a class="hover:text-white" href="{{ l.href }}" {{ l.hrefAttrs }}>{{ l.text('label') }}</a></li>
+        {% endfor %}
       </ul>
     </div>
   </div>
 
   <div class="border-t border-white/10">
     <div class="container-page flex flex-col gap-4 py-6 text-sm text-brand-300 lg:flex-row lg:items-center lg:justify-between">
-      <p>&copy; {{ currentYear }} {{ site.legalName }} All rights reserved.</p>
+      <p>&copy; {{ currentYear }} {{ site.legalName }} {{ cms.text('site.footer.rights', 'All rights reserved.') }}</p>
       <nav aria-label="Legal">
         <ul class="flex flex-wrap gap-x-5 gap-y-2">
-          <li><a href="/terms" class="hover:text-white">Terms &amp; Conditions</a></li>
-          <li><a href="/privacy" class="hover:text-white">Privacy Policy</a></li>
-          <li><a href="/data-protection" class="hover:text-white">Data Protection</a></li>
-          <li><a href="/cookies" class="hover:text-white">Cookie Policy</a></li>
-          <li><a href="/portal" class="hover:text-white">Staff login</a></li>
+          {% for l in cms.list('site.footer.legal', [
+            { label: 'Terms & Conditions', href: '/terms' }, { label: 'Privacy Policy', href: '/privacy' }, { label: 'Data Protection', href: '/data-protection' },
+            { label: 'Cookie Policy', href: '/cookies' }, { label: 'Staff login', href: '/portal' }
+          ]) %}
+            <li {{ l.attrs }}><a href="{{ l.href }}" {{ l.hrefAttrs }} class="hover:text-white">{{ l.text('label') }}</a></li>
+          {% endfor %}
         </ul>
       </nav>
       <p>Powered by <a href="https://giddyhost.com" target="_blank" rel="noopener" class="font-semibold text-white hover:text-accent-100">GiddyHost</a><span class="sr-only"> (opens in a new tab)</span></p>

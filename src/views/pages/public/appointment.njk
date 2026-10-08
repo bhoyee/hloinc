@@ -2,7 +2,7 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {{ ui.pageHero('Appointments', 'Request an appointment', 'Choose a type of appointment and a preferred day. Requests must be made at least one day in advance, and our team will contact you to confirm.', [{ label: 'Request an appointment' }]) }}
+  {{ ui.pageHero(cms.text('appointment-request.hero.eyebrow', 'Appointments'), cms.text('appointment-request.hero.title', 'Request an appointment'), cms.text('appointment-request.hero.intro', 'Choose a type of appointment and a preferred day. Requests must be made at least one day in advance, and our team will contact you to confirm.'), [{ label: 'Request an appointment' }]) }}
 
   <section class="section">
     <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr]">
@@ -90,18 +90,18 @@
 
       <aside class="space-y-5">
         <div class="card !p-6">
-          <h2 class="text-lg font-bold">What happens next</h2>
+          <h2 class="text-lg font-bold">{{ cms.text('appointment-request.next.title', 'What happens next') }}</h2>
           <ol class="mt-4 space-y-4">
-            {% for step in ['We email you a copy of your request.', 'Our team reviews it and contacts you to confirm a time.', 'You receive a confirmation email once it is booked.'] %}
-              <li class="flex gap-3 text-[15px] text-ink">
+            {% for step in cms.list('appointment-request.next.steps', cms.objects(['We email you a copy of your request.', 'Our team reviews it and contacts you to confirm a time.', 'You receive a confirmation email once it is booked.'])) %}
+              <li class="flex gap-3 text-[15px] text-ink" {{ step.attrs }}>
                 <span class="grid size-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-800">{{ loop.index }}</span>
-                {{ step }}
+                <span>{{ step.text('label') }}</span>
               </li>
             {% endfor %}
           </ol>
         </div>
         <div class="rounded-3xl bg-surface p-6 ring-1 ring-line">
-          <h2 class="text-lg font-bold">Prefer to call or walk in?</h2>
+          <h2 class="text-lg font-bold">{{ cms.text('appointment-request.call.title', 'Prefer to call or walk in?') }}</h2>
           <p class="mt-2 text-[15px] text-muted">{{ site.walkIn }}</p>
           <a href="{{ site.phone | telHref }}" class="btn-secondary mt-4 w-full">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
         </div>

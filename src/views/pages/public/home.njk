@@ -15,180 +15,190 @@
     </section>
   {% endif %}
 
-  {# Hero #}
-  <section class="bg-cream">
-    <div class="container-page grid items-center gap-8 py-8 sm:gap-12 sm:py-16 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:py-24">
-      <div>
-        <p class="eyebrow">{{ page.eyebrow }}</p>
-        <h1 class="mt-5 text-4xl leading-[1.08] font-extrabold sm:text-5xl xl:text-6xl">{{ page.title }}</h1>
-        <p class="mt-6 max-w-xl text-lg text-muted sm:text-xl">{{ page.intro }}</p>
-        <div class="mt-9 flex flex-wrap gap-3">
-          <a href="/getting-started" class="btn-primary">Start intake {{ icon('arrow-right', 'size-4') }}</a>
-          <a href="/services" class="btn-secondary">Explore our services</a>
-        </div>
-        <div class="mt-10 flex items-center gap-4 border-t border-line pt-6">
-          <a href="{{ site.phone | telHref }}" class="grid size-12 shrink-0 place-items-center rounded-full bg-brand-700 text-white hover:bg-brand-800">
-            {{ icon('phone', 'size-5') }}<span class="sr-only">Call {{ site.phone }}</span>
-          </a>
-          <p class="text-[15px] leading-snug text-muted">
-            Questions? Call us at <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a><br>
-            {{ site.hours }}
-          </p>
-        </div>
-      </div>
-
-      <div class="relative order-first mb-4 lg:order-last lg:mb-0">
-        <img src="/img/photos/hero-support.webp" srcset="/img/photos/hero-support-sm.webp 560w, /img/photos/hero-support.webp 960w"
-             sizes="(min-width: 1024px) 50vw, 100vw" width="960" height="640" fetchpriority="high"
-             alt="A support worker and a smiling woman holding hands during a conversation"
-             class="photo aspect-[4/3] object-[30%_center] shadow-lift lg:aspect-[4/3.4]">
-        <div class="absolute -bottom-6 left-4 hidden max-w-[17rem] rounded-2xl bg-brand-800 p-5 text-white shadow-lift sm:block lg:-left-6">
-          <p class="flex items-center gap-2 font-display font-bold">{{ icon('heart', 'size-5 text-accent-500') }} Person-centered</p>
-          <p class="mt-1.5 text-sm text-brand-100">Support built around each person’s goals, choices and plan.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  {# Key facts #}
-  <section class="border-y border-brand-800 bg-brand-900 text-white">
-    <h2 class="sr-only">HLO at a glance</h2>
-    <dl class="container-page grid grid-cols-2 gap-y-6 py-8 lg:grid-cols-4">
-      {% for f in [
-        { v: '10', l: 'Maryland counties served' },
-        { v: '5', l: 'Community-based services' },
-        { v: 'DDA', l: 'Approved & licensed services' },
-        { v: '9–5', l: 'Office open Monday to Friday' }
-      ] %}
-        <div class="flex flex-col-reverse px-2 lg:border-l lg:border-white/15 lg:px-8 lg:first:border-l-0 lg:first:pl-0">
-          <dt class="mt-1 text-sm text-brand-200">{{ f.l }}</dt>
-          <dd class="font-display text-3xl font-extrabold text-white">{{ f.v }}</dd>
-        </div>
-      {% endfor %}
-    </dl>
-  </section>
-
-  {# Services #}
-  <section class="section">
-    <div class="container-page">
-      <div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        {{ ui.sectionHeading('What we offer', 'Supports shaped around each person', 'Every service follows the person’s own plan and goals, and adapts as they grow.') }}
-        <a href="/services" class="btn-secondary shrink-0">View all services</a>
-      </div>
-      <ul class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {% for s in services %}
-          <li class="{{ 'lg:col-span-2' if loop.first }}">
-            <a href="/services/{{ s.slug }}" class="group flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
-              <div class="aspect-[16/9] overflow-hidden {{ 'lg:aspect-[21/9]' if loop.first }}">
-                <img src="/img/photos/{{ s.slug }}-sm.webp" srcset="/img/photos/{{ s.slug }}-sm.webp 560w, /img/photos/{{ s.slug }}.webp 960w"
-                     sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" alt="" loading="lazy" width="560" height="373"
-                     class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
-              </div>
-              <div class="flex flex-1 flex-col p-6 sm:p-7">
-                <h3 class="text-xl font-bold group-hover:text-brand-700">{{ s.name }}</h3>
-                <p class="mt-2 flex-1 text-muted">{{ s.summary }}</p>
-                <span class="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent-600">
-                  Learn more <span class="sr-only">about {{ s.name }}</span> {{ icon('arrow-right', 'size-4 transition group-hover:translate-x-1') }}
-                </span>
-              </div>
+  {% for sec in cms.sections('home', { hero: 'Top banner', facts: 'Key facts', services: 'Services', approach: 'Our approach', paths: 'Find your way', areas: 'Where we work', cta: 'Call to action' }) %}
+  <div {{ sec.attrs }}>
+  {% if sec.key == 'hero' %}
+    {% set heroImg = cms.image('home.hero.image', 'hero-support', 'A support worker and a smiling woman holding hands during a conversation') %}
+    {% set cta1 = cms.link('home.hero.cta1', 'Start intake', '/getting-started') %}
+    {% set cta2 = cms.link('home.hero.cta2', 'Explore our services', '/services') %}
+    <section class="bg-cream">
+      <div class="container-page grid items-center gap-8 py-8 sm:gap-12 sm:py-16 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:py-24">
+        <div>
+          <p class="eyebrow">{{ cms.text('home.hero.eyebrow', page.eyebrow) }}</p>
+          <h1 class="mt-5 text-4xl leading-[1.08] font-extrabold sm:text-5xl xl:text-6xl">{{ cms.text('home.hero.title', page.title) }}</h1>
+          <p class="mt-6 max-w-xl text-lg text-muted sm:text-xl">{{ cms.text('home.hero.intro', page.intro) }}</p>
+          <div class="mt-9 flex flex-wrap gap-3">
+            <a href="{{ cta1.href }}" {{ cta1.attrs }} class="btn-primary">{{ cta1.label }} {{ icon('arrow-right', 'size-4') }}</a>
+            <a href="{{ cta2.href }}" {{ cta2.attrs }} class="btn-secondary">{{ cta2.label }}</a>
+          </div>
+          <div class="mt-10 flex items-center gap-4 border-t border-line pt-6">
+            <a href="{{ site.phone | telHref }}" class="grid size-12 shrink-0 place-items-center rounded-full bg-brand-700 text-white hover:bg-brand-800">
+              {{ icon('phone', 'size-5') }}<span class="sr-only">Call {{ site.phone }}</span>
             </a>
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </section>
+            <p class="text-[15px] leading-snug text-muted">
+              {{ cms.text('home.hero.callPrompt', 'Questions? Call us at') }} <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a><br>
+              {{ site.hours }}
+            </p>
+          </div>
+        </div>
 
-  {# Approach #}
-  <section class="section bg-brand-50">
-    <div class="container-page grid items-center gap-14 lg:grid-cols-2">
-      <div class="relative order-last lg:order-first">
-        <img src="/img/photos/approach.webp" srcset="/img/photos/approach-sm.webp 560w, /img/photos/approach.webp 960w"
-             sizes="(min-width: 1024px) 50vw, 100vw" width="960" height="640" loading="lazy"
-             alt="A support worker kneeling to talk with a woman using a wheelchair"
-             class="photo aspect-[5/4] shadow-lift">
-        <div class="absolute -top-5 -right-3 rounded-2xl bg-accent-600 px-5 py-4 text-white shadow-lift sm:-right-6">
-          <p class="font-display text-2xl font-extrabold">Dignity</p>
-          <p class="text-sm text-accent-50">in every interaction</p>
+        <div class="relative order-first mb-4 lg:order-last lg:mb-0">
+          <img src="{{ heroImg.src }}" srcset="{{ heroImg.srcset }}" sizes="(min-width: 1024px) 50vw, 100vw" width="{{ heroImg.w }}" height="{{ heroImg.h }}" fetchpriority="high"
+               alt="{{ heroImg.alt }}" class="photo aspect-[4/3] object-[30%_center] shadow-lift lg:aspect-[4/3.4]" {{ heroImg.attrs }}>
+          <div class="absolute -bottom-6 left-4 hidden max-w-[17rem] rounded-2xl bg-brand-800 p-5 text-white shadow-lift sm:block lg:-left-6">
+            <p class="flex items-center gap-2 font-display font-bold">{{ icon('heart', 'size-5 text-accent-500') }} {{ cms.text('home.hero.badgeTitle', 'Person-centered') }}</p>
+            <p class="mt-1.5 text-sm text-brand-100">{{ cms.text('home.hero.badgeText', 'Support built around each person’s goals, choices and plan.') }}</p>
+          </div>
         </div>
       </div>
-      <div>
-        <p class="eyebrow">Our approach</p>
-        <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">{{ page.approachTitle }}</h2>
-        <p class="mt-5 text-lg text-muted">{{ page.approach }}</p>
-        <ol class="mt-8 space-y-5">
-          {% for step in [
-            { t: 'We listen', d: 'We get to know the person, their family and what matters to them.' },
-            { t: 'We plan together', d: 'Support follows the person-centered plan agreed with their coordinator.' },
-            { t: 'We support and grow', d: 'Trained staff support day to day, and we adjust as goals change.' }
-          ] %}
-            <li class="flex gap-4">
-              <span class="grid size-10 shrink-0 place-items-center rounded-full {{ 'bg-accent-600' if loop.index == 2 else 'bg-brand-700' }} font-display font-bold text-white">{{ loop.index }}</span>
-              <div>
-                <h3 class="text-lg font-bold">{{ step.t }}</h3>
-                <p class="mt-0.5 text-muted">{{ step.d }}</p>
-              </div>
+    </section>
+
+  {% elif sec.key == 'facts' %}
+    <section class="border-y border-brand-800 bg-brand-900 text-white">
+      <h2 class="sr-only">HLO at a glance</h2>
+      <dl class="container-page grid grid-cols-2 gap-y-6 py-8 lg:grid-cols-4">
+        {% for f in cms.list('home.facts', [
+          { value: '10', label: 'Maryland counties served' },
+          { value: '5', label: 'Community-based services' },
+          { value: 'DDA', label: 'Approved & licensed services' },
+          { value: '9–5', label: 'Office open Monday to Friday' }
+        ]) %}
+          <div class="flex flex-col-reverse px-2 lg:border-l lg:border-white/15 lg:px-8 lg:first:border-l-0 lg:first:pl-0" {{ f.attrs }}>
+            <dt class="mt-1 text-sm text-brand-200">{{ f.text('label') }}</dt>
+            <dd class="font-display text-3xl font-extrabold text-white">{{ f.text('value') }}</dd>
+          </div>
+        {% endfor %}
+      </dl>
+    </section>
+
+  {% elif sec.key == 'services' %}
+    {% set allServices = cms.link('home.services.all', 'View all services', '/services') %}
+    <section class="section">
+      <div class="container-page">
+        <div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          {{ ui.sectionHeading(cms.text('home.services.eyebrow', 'What we offer'), cms.text('home.services.title', 'Supports shaped around each person'), cms.text('home.services.intro', 'Every service follows the person’s own plan and goals, and adapts as they grow.')) }}
+          <a href="{{ allServices.href }}" {{ allServices.attrs }} class="btn-secondary shrink-0">{{ allServices.label }}</a>
+        </div>
+        <ul class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {% for s in services %}
+            {% set k = 'service-' + s.slug %}
+            {% set photo = cms.image(k + '.image', s.slug, s.imageAlt) %}
+            <li class="{{ 'lg:col-span-2' if loop.first }}">
+              <a href="/services/{{ s.slug }}" class="group flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+                <div class="aspect-[16/9] overflow-hidden {{ 'lg:aspect-[21/9]' if loop.first }}">
+                  <img src="{{ photo.srcSm }}" srcset="{{ photo.srcset }}" sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" alt="{{ photo.alt }}" loading="lazy" width="560" height="373"
+                       class="h-full w-full object-cover transition duration-500 group-hover:scale-105" {{ photo.attrs }}>
+                </div>
+                <div class="flex flex-1 flex-col p-6 sm:p-7">
+                  <h3 class="text-xl font-bold group-hover:text-brand-700">{{ cms.text(k + '.name', s.name) }}</h3>
+                  <p class="mt-2 flex-1 text-muted">{{ cms.text(k + '.summary', s.summary) }}</p>
+                  <span class="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent-600">
+                    {{ cms.text('home.services.more', 'Learn more') }} <span class="sr-only">about {{ s.name }}</span> {{ icon('arrow-right', 'size-4 transition group-hover:translate-x-1') }}
+                  </span>
+                </div>
+              </a>
             </li>
           {% endfor %}
-        </ol>
-        <a href="/about" class="btn-green mt-9">More about HLO</a>
+        </ul>
       </div>
-    </div>
-  </section>
+    </section>
 
-  {# Quick paths (requirements §3: Services, Location, Careers, Contact) #}
-  <section class="section">
-    <div class="container-page">
-      {{ ui.sectionHeading('Find your way', 'How can we help today?', null, true) }}
-      <ul class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {% for p in [
-          { href: '/getting-started', icon: 'heart', title: 'Start intake', text: 'How to begin services with HLO, step by step.', red: true },
-          { href: '/service-areas', icon: 'map-pin', title: 'Location & areas', text: 'Our Catonsville office and the 10 counties we serve.' },
-          { href: '/careers', icon: 'briefcase', title: 'Careers', text: 'Join a team that puts people first.', red: true },
-          { href: '/contact', icon: 'chat', title: 'Contact us', text: 'Call, email, visit or send us a message.' }
-        ] %}
-          <li>
-            <a href="{{ p.href }}" class="card card-hover group flex h-full flex-col !p-6">
-              <span class="{{ 'icon-tile-red' if p.red else 'icon-tile' }}">{{ icon(p.icon, 'size-6') }}</span>
-              <span class="mt-5 flex items-center justify-between font-display text-lg font-bold text-ink">
-                {{ p.title }} {{ icon('arrow-right', 'size-5 text-muted transition group-hover:translate-x-1 group-hover:text-accent-600') }}
-              </span>
-              <span class="mt-1.5 text-[15px] text-muted">{{ p.text }}</span>
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </section>
-
-  {# Service areas #}
-  <section class="section pt-0">
-    <div class="container-page">
-      <div class="grid overflow-hidden rounded-[2rem] bg-brand-900 text-white lg:grid-cols-2">
-        <div class="relative min-h-64">
-          <img src="/img/photos/service-areas.webp" srcset="/img/photos/service-areas-sm.webp 560w, /img/photos/service-areas.webp 960w"
-               sizes="(min-width: 1024px) 50vw, 100vw" width="960" height="540" loading="lazy"
-               alt="A green, tree-lined park on a sunny day" class="absolute inset-0 h-full w-full object-cover">
-        </div>
-        <div class="p-8 sm:p-12">
-          <p class="eyebrow !text-accent-100 before:!bg-accent-500">Where we work</p>
-          <h2 class="mt-4 text-3xl font-extrabold text-white sm:text-4xl">Serving Central and Southern Maryland</h2>
-          <div class="mt-8 grid gap-8 sm:grid-cols-2">
-            {% for area in areas %}
-              <div>
-                <h3 class="font-bold text-white">{{ area.region }}</h3>
-                <ul class="mt-3 space-y-2 text-[15px] text-brand-100">
-                  {% for c in area.counties %}
-                    <li class="flex items-center gap-2">{{ icon('check', 'size-4 text-brand-300') }} {{ c }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            {% endfor %}
+  {% elif sec.key == 'approach' %}
+    {% set approachImg = cms.image('home.approach.image', 'approach', 'A support worker kneeling to talk with a woman using a wheelchair') %}
+    {% set approachLink = cms.link('home.approach.cta', 'More about HLO', '/about') %}
+    <section class="section bg-brand-50">
+      <div class="container-page grid items-center gap-14 lg:grid-cols-2">
+        <div class="relative order-last lg:order-first">
+          <img src="{{ approachImg.src }}" srcset="{{ approachImg.srcset }}" sizes="(min-width: 1024px) 50vw, 100vw" width="{{ approachImg.w }}" height="{{ approachImg.h }}" loading="lazy"
+               alt="{{ approachImg.alt }}" class="photo aspect-[5/4] shadow-lift" {{ approachImg.attrs }}>
+          <div class="absolute -top-5 -right-3 rounded-2xl bg-accent-600 px-5 py-4 text-white shadow-lift sm:-right-6">
+            <p class="font-display text-2xl font-extrabold">{{ cms.text('home.approach.badgeTitle', 'Dignity') }}</p>
+            <p class="text-sm text-accent-50">{{ cms.text('home.approach.badgeText', 'in every interaction') }}</p>
           </div>
-          <a href="/service-areas" class="btn-light mt-9">Service areas &amp; office {{ icon('arrow-right', 'size-4') }}</a>
+        </div>
+        <div>
+          <p class="eyebrow">{{ cms.text('home.approach.eyebrow', 'Our approach') }}</p>
+          <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">{{ cms.text('home.approach.title', page.approachTitle) }}</h2>
+          <p class="mt-5 text-lg text-muted">{{ cms.text('home.approach.text', page.approach) }}</p>
+          <ol class="mt-8 space-y-5">
+            {% for step in cms.list('home.approach.steps', [
+              { title: 'We listen', text: 'We get to know the person, their family and what matters to them.' },
+              { title: 'We plan together', text: 'Support follows the person-centered plan agreed with their coordinator.' },
+              { title: 'We support and grow', text: 'Trained staff support day to day, and we adjust as goals change.' }
+            ]) %}
+              <li class="flex gap-4" {{ step.attrs }}>
+                <span class="grid size-10 shrink-0 place-items-center rounded-full {{ 'bg-accent-600' if loop.index == 2 else 'bg-brand-700' }} font-display font-bold text-white">{{ loop.index }}</span>
+                <div>
+                  <h3 class="text-lg font-bold">{{ step.text('title') }}</h3>
+                  <p class="mt-0.5 text-muted">{{ step.text('text') }}</p>
+                </div>
+              </li>
+            {% endfor %}
+          </ol>
+          <a href="{{ approachLink.href }}" {{ approachLink.attrs }} class="btn-green mt-9">{{ approachLink.label }}</a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  {{ ui.ctaBand(site) }}
+  {% elif sec.key == 'paths' %}
+    <section class="section">
+      <div class="container-page">
+        {{ ui.sectionHeading(cms.text('home.paths.eyebrow', 'Find your way'), cms.text('home.paths.title', 'How can we help today?'), null, true) }}
+        <ul class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {% for p in cms.list('home.paths.items', [
+            { href: '/getting-started', icon: 'heart', title: 'Start intake', text: 'How to begin services with HLO, step by step.' },
+            { href: '/service-areas', icon: 'map-pin', title: 'Location & areas', text: 'Our Catonsville office and the 10 counties we serve.' },
+            { href: '/careers', icon: 'briefcase', title: 'Careers', text: 'Join a team that puts people first.' },
+            { href: '/contact', icon: 'chat', title: 'Contact us', text: 'Call, email, visit or send us a message.' }
+          ]) %}
+            <li {{ p.attrs }}>
+              <a href="{{ p.href }}" {{ p.hrefAttrs }} class="card card-hover group flex h-full flex-col !p-6">
+                <span class="{{ 'icon-tile-red' if loop.index is odd else 'icon-tile' }}">{{ icon(p.icon or 'heart', 'size-6') }}</span>
+                <span class="mt-5 flex items-center justify-between font-display text-lg font-bold text-ink">
+                  {{ p.text('title') }} {{ icon('arrow-right', 'size-5 text-muted transition group-hover:translate-x-1 group-hover:text-accent-600') }}
+                </span>
+                <span class="mt-1.5 text-[15px] text-muted">{{ p.text('text') }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+  {% elif sec.key == 'areas' %}
+    {% set areaImg = cms.image('home.areas.image', 'service-areas', 'A green, tree-lined park on a sunny day') %}
+    {% set areaLink = cms.link('home.areas.cta', 'Service areas & office', '/service-areas') %}
+    <section class="section pt-0">
+      <div class="container-page">
+        <div class="grid overflow-hidden rounded-[2rem] bg-brand-900 text-white lg:grid-cols-2">
+          <div class="relative min-h-64">
+            <img src="{{ areaImg.src }}" srcset="{{ areaImg.srcset }}" sizes="(min-width: 1024px) 50vw, 100vw" width="{{ areaImg.w }}" height="{{ areaImg.h }}" loading="lazy"
+                 alt="{{ areaImg.alt }}" class="absolute inset-0 h-full w-full object-cover" {{ areaImg.attrs }}>
+          </div>
+          <div class="p-8 sm:p-12">
+            <p class="eyebrow !text-accent-100 before:!bg-accent-500">{{ cms.text('home.areas.eyebrow', 'Where we work') }}</p>
+            <h2 class="mt-4 text-3xl font-extrabold text-white sm:text-4xl">{{ cms.text('home.areas.title', 'Serving Central and Southern Maryland') }}</h2>
+            <div class="mt-8 grid gap-8 sm:grid-cols-2">
+              {% for area in areas %}
+                <div>
+                  <h3 class="font-bold text-white">{{ area.region }}</h3>
+                  <ul class="mt-3 space-y-2 text-[15px] text-brand-100">
+                    {% for c in area.counties %}
+                      <li class="flex items-center gap-2">{{ icon('check', 'size-4 text-brand-300') }} {{ c }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endfor %}
+            </div>
+            <a href="{{ areaLink.href }}" {{ areaLink.attrs }} class="btn-light mt-9">{{ areaLink.label }} {{ icon('arrow-right', 'size-4') }}</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  {% elif sec.key == 'cta' %}
+    {{ ui.ctaBand(site) }}
+  {% endif %}
+  </div>
+  {% endfor %}
 {% endblock %}

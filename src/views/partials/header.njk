@@ -1,6 +1,6 @@
 <div class="hidden bg-brand-950 text-sm text-brand-100 md:block">
   <div class="container-page flex h-10 items-center justify-between">
-    <p class="flex items-center gap-2">{{ icon('clock', 'size-4') }} Office hours: {{ site.hours }}</p>
+    <p class="flex items-center gap-2">{{ icon('clock', 'size-4') }} {{ cms.text('site.topbar.hours', 'Office hours:') }} {{ site.hours }}</p>
     <div class="flex items-center gap-6">
       <a href="{{ site.phone | telHref }}" class="flex items-center gap-2 hover:text-white">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
       <a href="mailto:{{ site.email }}" class="flex items-center gap-2 hover:text-white">{{ icon('mail', 'size-4') }} {{ site.email }}</a>
@@ -8,27 +8,30 @@
   </div>
 </div>
 
+{% set navItems = cms.list('site.nav', nav) %}
+{% set headerCta = cms.link('site.header.cta', 'Start intake', '/getting-started') %}
 <header class="sticky top-0 z-40 border-b border-line/80 bg-white">
   <div class="container-page flex h-20 items-center justify-between gap-6">
     <a href="/" class="shrink-0" aria-label="{{ site.legalName }} home">
-      <img src="/img/logo.jpg" alt="{{ site.legalName }}" width="192" height="60" class="h-12 w-auto sm:h-14">
+      {% set logo = cms.image('site.logo', { src: '/img/logo.jpg', srcSm: '/img/logo.jpg', w: 192, h: 60, alt: site.legalName }) %}
+      <img src="{{ logo.src }}" alt="{{ logo.alt or site.legalName }}" width="{{ logo.w }}" height="{{ logo.h }}" class="h-12 w-auto sm:h-14" {{ logo.attrs }}>
     </a>
 
     <nav aria-label="Main" class="hidden lg:block">
       <ul class="flex items-center gap-1">
-        {% for item in nav %}
-          {% set active = currentPath == item.href or currentPath.startsWith(item.href + '/') %}
-          <li>
-            <a href="{{ item.href }}"
+        {% for item in navItems %}
+          {% set active = currentPath == item.href or (item.href != '/' and currentPath.startsWith(item.href + '/')) %}
+          <li {{ item.attrs }}>
+            <a href="{{ item.href }}" {{ item.hrefAttrs }}
                class="rounded-full px-4 py-2 text-[15px] font-semibold transition {{ 'bg-brand-50 text-brand-800' if active else 'text-muted hover:bg-surface hover:text-ink' }}"
-               {% if active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+               {% if active %}aria-current="page"{% endif %}>{{ item.text('label') }}</a>
           </li>
         {% endfor %}
       </ul>
     </nav>
 
     <div class="flex items-center gap-2">
-      <a href="/getting-started" class="btn-primary hidden sm:inline-flex">Start intake {{ icon('arrow-right', 'size-4') }}</a>
+      <a href="{{ headerCta.href }}" {{ headerCta.attrs }} class="btn-primary hidden sm:inline-flex">{{ headerCta.label }} {{ icon('arrow-right', 'size-4') }}</a>
       <button type="button" class="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-surface lg:hidden"
               aria-controls="mobile-nav" aria-expanded="false" data-menu-toggle>
         <span class="sr-only" data-menu-label>Open menu</span>
@@ -40,12 +43,12 @@
 
   <nav id="mobile-nav" aria-label="Mobile" class="hidden border-t border-line bg-white lg:hidden">
     <ul class="container-page flex flex-col gap-1 py-4">
-      {% for item in nav %}
-        {% set active = currentPath == item.href or currentPath.startsWith(item.href + '/') %}
+      {% for item in navItems %}
+        {% set active = currentPath == item.href or (item.href != '/' and currentPath.startsWith(item.href + '/')) %}
         <li><a href="{{ item.href }}" class="block rounded-xl px-3 py-3 text-lg font-semibold hover:bg-surface {{ 'bg-brand-50 text-brand-800' if active else 'text-ink' }}"
                {% if active %}aria-current="page"{% endif %}>{{ item.label }}</a></li>
       {% endfor %}
-      <li class="pt-3"><a href="/getting-started" class="btn-primary w-full">Start intake</a></li>
+      <li class="pt-3"><a href="{{ headerCta.href }}" class="btn-primary w-full">{{ headerCta.label }}</a></li>
       <li><a href="{{ site.phone | telHref }}" class="btn-secondary mt-2 w-full">{{ icon('phone', 'size-4') }} Call {{ site.phone }}</a></li>
     </ul>
   </nav>
