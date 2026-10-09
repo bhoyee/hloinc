@@ -99,7 +99,7 @@ sent as `@hloinc.com` from anywhere else. So the website sends from its own subd
 **`noreply@notify.hloinc.com`**, on this hosting:
 
 - cPanel → *Domains*: `notify.hloinc.com` (no website; it only carries mail).
-- cPanel → *Email Accounts*: `noreply@notify.hloinc.com`.
+- cPanel → *Email Accounts*: `noreply@notify.hloinc.com`. If the hosting plan allows no more mailboxes, the setup script uses `MAIL_TRANSPORT=sendmail` instead: the same sender address, sent through the server's own mail program (still signed with DKIM).
 - cPanel → *Email Deliverability*: SPF and DKIM for `notify.hloinc.com` must show **Valid**
   (use *Repair* if not). `hloinc.com` itself is left exactly as it is.
 - cPanel → *Email Routing* for `hloinc.com` must stay **Remote Mail Exchanger**, so mail *to*

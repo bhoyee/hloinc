@@ -3,6 +3,9 @@
 #
 #   git clone https://github.com/bhoyee/hloinc.git ~/hloinc-preview && bash ~/hloinc-preview/scripts/deploy/setup-cpanel.sh
 #
+# To run it again later (e.g. after a fix):
+#   cd ~/hloinc-preview && git pull && bash scripts/deploy/setup-cpanel.sh
+#
 # It creates (or reuses, if run again):
 #   - preview.hloinc.com            the test website
 #   - notify.hloinc.com             a mail-only subdomain the website sends email from
@@ -66,8 +69,19 @@ api Mysql set_privileges_on_database user="$DB_USER" database="$DB_NAME" privile
 
 # ── Email: noreply@notify.hloinc.com ──────────────────────────────────────────
 say "Email"
-if api Email add_pop email="noreply" domain="$MAIL_DOMAIN" password="$MAIL_PASS" quota=250; then ok "$MAILBOX"; fi
-api Email passwd_pop email="noreply" domain="$MAIL_DOMAIN" password="$MAIL_PASS" >/dev/null && ok "password set"
+MAIL_MODE="smtp"
+if api Email add_pop email="noreply" domain="$MAIL_DOMAIN" password="$MAIL_PASS" quota=250 2>/tmp/hlo-mail-err.$$; then
+  api Email passwd_pop email="noreply" domain="$MAIL_DOMAIN" password="$MAIL_PASS" >/dev/null && ok "mailbox $MAILBOX"
+elif [ -x /usr/sbin/sendmail ]; then
+  # No mailbox allowed on this plan: send through the server's mail program instead,
+  # still as $MAILBOX (covered by the SPF and DKIM records below).
+  MAIL_MODE="sendmail"
+  ok "no mailbox available on this plan; sending as $MAILBOX through the server's mail program"
+else
+  cat /tmp/hlo-mail-err.$$ >&2
+  warn "Couldn't create $MAILBOX and the server has no sendmail. Emails won't send until this is fixed."
+fi
+rm -f /tmp/hlo-mail-err.$$
 api EmailAuth enable_dkim domain="$MAIL_DOMAIN" && ok "DKIM on for $MAIL_DOMAIN" || warn "Turn on DKIM: cPanel → Email Deliverability → $MAIL_DOMAIN → Repair"
 SERVER_IP="$(curl -fsS --max-time 10 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
 api EmailAuth install_spf_records domain="$MAIL_DOMAIN" record="v=spf1 +a +mx +ip4:${SERVER_IP} ~all" && ok "SPF for $MAIL_DOMAIN" \
@@ -84,13 +98,24 @@ say "Node.js app"
 NODE_VERSION="$( { cloudlinux-selector get --json --interpreter nodejs 2>/dev/null || echo '{}'; } | python3 -c '
 import json, sys
 data = json.load(sys.stdin)
-versions = [v["version"] for v in data.get("available_versions", []) if str(v.get("status", "enabled")) == "enabled"]
-majors = sorted({int(v.split(".")[0]) for v in versions if v.split(".")[0].isdigit()})
-best = [m for m in majors if m >= 20]
+av = data.get("available_versions", [])
+if isinstance(av, dict):
+    items = list(av.items())
+else:
+    items = [((v.get("version") if isinstance(v, dict) else v), v) for v in av]
+def enabled(info):
+    return not isinstance(info, dict) or str(info.get("status", "enabled")).lower() in ("enabled", "installed", "true")
+majors = set()
+for version, info in items:
+    head = str(version).split(".")[0]
+    if head.isdigit() and enabled(info):
+        majors.add(int(head))
+best = sorted(m for m in majors if m >= 20)
 print(best[-1] if best else "")
 ' || true)"
 if [ -z "$NODE_VERSION" ]; then
-  echo "   ✗ No Node.js 20+ is enabled on this server. Ask the host to enable it in the Node.js Selector." >&2
+  echo "   ✗ Couldn't find Node.js 20 or newer. This is what the server reports:" >&2
+  cloudlinux-selector get --json --interpreter nodejs 2>&1 | head -c 1500 >&2; echo >&2
   exit 1
 fi
 if cloudlinux-selector get --json --interpreter nodejs 2>/dev/null | grep -q "\"$APP_NAME\""; then
@@ -125,11 +150,11 @@ DB_NAME=${DB_NAME}
 DB_USER=${DB_USER}
 DB_PASSWORD=${DB_PASS}
 
-SMTP_HOST=${SMTP_HOST}
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=${MAILBOX}
-SMTP_PASSWORD=${MAIL_PASS}
+$(if [ "$MAIL_MODE" = "sendmail" ]; then
+  printf 'MAIL_TRANSPORT=sendmail\n'
+else
+  printf 'MAIL_TRANSPORT=smtp\nSMTP_HOST=%s\nSMTP_PORT=465\nSMTP_SECURE=true\nSMTP_USER=%s\nSMTP_PASSWORD=%s\n' "$SMTP_HOST" "$MAILBOX" "$MAIL_PASS"
+fi)
 MAIL_FROM="Healthy Living Option Inc. <${MAILBOX}>"
 
 TURNSTILE_SITE_KEY=

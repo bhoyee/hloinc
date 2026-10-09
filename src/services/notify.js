@@ -7,7 +7,10 @@ let transporter;
 
 function getTransporter() {
   if (transporter) return transporter;
-  if (!config.mail.host) {
+  if (config.mail.transport === 'sendmail') {
+    // The server's mail program (Exim on cPanel). Signs with the domain's DKIM; no mailbox needed.
+    transporter = nodemailer.createTransport({ sendmail: true, newline: 'unix', path: config.mail.sendmailPath });
+  } else if (!config.mail.host) {
     // No SMTP configured (local dev): print emails to the console instead.
     transporter = nodemailer.createTransport({ jsonTransport: true });
   } else {
@@ -24,7 +27,7 @@ function getTransporter() {
 const channels = {
   async email({ to, subject, text, replyTo }) {
     const info = await getTransporter().sendMail({ from: config.mail.from, to, subject, text, replyTo });
-    if (!config.mail.host && !config.isTest) console.log('[email:dev]', { to, subject, text });
+    if (config.mail.transport !== 'sendmail' && !config.mail.host && !config.isTest) console.log('[email:dev]', { to, subject, text });
     return info;
   },
   // SMS is out of scope (requirements §2). Add a provider here later and

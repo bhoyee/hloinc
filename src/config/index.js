@@ -27,6 +27,9 @@ const schema = z.object({
   DB_USER: z.string().default('root'),
   DB_PASSWORD: z.string().default(''),
 
+  // "smtp" (default) or "sendmail" (the server's own mail program; no mailbox needed on cPanel).
+  MAIL_TRANSPORT: z.enum(['smtp', 'sendmail']).default('smtp'),
+  SENDMAIL_PATH: z.string().default('/usr/sbin/sendmail'),
   SMTP_HOST: z.string().default(''),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_SECURE: bool,
@@ -88,6 +91,8 @@ module.exports = {
     password: env.DB_PASSWORD,
   },
   mail: {
+    transport: env.MAIL_TRANSPORT,
+    sendmailPath: env.SENDMAIL_PATH,
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
     secure: env.SMTP_SECURE,
