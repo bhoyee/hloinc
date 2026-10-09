@@ -365,6 +365,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) return;
       const data = await res.json();
       const count = document.querySelector('[data-notif-count]');
+      // Red counters on the menu (Messages, Appointments).
+      for (const [key, n] of Object.entries(data.badges || {})) {
+        const value = Number(n) || 0;
+        document.querySelectorAll(`[data-nav-badge="${key}"]`).forEach((b) => {
+          b.textContent = value > 99 ? '99+' : String(value);
+          b.classList.toggle('hidden', !value);
+        });
+        document.querySelectorAll(`[data-nav-badge-label="${key}"]`).forEach((l) => {
+          l.textContent = value ? `, ${value} ${l.dataset.label}` : '';
+        });
+      }
+      const anyBadge = Object.values(data.badges || {}).some((n) => Number(n) > 0);
+      document.querySelectorAll('[data-nav-badge-any]').forEach((d) => d.classList.toggle('hidden', !anyBadge));
       count.textContent = data.unread > 99 ? '99+' : String(data.unread);
       count.classList.toggle('hidden', !data.unread);
       document.querySelector('[data-notif-label]').textContent = `Notifications${data.unread ? `, ${data.unread} unread` : ''}`;
@@ -392,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch { /* offline: try again next time */ }
   }
   if (notifBtn) {
-    setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 60000);
+    setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 30000);
     // Coming back to a tab: check straight away (the session may have ended while it was hidden).
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadNotifications(); });
     const readAll = document.querySelector('[data-notif-read-all]');
@@ -438,6 +451,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const update = () => { out.textContent = field.value.trim() || fallback; };
     field.addEventListener('input', update);
     update();
+  });
+
+  // Role editor: the role checklist only matters for "their own and chosen roles".
+  const scheduleRoles = document.querySelector('[data-schedule-roles]');
+  document.querySelectorAll('[data-schedule-mode]').forEach((r) => {
+    r.addEventListener('change', () => { if (scheduleRoles && r.checked) scheduleRoles.hidden = r.value !== 'roles'; });
+  });
+
+  // Security settings: show the warning while "Off" is chosen.
+  const offWarning = document.querySelector('[data-off-warning]');
+  document.querySelectorAll('[data-two-step-choice]').forEach((r) => {
+    r.addEventListener('change', () => { if (offWarning) offWarning.hidden = !(r.checked && r.value === 'off'); });
   });
 
   // Ask before permanent, can't-undo actions.

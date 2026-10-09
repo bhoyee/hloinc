@@ -9,8 +9,9 @@ const { encrypt, decrypt, sha256 } = require('../lib/crypto');
 const ISSUER = 'HLO Staff Portal';
 const RECOVERY_CODE_COUNT = 10;
 
-/** Must this user use two-step sign-in? Set per role under Roles & permissions. */
+/** Must this user use two-step sign-in? Set per role, while it's switched on for the portal. */
 async function isRequiredFor(user) {
+  if (!(await require('./security').twoStepOn())) return false;
   const role = await require('./roles').get(user.role);
   return Boolean(role && role.require_mfa);
 }

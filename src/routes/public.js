@@ -340,6 +340,7 @@ router.get(['/privacy', '/terms', '/data-protection', '/cookies'], (req, res) =>
 // --- SEO -----------------------------------------------------------------
 
 router.get('/robots.txt', (req, res) => {
+  if (config.noindex) return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
   res.type('text/plain').send(`User-agent: *\nDisallow: /portal\n\nSitemap: ${config.appUrl}/sitemap.xml\n`);
 });
 

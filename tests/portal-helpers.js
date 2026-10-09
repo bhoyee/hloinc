@@ -8,6 +8,13 @@ const roles = require('../src/services/roles');
 const { DEFAULT_ROLES, normalize } = require('../src/auth/permissions');
 
 export const PASSWORD = 'correct horse battery';
+
+/** Starting "whose schedules can this role see" settings (migration 014). */
+const SCHEDULE_DEFAULTS = {
+  admin: { mode: 'all' },
+  program_director: { mode: 'roles', roles: ['program_coordinator', 'intake_specialist', 'reception'] },
+  program_coordinator: { mode: 'roles', roles: ['intake_specialist', 'reception'] },
+};
 export const csrfFrom = (html) => (html.match(/name="_csrf" value="([a-f0-9]+)"/) || [])[1];
 
 /** Put the starting roles back exactly as defined, without two-step sign-in (simpler tests). */
@@ -15,7 +22,7 @@ export async function resetRoles() {
   await db('roles').whereNotIn('key', DEFAULT_ROLES.map((r) => r.key)).del();
   for (const r of DEFAULT_ROLES) {
     const row = await db('roles').where({ key: r.key }).first();
-    await db('roles').where({ id: row.id }).update({ require_mfa: false });
+    await db('roles').where({ id: row.id }).update({ require_mfa: false, schedule_scope: JSON.stringify(SCHEDULE_DEFAULTS[r.key] || { mode: 'own' }) });
     await db('role_permissions').where({ role_id: row.id }).del();
     await db('role_permissions').insert(normalize(r.permissions).map((permission) => ({ role_id: row.id, permission })));
   }

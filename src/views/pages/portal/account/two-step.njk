@@ -2,7 +2,17 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% if setup %}
+  {% if switchedOff %}
+    <p class="mb-6 flex gap-3 rounded-2xl border border-line bg-white p-4 text-[15px] text-ink shadow-soft" role="status">
+      {{ icon('info', 'mt-0.5 size-5 shrink-0 text-brand-700') }}
+      <span><strong>Two-step sign-in is switched off for everyone</strong> by an administrator, so you sign in with your email and password only.
+        {% if user.mfa_enabled %}Your authenticator app stays linked and will be asked for again if it’s switched back on.{% else %}You can set it up if it’s switched back on.{% endif %}</span>
+    </p>
+  {% endif %}
+
+  {% if switchedOff and not user.mfa_enabled %}
+    {# Nothing to set up while it's switched off. #}
+  {% elif setup %}
     {% if required %}
       <p class="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900" role="status">
         {{ icon('lock', 'mt-0.5 size-5 shrink-0') }}
@@ -46,11 +56,11 @@
         <div class="flex items-center gap-4">
           <span class="icon-tile">{{ icon('check', 'size-6') }}</span>
           <div>
-            <h2 class="text-lg font-bold">Two-step sign-in is on</h2>
+            <h2 class="text-lg font-bold">{{ 'Your authenticator app is linked' if switchedOff else 'Two-step sign-in is on' }}</h2>
             <p class="text-[15px] text-muted">{{ recoveryLeft }} of 10 recovery codes left.</p>
           </div>
         </div>
-        <p class="mt-5 text-[15px] text-muted">Each time you sign in, you’ll enter a code from your authenticator app after your password.</p>
+        <p class="mt-5 text-[15px] text-muted">{{ 'While two-step sign-in is switched off, you won’t be asked for a code.' if switchedOff else 'Each time you sign in, you’ll enter a code from your authenticator app after your password.' }}</p>
       </section>
 
       <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">

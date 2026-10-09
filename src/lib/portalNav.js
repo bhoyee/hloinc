@@ -7,14 +7,15 @@
  */
 const NAV = [
   { label: 'Dashboard', href: '/portal', icon: 'dashboard' },
-  { label: 'Appointments', href: '/portal/appointments', icon: 'calendar', permission: ['appointments.view', 'appointments.log'] },
+  { label: 'Appointments', href: '/portal/appointments', icon: 'calendar', permission: ['appointments.view', 'appointments.log'], badge: 'appointments', badgeLabel: 'waiting to be confirmed' },
   { label: 'Schedule', href: '/portal/schedule', icon: 'clock' },
-  { label: 'Messages', href: '/portal/messages', icon: 'inbox', permission: ['messages.view', 'messages.view_intake'] },
+  { label: 'Messages', href: '/portal/messages', icon: 'inbox', permission: ['messages.view', 'messages.view_intake'], badge: 'messages', badgeLabel: 'unread' },
   { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view' },
   { label: 'Announcements', href: '/portal/announcements', icon: 'megaphone', permission: 'announcements.view' },
   { label: 'Site content', href: '/portal/content', icon: 'document', permission: ['site_content.view', 'site_content.edit', 'site_content.edit_limited'] },
   { label: 'Staff accounts', href: '/portal/accounts', icon: 'users', permission: 'accounts.view', group: 'admin' },
   { label: 'Roles & permissions', href: '/portal/roles', icon: 'key', permission: 'roles.view', group: 'admin' },
+  { label: 'Security settings', href: '/portal/settings/security', icon: 'lock', permission: 'security.edit', group: 'admin' },
   { label: 'Audit log', href: '/portal/audit', icon: 'shield', permission: 'audit.view', group: 'admin' },
 ];
 

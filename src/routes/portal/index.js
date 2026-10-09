@@ -27,9 +27,14 @@ router.use(require('./auth'));
 router.use(requireAuth);
 router.use(requireMfaSetup);
 
-// Unread count for the bell in the header.
+// Unread count for the bell in the header, and the red counters on the menu.
 router.use(async (req, res, next) => {
-  res.locals.unreadCount = await require('../../services/notifications').unreadCount(req.user.id);
+  const [unread, badges] = await Promise.all([
+    require('../../services/notifications').unreadCount(req.user.id),
+    require('../../services/badges').forUser(req.user),
+  ]);
+  res.locals.unreadCount = unread;
+  res.locals.navBadges = badges;
   next();
 });
 
@@ -46,6 +51,7 @@ router.use('/messages', requirePermission(['messages.view', 'messages.view_intak
 router.use('/accounts', requirePermission('accounts.view'), require('./accounts'));
 router.use('/roles', requirePermission('roles.view'), require('./roles'));
 router.use('/audit', requirePermission('audit.view'), require('./audit'));
+router.use('/settings', requirePermission('security.edit'), require('./settings'));
 
 router.use((req, res, next) => {
   const err = new Error('We couldn’t find that page in the portal.');

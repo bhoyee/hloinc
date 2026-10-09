@@ -1,0 +1,49 @@
+# Tests every push and pull request.
+#
+# Deployment is pulled by the server, not pushed: a cron job on cPanel
+# (scripts/deploy/pull.sh, installed by scripts/deploy/setup-cpanel.sh) checks
+# GitHub every 5 minutes and installs a new commit on `main` only once the
+# "Test" job below has passed for it. See DEPLOY.md.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # The server looks for a check called exactly "Test" before deploying. Don't rename it.
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: hloinc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Check the built CSS is up to date
+        run: |
+          npm run css:build
+          git diff --exit-code -- public/css/app.css || (echo "::error::public/css/app.css is out of date. Run 'npm run css:build' and commit it." && exit 1)
+      - run: npm test

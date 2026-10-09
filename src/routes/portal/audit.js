@@ -23,6 +23,8 @@ const ACTION_LABELS = {
   'mfa.enabled': 'Two-step sign-in turned on',
   'mfa.disabled': 'Two-step sign-in turned off',
   'mfa.recovery_regenerated': 'New recovery codes',
+  'security.two_step_on': 'Two-step switched ON for everyone',
+  'security.two_step_off': 'Two-step switched OFF for everyone',
   'account.create': 'Account created',
   'account.update': 'Account details changed',
   'account.role_change': 'Role changed',

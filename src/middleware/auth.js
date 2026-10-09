@@ -4,6 +4,7 @@ const config = require('../config');
 const users = require('../services/users');
 const roles = require('../services/roles');
 const { can } = require('../auth/permissions');
+const security = require('../services/security');
 
 const AUTH_KEYS = ['userId', 'sessionVersion', 'loginAt', 'lastActivity', 'previousLoginAt', 'pendingMfa', 'mfaSetup'];
 
@@ -60,7 +61,11 @@ async function loadUser(req, res, next) {
   const role = await roles.get(user.role);
   user.permissions = role ? role.permissions : new Set();
   user.roleLabel = role ? role.name : user.role;
-  user.requireMfa = Boolean(role && role.require_mfa);
+  user.scheduleScope = role ? role.scheduleScope : { mode: 'own', roles: [] };
+  // Two-step sign-in can be switched off for everyone (Administration → Security settings).
+  const twoStepOn = await security.twoStepOn();
+  user.twoStepOff = !twoStepOn;
+  user.requireMfa = twoStepOn && Boolean(role && role.require_mfa);
   if (!BACKGROUND_PATHS.has(req.path)) req.session.lastActivity = now;
   req.user = user;
   res.locals.user = user;

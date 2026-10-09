@@ -211,7 +211,10 @@
       <h2 class="text-lg font-bold">Your account security</h2>
       <ul class="mt-4 space-y-3 text-[15px]">
         <li class="flex items-center gap-3">
-          {% if security.mfaEnabled %}
+          {% if user.twoStepOff %}
+            <span class="grid size-8 place-items-center rounded-full bg-surface text-muted ring-1 ring-line">{{ icon('info', 'size-4') }}</span>
+            <span>Two-step sign-in is switched off for everyone{% if can('security.edit') %} · <a href="/portal/settings/security" class="link">Security settings</a>{% endif %}</span>
+          {% elif security.mfaEnabled %}
             <span class="grid size-8 place-items-center rounded-full bg-brand-100 text-brand-800">{{ icon('check', 'size-4') }}</span>
             <span>Two-step sign-in is on · {{ security.recoveryLeft }} recovery codes left</span>
           {% else %}

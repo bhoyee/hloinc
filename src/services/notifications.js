@@ -29,12 +29,12 @@ function notifyUser(userId, payload) {
  * Example: a new referral goes to anyone who can view all messages or
  * intake messages.
  */
-async function notifyPermission(permissions, payload) {
+async function notifyPermission(permissions, payload, { exceptId = null } = {}) {
   try {
     const wanted = [].concat(permissions);
     const roleKeys = (await roles.list()).filter((r) => wanted.some((p) => r.permissions.has(p))).map((r) => r.key);
     if (!roleKeys.length) return;
-    const ids = await db('users').whereIn('role', roleKeys).where({ status: 'active' }).pluck('id');
+    const ids = await db('users').whereIn('role', roleKeys).where({ status: 'active' }).modify((q) => exceptId && q.whereNot({ id: exceptId })).pluck('id');
     await insert(ids, payload);
   } catch (err) {
     console.error('Notification fan-out failed:', err.message);

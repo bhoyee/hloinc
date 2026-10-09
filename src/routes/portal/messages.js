@@ -27,6 +27,8 @@ router.get('/', async (req, res) => {
   const tab = msgs.TABS[req.query.tab] ? req.query.tab : 'new';
   const filters = { q: str(req.query.q), type: str(req.query.type), recipient: str(req.query.recipient), mine: req.query.mine === '1' ? '1' : '' };
   const result = await msgs.list(req.user, { tab, ...filters, mine: filters.mine === '1', page: req.query.page });
+  const readIds = new Set(await require('../../db/knex')('message_reads').where({ user_id: req.user.id }).whereIn('message_id', result.items.map((m) => m.id)).pluck('message_id'));
+  result.items = result.items.map((m) => ({ ...m, unread: !readIds.has(m.id) && !m.archived_at && m.status !== 'resolved' }));
   const pageUrl = (p) => `/portal/messages?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
   const intakeOnly = !req.user.permissions.has('messages.view');
   res.render('pages/portal/messages/index.njk', {
@@ -45,6 +47,12 @@ router.get('/', async (req, res) => {
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
   });
+});
+
+router.post('/read-all', async (req, res) => {
+  const n = await require('../../services/badges').markAllRead(req.user);
+  setFlash(req, 'success', n ? `Marked ${n} ${n === 1 ? 'message' : 'messages'} as read.` : 'Everything is already read.');
+  res.redirect(303, typeof req.body.back === 'string' && req.body.back.startsWith('/portal/messages') ? req.body.back : '/portal/messages');
 });
 
 // --- One message ------------------------------------------------------------------------
@@ -91,6 +99,9 @@ async function renderShow(req, res, { values = {}, errors = {}, status = 200 } =
 }
 
 router.get('/:id', async (req, res) => {
+  const badges = require('../../services/badges');
+  await badges.markRead(req.msg.id, req.user.id);
+  res.locals.navBadges = await badges.forUser(req.user); // so the menu counter drops on this page
   await auditView(req);
   await renderShow(req, res);
 });

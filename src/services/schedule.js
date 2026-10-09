@@ -9,17 +9,45 @@ function base() {
   return db('shifts as s').join('users as u', 'u.id', 's.user_id').select('s.*', 'u.name as user_name');
 }
 
-/** Shifts that overlap [from, to), optionally for one person. */
-function between(from, to, userId) {
+/** Shifts that overlap [from, to), for one person or a list of people (null = everyone). */
+function between(from, to, who) {
   const q = base().where('s.start_at', '<', to).where('s.end_at', '>', from).orderBy('s.start_at');
-  if (userId) q.where('s.user_id', userId);
+  if (Array.isArray(who)) q.whereIn('s.user_id', who.length ? who : [0]);
+  else if (who) q.where('s.user_id', who);
   return q;
+}
+
+/**
+ * Whose schedules this person can see (set per role under Roles & permissions):
+ * null means everyone; otherwise a list of user IDs that always includes their own.
+ */
+async function visibleIds(user) {
+  const scope = user.scheduleScope || { mode: 'own', roles: [] };
+  if (scope.mode === 'all') return null;
+  if (scope.mode === 'roles' && scope.roles.length) {
+    const ids = await db('users').whereIn('role', scope.roles).pluck('id');
+    return [...new Set([user.id, ...ids])];
+  }
+  return [user.id];
+}
+
+/** Can this person see (and, with schedule.edit, change) this staff member's schedule? */
+async function canSee(user, userId) {
+  const ids = await visibleIds(user);
+  return ids === null || ids.includes(Number(userId));
 }
 
 const get = (id) => base().where('s.id', id).first();
 
-/** Active staff for the team grid and pickers. */
-const staff = () => db('users').select('id', 'name', 'role').where({ status: 'active' }).orderBy('name');
+/** Active staff for the team grid and pickers, limited to the people this user can see. */
+async function staff(user) {
+  const q = db('users').select('id', 'name', 'role').where({ status: 'active' }).orderBy('name');
+  if (user) {
+    const ids = await visibleIds(user);
+    if (ids) q.whereIn('id', ids);
+  }
+  return q;
+}
 
 /**
  * Turn a form's date + start/end times into instants. An end time at or
@@ -78,4 +106,4 @@ async function update(id, data) {
 
 const remove = (id) => db('shifts').where({ id }).del();
 
-module.exports = { KIND_LABELS, between, get, staff, toRange, clashes, create, update, remove };
+module.exports = { KIND_LABELS, between, get, staff, visibleIds, canSee, toRange, clashes, create, update, remove };

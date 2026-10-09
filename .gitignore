@@ -4,6 +4,7 @@ storage/uploads/*
 storage/logs/*
 !storage/**/.gitkeep
 tmp/
+backups/
 coverage/
 *.log
 

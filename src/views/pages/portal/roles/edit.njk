@@ -26,13 +26,49 @@
           {{ ui.input('name', 'Role name', values, errors, autocomplete='off', attrs='maxlength="80"') }}
           {{ ui.input('description', 'Short description', values, errors, required=false, autocomplete='off', attrs='maxlength="255"') }}
         </div>
-        <label class="mt-5 flex items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line">
-          <input type="checkbox" name="require_mfa" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" {% if values.require_mfa == 'yes' %}checked{% endif %}>
+        <label class="mt-5 flex items-start gap-3 rounded-2xl border border-accent-200 bg-accent-50 p-4">
+          <input type="checkbox" name="require_mfa" value="yes" class="mt-1 size-5 shrink-0 accent-accent-600" {% if values.require_mfa == 'yes' %}checked{% endif %}>
           <span>
-            <span class="block font-semibold text-ink">Require two-step sign-in</span>
-            <span class="block text-sm text-muted">People with this role must use an authenticator app to sign in. Recommended for roles that can see personal information or change accounts.</span>
+            <span class="flex items-center gap-2 font-semibold text-accent-800">{{ icon('lock', 'size-4') }} Require two-step sign-in</span>
+            <span class="mt-0.5 block text-sm text-accent-900">People with this role must use an authenticator app to sign in. Recommended for roles that can see personal information or change accounts.</span>
+            {% if user.twoStepOff %}<span class="mt-1 block text-sm font-semibold text-accent-800">Two-step sign-in is currently switched off for everyone in <a href="/portal/settings/security" class="underline underline-offset-2">Security settings</a>, so this has no effect until it’s switched back on.</span>{% endif %}
           </span>
         </label>
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="sched-h">
+        <h2 id="sched-h" class="text-lg font-bold">Staff schedule</h2>
+        <p class="mt-1 text-[15px] text-muted">Whose shifts and time off people with this role can see. With “Create &amp; edit” on Staff schedule, they can also change them. Everyone always sees their own.</p>
+        {% if role and role.is_system %}
+          <p class="mt-4 rounded-2xl bg-surface p-4 text-[15px] text-ink ring-1 ring-line">The Admin role (CEO/COO) always sees everyone’s schedule.</p>
+        {% else %}
+          <fieldset class="mt-5">
+            <legend class="sr-only">Whose schedules this role can see</legend>
+            <div class="grid gap-3 md:grid-cols-3">
+              {% for opt in [
+                { v: 'own', t: 'Only their own', d: 'Just their own shifts and time off.' },
+                { v: 'roles', t: 'Their own and chosen roles', d: 'For example a manager and the team they supervise.' },
+                { v: 'all', t: 'Everyone', d: 'All staff, including leadership.' }
+              ] %}
+                <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-line p-4 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                  <input type="radio" name="schedule_mode" value="{{ opt.v }}" class="mt-1 size-4 shrink-0 accent-brand-700" {% if (values.schedule_mode or 'own') == opt.v %}checked{% endif %} data-schedule-mode>
+                  <span><span class="block font-semibold text-ink">{{ opt.t }}</span><span class="block text-sm text-muted">{{ opt.d }}</span></span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="mt-4 rounded-2xl bg-surface p-4 ring-1 ring-line" data-schedule-roles {% if values.schedule_mode != 'roles' %}hidden{% endif %}>
+              <p class="text-sm font-semibold text-ink">They can also see people with these roles:</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {% for r in allRoles %}
+                  <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                    <input type="checkbox" name="schedule_roles" value="{{ r.key }}" class="size-4 accent-brand-700" {% if r.key in (values.schedule_roles or []) %}checked{% endif %}> {{ r.name }}{% if role and r.key == role.key %} <span class="text-muted">(each other)</span>{% endif %}
+                  </label>
+                {% endfor %}
+              </div>
+              <p class="mt-2 text-xs text-muted">The CEO/COO’s schedule is only included when you choose “Everyone”.</p>
+            </div>
+          </fieldset>
+        {% endif %}
       </section>
 
       <section class="rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="perm-h">

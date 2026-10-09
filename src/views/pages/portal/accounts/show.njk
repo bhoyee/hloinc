@@ -56,7 +56,7 @@
       <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="access-h">
         <h2 id="access-h" class="text-lg font-bold">Access</h2>
         <dl class="mt-4 space-y-2 text-[15px]">
-          <div class="flex justify-between gap-4"><dt class="text-muted">Two-step sign-in</dt><dd class="font-medium">{{ 'On' if account.mfa_enabled else ('Off · required' if mfaRequired else 'Off') }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Two-step sign-in</dt><dd class="text-right font-medium">{{ (('Linked' if account.mfa_enabled else 'Not set up') if user.twoStepOff else ('On' if account.mfa_enabled else 'Off')) }}{% if user.twoStepOff %} <span class="block text-xs font-normal text-muted">Switched off for everyone</span>{% elif not account.mfa_enabled and mfaRequired %} · required{% endif %}</dd></div>
           <div class="flex justify-between gap-4"><dt class="text-muted">Last sign-in</dt><dd class="font-medium">{{ account.last_login_at | date({ month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) if account.last_login_at else 'Never' }}</dd></div>
           <div class="flex justify-between gap-4"><dt class="text-muted">Account created</dt><dd class="font-medium">{{ account.created_at | date }}</dd></div>
         </dl>

@@ -64,7 +64,8 @@ router.post('/login', limiters.login, async (req, res) => {
   const next = safeNext(req.body.next);
   const { user } = result;
 
-  if (user.mfa_enabled) {
+  // Ask for a code only while two-step sign-in is switched on for the portal.
+  if (user.mfa_enabled && (await require('../../services/security').twoStepOn())) {
     await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
     req.session.pendingMfa = { userId: user.id, at: Date.now(), attempts: 0, next };
     return res.redirect(303, '/portal/login/verify');

@@ -63,6 +63,13 @@ function createApp() {
   app.set('view engine', 'njk');
 
   app.use(securityHeaders());
+  // Preview site: keep every page out of search engines.
+  if (config.noindex) {
+    app.use((req, res, next) => {
+      res.set('X-Robots-Tag', 'noindex, nofollow');
+      next();
+    });
+  }
   app.use(compression());
   app.use(
     express.static(config.paths.public, {

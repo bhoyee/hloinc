@@ -14,11 +14,17 @@ const roles = require('../src/services/roles');
 const { DEFAULT_ROLES } = require('../src/auth/permissions');
 
 /** Put roles back to the defaults; two-step off unless a test turns it on. */
+const SCHEDULE_DEFAULTS = {
+  admin: { mode: 'all' },
+  program_director: { mode: 'roles', roles: ['program_coordinator', 'intake_specialist', 'reception'] },
+  program_coordinator: { mode: 'roles', roles: ['intake_specialist', 'reception'] },
+};
+
 async function resetRoles({ requireMfaFor = [] } = {}) {
   await db('roles').whereNotIn('key', DEFAULT_ROLES.map((r) => r.key)).del();
   for (const r of DEFAULT_ROLES) {
     const row = await db('roles').where({ key: r.key }).first();
-    await db('roles').where({ id: row.id }).update({ name: r.name, require_mfa: requireMfaFor.includes(r.key) });
+    await db('roles').where({ id: row.id }).update({ name: r.name, require_mfa: requireMfaFor.includes(r.key), schedule_scope: JSON.stringify(SCHEDULE_DEFAULTS[r.key] || { mode: 'own' }) });
     await db('role_permissions').where({ role_id: row.id }).del();
     await db('role_permissions').insert(r.permissions.map((permission) => ({ role_id: row.id, permission })));
   }

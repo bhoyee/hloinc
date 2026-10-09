@@ -13,9 +13,10 @@ const safeLink = (link) => (typeof link === 'string' && link.startsWith('/') && 
 
 // For the bell in the header (polled every minute while the tab is open).
 router.get('/summary', async (req, res) => {
-  const [unread, items] = await Promise.all([notifications.unreadCount(req.user.id), notifications.latest(req.user.id, 8)]);
+  const [unread, items, badges] = await Promise.all([notifications.unreadCount(req.user.id), notifications.latest(req.user.id, 8), require('../../services/badges').forUser(req.user)]);
   res.json({
     unread,
+    badges,
     items: items.map((n) => ({ id: n.id, title: n.title, body: n.body, link: safeLink(n.link), read: Boolean(n.read_at), at: n.created_at })),
   });
 });

@@ -75,7 +75,7 @@ const SETUP_MINUTES = 15;
 async function renderTwoStep(req, res, { errors = {}, status = 200 } = {}) {
   const required = req.user.requireMfa;
   let setup = null;
-  if (!req.user.mfa_enabled) {
+  if (!req.user.mfa_enabled && !req.user.twoStepOff) {
     // Keep the same secret while the person is setting up, so the QR code doesn't change on a typo.
     const s = req.session.mfaSetup;
     if (!s || Date.now() - s.at > SETUP_MINUTES * 60 * 1000) {
@@ -87,6 +87,7 @@ async function renderTwoStep(req, res, { errors = {}, status = 200 } = {}) {
     title: 'Two-step sign-in',
     crumbs: [...crumbs, { label: 'My account', href: '/portal/account' }],
     required,
+    switchedOff: req.user.twoStepOff,
     setup,
     errors,
     recoveryLeft: req.user.mfa_enabled ? await mfa.remainingRecoveryCodes(req.user.id) : 0,
@@ -96,7 +97,7 @@ async function renderTwoStep(req, res, { errors = {}, status = 200 } = {}) {
 router.get('/two-step', (req, res) => renderTwoStep(req, res));
 
 router.post('/two-step/enable', limiters.login, async (req, res) => {
-  if (req.user.mfa_enabled) return res.redirect(303, '/portal/account/two-step');
+  if (req.user.mfa_enabled || req.user.twoStepOff) return res.redirect(303, '/portal/account/two-step');
   const s = req.session.mfaSetup;
   const parsed = mfaCodeSchema.safeParse(req.body);
   const step = s && parsed.success ? await mfa.checkCode(s.secret, parsed.data.code) : null;

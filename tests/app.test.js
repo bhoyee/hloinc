@@ -62,6 +62,20 @@ describe('security', () => {
     expect(res.headers.location).toBe('/portal/login?ended=expired&next=%2Fportal%2Fjobs%2F5');
   });
 
+  it('keeps a preview copy out of search engines when NOINDEX is set', async () => {
+    const config = require('../src/config');
+    config.noindex = true;
+    try {
+      const preview = createApp();
+      const home = await request(preview).get('/');
+      expect(home.headers['x-robots-tag']).toBe('noindex, nofollow');
+      expect((await request(preview).get('/robots.txt')).text).toMatch(/^Disallow: \/$/m);
+    } finally {
+      config.noindex = false;
+    }
+    expect((await request(app).get('/robots.txt')).text).toContain('Sitemap:');
+  });
+
   it('keeps the staff portal out of search engines', async () => {
     const res = await request(app).get('/portal');
     expect(res.headers['x-robots-tag']).toBe('noindex, nofollow');

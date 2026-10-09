@@ -38,6 +38,8 @@ const schema = z.object({
   TURNSTILE_SITE_KEY: z.string().default(''),
   TURNSTILE_SECRET_KEY: z.string().default(''),
   FORMS_MAX_PER_EMAIL_PER_DAY: z.coerce.number().int().positive().default(10),
+  // Test/preview copies: tell search engines not to index anything.
+  NOINDEX: bool,
 });
 
 const parsed = schema.safeParse({
@@ -62,6 +64,7 @@ module.exports = {
   isTest: env.NODE_ENV === 'test',
   port: env.PORT,
   appUrl: env.APP_URL.replace(/\/$/, ''),
+  noindex: env.NOINDEX,
   session: {
     secret: env.SESSION_SECRET,
     idleMinutes: env.SESSION_IDLE_MINUTES,

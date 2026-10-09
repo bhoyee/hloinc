@@ -8,11 +8,17 @@
 {% endblock %}
 {% block bodyClass %}bg-surface{% endblock %}
 
-{% macro navLink(item) %}
+{% macro navLink(item, badges) %}
+  {% set n = badges[item.badge] if (item.badge and badges) else 0 %}
   <li>
     <a href="{{ item.href }}" {% if item.active %}aria-current="page"{% endif %}
        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition {{ 'bg-white/10 text-white' if item.active else 'hover:bg-white/5 hover:text-white' }}">
       {{ icon(item.icon, 'size-5 ' + ('text-accent-500' if item.active else 'text-brand-300')) }} {{ item.label }}
+      {% if item.badge %}
+        {# Red counter, kept up to date by site.js (every 30 seconds). #}
+        <span class="ml-auto min-w-6 rounded-full bg-accent-600 px-1.5 py-0.5 text-center text-xs leading-4 font-bold text-white shadow-sm {{ '' if n else 'hidden' }}" data-nav-badge="{{ item.badge }}" aria-hidden="true">{{ n if n < 100 else '99+' }}</span>
+        <span class="sr-only" data-nav-badge-label="{{ item.badge }}" data-label="{{ item.badgeLabel }}">{% if n %}, {{ n }} {{ item.badgeLabel }}{% endif %}</span>
+      {% endif %}
     </a>
   </li>
 {% endmacro %}
@@ -39,13 +45,13 @@
 
     <nav aria-label="Portal" class="flex-1 overflow-y-auto px-3 py-5">
       <ul class="space-y-1">
-        {% for item in portalNav %}{% if not item.soon and item.group != 'admin' %}{{ navLink(item) }}{% endif %}{% endfor %}
+        {% for item in portalNav %}{% if not item.soon and item.group != 'admin' %}{{ navLink(item, navBadges) }}{% endif %}{% endfor %}
       </ul>
 
       {% set adminItems = portalNav | selectattr('group') %}
       {% if adminItems.length %}
         <p class="mt-7 px-3 text-xs font-semibold tracking-wider text-brand-400 uppercase">Administration</p>
-        <ul class="mt-2 space-y-1">{% for item in adminItems %}{{ navLink(item) }}{% endfor %}</ul>
+        <ul class="mt-2 space-y-1">{% for item in adminItems %}{{ navLink(item, navBadges) }}{% endfor %}</ul>
       {% endif %}
 
       {% set soonItems = portalNav | selectattr('soon') %}
@@ -74,8 +80,10 @@
   <div class="flex min-h-screen min-w-0 flex-col">
     <header class="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
       <div class="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:h-[4.5rem] lg:px-8">
-        <button type="button" class="grid size-10 shrink-0 place-items-center rounded-lg text-ink hover:bg-surface lg:hidden" aria-controls="portal-nav" aria-expanded="false" data-portal-nav-open>
+        <button type="button" class="relative grid size-10 shrink-0 place-items-center rounded-lg text-ink hover:bg-surface lg:hidden" aria-controls="portal-nav" aria-expanded="false" data-portal-nav-open>
           {{ icon('menu', 'size-6') }}<span class="sr-only">Open menu</span>
+          {# Phones: a red dot when something in the menu needs attention. #}
+          <span class="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-accent-600 ring-2 ring-white {{ '' if (navBadges.messages or navBadges.appointments) else 'hidden' }}" data-nav-badge-any aria-hidden="true"></span>
         </button>
         <a href="/portal" class="flex items-center gap-2 lg:hidden" aria-label="Staff portal home">
           <img src="/apple-touch-icon.png" alt="" width="32" height="32" class="size-8 rounded-lg">

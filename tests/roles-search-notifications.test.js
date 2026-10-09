@@ -14,11 +14,17 @@ const app = createApp();
 const PASSWORD = 'correct horse battery';
 const csrfFrom = (html) => (html.match(/name="_csrf" value="([a-f0-9]+)"/) || [])[1];
 
+const SCHEDULE_DEFAULTS = {
+  admin: { mode: 'all' },
+  program_director: { mode: 'roles', roles: ['program_coordinator', 'intake_specialist', 'reception'] },
+  program_coordinator: { mode: 'roles', roles: ['intake_specialist', 'reception'] },
+};
+
 async function resetRoles() {
   await db('roles').whereNotIn('key', DEFAULT_ROLES.map((r) => r.key)).del();
   for (const r of DEFAULT_ROLES) {
     const row = await db('roles').where({ key: r.key }).first();
-    await db('roles').where({ id: row.id }).update({ name: r.name, require_mfa: false });
+    await db('roles').where({ id: row.id }).update({ name: r.name, require_mfa: false, schedule_scope: JSON.stringify(SCHEDULE_DEFAULTS[r.key] || { mode: 'own' }) });
     await db('role_permissions').where({ role_id: row.id }).del();
     await db('role_permissions').insert(r.permissions.map((permission) => ({ role_id: row.id, permission })));
   }

@@ -23,11 +23,13 @@ const rangeLabel = (s) => {
 };
 
 /**
- * Team week view (schedule.view) or "My schedule" (everyone: staff always
- * see their own shifts, requirements §5.2).
+ * Team week view or "My schedule". Everyone sees their own shifts
+ * (requirements §5.2); the team view shows only the people this role can see
+ * (Roles & permissions → Staff schedule), e.g. a Program Director sees the
+ * coordinators, intake and reception staff but not the CEO/COO.
  */
 router.get('/', async (req, res) => {
-  const teamAllowed = can(req.user, 'schedule.view');
+  const teamAllowed = can(req.user, 'schedule.view') && req.user.scheduleScope.mode !== 'own';
   const view = teamAllowed && req.query.view !== 'mine' ? 'team' : 'mine';
   const today = marylandParts(new Date()).date;
   const week = weekStartIso(isIsoDate(req.query.week) ? req.query.week : today);
@@ -43,7 +45,7 @@ router.get('/', async (req, res) => {
   });
   const from = marylandDateTime(week, '00:00');
   const to = marylandDateTime(addDaysIso(week, 7), '00:00');
-  const entries = await schedule.between(from, to, view === 'mine' ? req.user.id : null);
+  const entries = await schedule.between(from, to, view === 'mine' ? req.user.id : await schedule.visibleIds(req.user));
 
   // Place each entry on every day it touches (overnight shifts span two).
   const cell = {};
@@ -59,7 +61,7 @@ router.get('/', async (req, res) => {
     }
   }
 
-  const people = view === 'team' ? await schedule.staff() : [{ id: req.user.id, name: req.user.name }];
+  const people = view === 'team' ? await schedule.staff(req.user) : [{ id: req.user.id, name: req.user.name }];
   const fmtWeek = (d, o) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...o });
   res.render('pages/portal/schedule/index.njk', {
     title: view === 'team' ? 'Staff schedule' : 'My schedule',
@@ -88,7 +90,7 @@ async function renderForm(req, res, { shift = null, values, errors = {}, status 
     shift,
     values,
     errors,
-    staff: await schedule.staff(),
+    staff: await schedule.staff(req.user),
   });
 }
 
@@ -131,6 +133,9 @@ router.post('/', requirePermission('schedule.edit'), async (req, res) => {
   const parsed = shiftSchema.safeParse(req.body);
   if (!parsed.success) return renderForm(req, res, { values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   const d = parsed.data;
+  if (!(await schedule.canSee(req.user, d.user_id))) {
+    return renderForm(req, res, { values: req.body, errors: { user_id: 'Choose someone whose schedule you manage.' }, status: 422 });
+  }
   const { created, skipped } = await schedule.create(d, { repeatWeeks: d.repeat_weeks, createdBy: req.user.id });
   if (!created.length) {
     return renderForm(req, res, { values: req.body, errors: { date: 'This person already has something on the schedule at that time.' }, status: 422 });
@@ -153,6 +158,8 @@ router.post('/', requirePermission('schedule.edit'), async (req, res) => {
 
 router.param('id', async (req, res, next, id) => {
   req.shift = /^\d+$/.test(id) ? await schedule.get(Number(id)) : null;
+  // Someone outside this role's view looks the same as not existing.
+  if (req.shift && !(await schedule.canSee(req.user, req.shift.user_id))) req.shift = null;
   if (!req.shift) {
     const err = new Error('That schedule entry doesn’t exist.');
     err.status = 404;
@@ -167,6 +174,9 @@ router.post('/:id', requirePermission('schedule.edit'), async (req, res) => {
   const parsed = shiftSchema.safeParse(req.body);
   if (!parsed.success) return renderForm(req, res, { shift: req.shift, values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   const d = parsed.data;
+  if (!(await schedule.canSee(req.user, d.user_id))) {
+    return renderForm(req, res, { shift: req.shift, values: req.body, errors: { user_id: 'Choose someone whose schedule you manage.' }, status: 422 });
+  }
   const range = schedule.toRange(d);
   if ((await schedule.clashes(d.user_id, range.start, range.end, req.shift.id)).length) {
     return renderForm(req, res, { shift: req.shift, values: req.body, errors: { date: 'This person already has something on the schedule at that time.' }, status: 422 });

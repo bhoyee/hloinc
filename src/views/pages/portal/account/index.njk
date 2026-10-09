@@ -50,14 +50,18 @@
           <span class="{{ 'icon-tile' if user.mfa_enabled else 'icon-tile-red' }}">{{ icon('device', 'size-6') }}</span>
           <div>
             <h2 id="mfa-h" class="text-lg font-bold">Two-step sign-in</h2>
-            {% if user.mfa_enabled %}
+            {% if user.twoStepOff %}
+              <p class="mt-1 text-[15px] text-muted"><strong class="text-ink">Switched off for everyone</strong> by an administrator. You sign in with your password only.</p>
+            {% elif user.mfa_enabled %}
               <p class="mt-1 text-[15px] text-muted"><strong class="text-brand-800">On.</strong> {{ recoveryLeft }} recovery codes left.</p>
             {% else %}
               <p class="mt-1 text-[15px] text-muted"><strong class="text-accent-700">Off.</strong> {% if mfaRequired %}Your role requires it.{% else %}Recommended for everyone.{% endif %}</p>
             {% endif %}
           </div>
         </div>
-        <a href="/portal/account/two-step" class="btn-secondary mt-5 w-full">{{ 'Manage' if user.mfa_enabled else 'Set up' }} two-step sign-in</a>
+        {% if not (user.twoStepOff and not user.mfa_enabled) %}
+          <a href="/portal/account/two-step" class="btn-secondary mt-5 w-full">{{ 'Manage' if user.mfa_enabled else 'Set up' }} two-step sign-in</a>
+        {% endif %}
       </section>
 
       {# Sessions #}

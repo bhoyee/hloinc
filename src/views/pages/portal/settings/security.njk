@@ -1,0 +1,72 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% macro choice(value, title, text, iconName, values, on) %}
+  {% set checked = (values.two_step == value) if values.two_step else ((value == 'on') == on) %}
+  <label class="relative flex cursor-pointer items-start gap-4 rounded-2xl border border-line bg-white p-5 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:ring-1 has-[:checked]:ring-brand-600">
+    <input type="radio" name="two_step" value="{{ value }}" class="mt-1 size-5 shrink-0 accent-brand-700" {% if checked %}checked{% endif %} data-two-step-choice>
+    <span>
+      <span class="flex items-center gap-2 font-display text-lg font-bold text-ink">{{ icon(iconName, 'size-5 ' + ('text-brand-700' if value == 'on' else 'text-accent-600')) }} {{ title }}</span>
+      <span class="mt-1 block text-[15px] text-muted">{{ text }}</span>
+    </span>
+  </label>
+{% endmacro %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <form method="post" action="/portal/settings/security" class="space-y-6" novalidate data-once>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="mfa-h">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 id="mfa-h" class="text-lg font-bold">Two-step sign-in (authenticator app)</h2>
+            <p class="mt-1 max-w-2xl text-[15px] text-muted">After their password, staff enter a 6-digit code from an app on their phone. It stops someone who has guessed or stolen a password from getting in.</p>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 {{ 'bg-brand-50 text-brand-800 ring-brand-200' if on else 'bg-accent-50 text-accent-700 ring-accent-200' }}">
+            <span class="size-2 rounded-full {{ 'bg-brand-500' if on else 'bg-accent-600' }}" aria-hidden="true"></span>
+            Currently {{ 'on' if on else 'off' }}
+          </span>
+        </div>
+
+        <fieldset class="mt-6">
+          <legend class="sr-only">Two-step sign-in for everyone</legend>
+          <div class="grid gap-3 md:grid-cols-2">
+            {{ choice('on', 'On (recommended)', 'Anyone who has linked an authenticator app must enter a code. Roles marked “Require two-step sign-in” must set it up before using the portal.', 'lock', values, on) }}
+            {{ choice('off', 'Off', 'Everyone signs in with email and password only, and nobody is asked to set it up. Linked apps are kept for when it’s switched back on.', 'exclamation', values, on) }}
+          </div>
+          {{ ui.fieldError('two_step', errors) }}
+        </fieldset>
+
+        <p class="mt-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900" data-off-warning {% if on %}hidden{% endif %}>
+          {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }}
+          <span><strong>Switching it off makes the portal easier to break into.</strong> Staff accounts can see messages, referrals and appointment details about real people. Only switch it off for a short time if you must, for example while staff are getting new phones.</span>
+        </p>
+
+        <div class="mt-6 max-w-sm">
+          <input type="email" name="username" value="{{ user.email }}" autocomplete="username" class="sr-only" tabindex="-1" aria-hidden="true" readonly>
+          {{ ui.input('password', 'Confirm with your password', {}, errors, type='password', autocomplete='current-password') }}
+        </div>
+        <button type="submit" class="btn-primary mt-6">Save</button>
+      </section>
+    </form>
+
+    <aside class="space-y-4" aria-label="Current situation">
+      <section class="rounded-3xl border border-line bg-white p-6 text-[15px] shadow-soft">
+        <h2 class="font-semibold text-ink">Right now</h2>
+        <dl class="mt-3 space-y-2 text-muted">
+          <div class="flex justify-between gap-3"><dt>Staff with an app linked</dt><dd class="font-semibold text-ink">{{ linked }} of {{ active }}</dd></div>
+          <div>
+            <dt>Roles that require it</dt>
+            <dd class="mt-1 text-ink">{{ requiredRoles | join(', ') if requiredRoles.length else 'None' }}</dd>
+          </div>
+        </dl>
+        <a href="/portal/roles" class="link mt-4 inline-block text-sm">Change which roles require it</a>
+      </section>
+      {% if lastChange and lastChange.name %}
+        <p class="px-2 text-sm text-muted">Last changed {{ lastChange.updated_at | dateTime }} by {{ lastChange.name }}. Every change is in the audit log.</p>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

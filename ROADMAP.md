@@ -112,6 +112,9 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Media library: uploads re-encoded to WebP in two sizes (location data stripped); images in use can't be deleted
 - [x] Business details forms: contact details, office hours (drives the "Open now" badge), contact form email addresses. Every change audited with old and new values
 - Program Director limited to the careers page and office hours **(CONFIRM)**
+- [x] Red counters on the menu, refreshed every 30 seconds: Messages = unread open messages for each person (drops when they open one, or for everyone when resolved/archived; "Mark all as read"); Appointments = website requests waiting to be confirmed. Red dot on the phone menu button
+- [x] Schedule visibility per role (Roles & permissions → Staff schedule): only their own / their own plus chosen roles / everyone. Defaults: CEO/COO everyone; Program Director → coordinators, intake, reception; Program Coordinator → intake, reception; Intake, Reception, IT → own only. Editing follows the same rule
+- [x] Security settings (Administration): switch two-step sign-in on or off for everyone. Off = email and password only, nobody is made to set it up, linked apps are kept for when it's switched back on. Needs the admin's password; audited; other admins notified (new permission "Security settings → Change", Admin only by default)
 - Tests: 47 new (248 total); axe clean on all Phase 4 screens, desktop and phone
 
 ## Phase 5 — Testing & launch

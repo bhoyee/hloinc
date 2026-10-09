@@ -2,7 +2,10 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block actions %}
-  {% if can('accounts.edit') %}<a href="/portal/accounts/new" class="btn-primary shrink-0">{{ icon('plus', 'size-4') }} Add staff account</a>{% endif %}
+  <div class="flex flex-wrap gap-2">
+    {% if can('security.edit') %}<a href="/portal/settings/security" class="btn-secondary shrink-0">{{ icon('lock', 'size-4') }} Security settings</a>{% endif %}
+    {% if can('accounts.edit') %}<a href="/portal/accounts/new" class="btn-primary shrink-0">{{ icon('plus', 'size-4') }} Add staff account</a>{% endif %}
+  </div>
 {% endblock %}
 
 {% block content %}
@@ -59,7 +62,7 @@
                 {% elif u.must_change_password %}<span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">Invited</span>
                 {% else %}<span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 ring-brand-100">Active</span>{% endif %}
               </td>
-              <td class="px-5 py-4">{{ 'On' if u.mfa_enabled else 'Off' }}</td>
+              <td class="px-5 py-4">{{ ('Linked' if u.mfa_enabled else 'Not set up') if user.twoStepOff else ('On' if u.mfa_enabled else 'Off') }}</td>
               <td class="px-5 py-4 text-muted">{{ u.last_login_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) if u.last_login_at else 'Never' }}</td>
             </tr>
           {% endfor %}

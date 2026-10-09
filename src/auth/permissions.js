@@ -84,6 +84,13 @@ const MODULES = [
     labels: { view: 'See charts' },
   },
   {
+    key: 'security',
+    label: 'Security settings',
+    description: 'Portal-wide security, such as switching two-step sign-in on or off for everyone.',
+    actions: ['edit'],
+    labels: { edit: 'Change' },
+  },
+  {
     key: 'audit',
     label: 'Audit log',
     description: 'The record of sign-ins and important changes.',

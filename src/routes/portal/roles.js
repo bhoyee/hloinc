@@ -54,7 +54,7 @@ router.get('/', async (req, res) => {
 
 // --- Create / edit ---------------------------------------------------------------
 
-function renderEditor(req, res, { role = null, values, errors = {}, status = 200, readOnly = false, readOnlyReason = '' }) {
+async function renderEditor(req, res, { role = null, values, errors = {}, status = 200, readOnly = false, readOnlyReason = '' }) {
   res.status(status).render('pages/portal/roles/edit.njk', {
     title: role ? role.name : 'New role',
     subheading: role ? role.description : 'Give the role a name, then tick what it can do.',
@@ -66,6 +66,7 @@ function renderEditor(req, res, { role = null, values, errors = {}, status = 200
     readOnly,
     readOnlyReason,
     actorRole: req.user.role,
+    allRoles: (await roles.list()).filter((r) => r.key !== ADMIN_ROLE),
   });
 }
 
@@ -73,25 +74,32 @@ const valuesFrom = (role) => ({
   name: role.name,
   description: role.description || '',
   require_mfa: role.require_mfa ? 'yes' : '',
+  schedule_mode: role.scheduleScope.mode,
+  schedule_roles: role.scheduleScope.roles,
   permissions: [...role.permissions],
 });
 
 router.get('/new', requirePermission('roles.edit'), (req, res) =>
-  renderEditor(req, res, { values: { name: '', description: '', require_mfa: '', permissions: [] } })
+  renderEditor(req, res, { values: { name: '', description: '', require_mfa: '', schedule_mode: 'own', schedule_roles: [], permissions: [] } })
 );
 
-function parseRole(req) {
+async function parseRole(req) {
   const parsed = roleSchema.safeParse(req.body);
-  const values = { ...req.body, permissions: [].concat(req.body.permissions || []) };
+  const values = { ...req.body, permissions: [].concat(req.body.permissions || []), schedule_roles: [].concat(req.body.schedule_roles || []) };
   if (!parsed.success) return { values, errors: fieldErrors(parsed.error) };
   const permissions = normalize(parsed.data.permissions);
   const tooMuch = beyondActor(req.user, permissions);
   if (tooMuch.length) return { values, errors: { permissions: 'You can only give permissions that your own role has.' } };
-  return { values, data: { name: parsed.data.name, description: parsed.data.description, requireMfa: parsed.data.require_mfa === 'yes', permissions } };
+  // Whose schedules the role can see: everyone, only their own, or their own plus chosen roles.
+  const known = new Set((await roles.list()).map((r) => r.key));
+  const chosen = values.schedule_roles.filter((k) => typeof k === 'string' && known.has(k));
+  const mode = ['all', 'own', 'roles'].includes(req.body.schedule_mode) ? req.body.schedule_mode : 'own';
+  const scheduleScope = mode === 'roles' && chosen.length ? { mode: 'roles', roles: chosen } : { mode: mode === 'all' ? 'all' : 'own', roles: [] };
+  return { values, data: { name: parsed.data.name, description: parsed.data.description, requireMfa: parsed.data.require_mfa === 'yes', scheduleScope, permissions } };
 }
 
 router.post('/', requirePermission('roles.edit'), async (req, res) => {
-  const { values, errors, data } = parseRole(req);
+  const { values, errors, data } = await parseRole(req);
   if (!data) return renderEditor(req, res, { values, errors, status: 422 });
   if ((await roles.list()).some((r) => r.name.toLowerCase() === data.name.toLowerCase())) {
     return renderEditor(req, res, { values, errors: { name: 'A role with this name already exists.' }, status: 422 });
@@ -129,7 +137,7 @@ function lockReason(req) {
 
 router.get('/:key', (req, res) => {
   const reason = lockReason(req);
-  renderEditor(req, res, { role: req.role, values: valuesFrom(req.role), readOnly: Boolean(reason), readOnlyReason: reason });
+  return renderEditor(req, res, { role: req.role, values: valuesFrom(req.role), readOnly: Boolean(reason), readOnlyReason: reason });
 });
 
 router.post('/:key', requirePermission('roles.edit'), async (req, res) => {
@@ -138,7 +146,7 @@ router.post('/:key', requirePermission('roles.edit'), async (req, res) => {
     setFlash(req, 'error', reason);
     return res.redirect(303, `/portal/roles/${req.role.key}`);
   }
-  const { values, errors, data } = parseRole(req);
+  const { values, errors, data } = await parseRole(req);
   if (!data) return renderEditor(req, res, { role: req.role, values, errors, status: 422 });
   if ((await roles.list()).some((r) => r.key !== req.role.key && r.name.toLowerCase() === data.name.toLowerCase())) {
     return renderEditor(req, res, { role: req.role, values, errors: { name: 'Another role already has this name.' }, status: 422 });
@@ -153,7 +161,7 @@ router.post('/:key', requirePermission('roles.edit'), async (req, res) => {
     entityType: 'role',
     entityId: after.key,
     summary: `${req.user.name} updated the role “${after.name}” (${added.length} added, ${removed.length} removed)`,
-    metadata: { added, removed, requireMfa: { from: before.require_mfa, to: after.require_mfa }, name: { from: before.name, to: after.name } },
+    metadata: { added, removed, requireMfa: { from: before.require_mfa, to: after.require_mfa }, scheduleScope: { from: before.scheduleScope, to: after.scheduleScope }, name: { from: before.name, to: after.name } },
   });
   setFlash(req, 'success', 'Role saved. Changes apply to everyone with this role straight away.');
   res.redirect(303, `/portal/roles/${after.key}`);
