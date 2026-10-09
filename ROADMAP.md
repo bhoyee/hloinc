@@ -118,6 +118,9 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - Tests: 47 new (248 total); axe clean on all Phase 4 screens, desktop and phone
 
 ## Phase 5 — Testing & launch
+- [x] Preview site live at https://preview.hloinc.com (cPanel, Node 24, MySQL, AutoSSL, hidden from search engines)
+- [x] CI: tests run on GitHub for every push; the server installs each passing commit on `main` within ~5 minutes (database backup first, automatic rollback on failure). `/healthz` shows the running version
+- [x] Website email sent as noreply@notify.hloinc.com (SPF + DKIM), so HLO's Microsoft 365 setup is untouched
 - [ ] Automated tests: validation, permissions matrix, form handling
 - [ ] Accessibility audit (axe + manual keyboard/screen reader)
 - [ ] Cross-browser/device testing

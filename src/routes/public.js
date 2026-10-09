@@ -369,7 +369,14 @@ router.get('/sitemap.xml', async (req, res) => {
 // Liveness check for the host / uptime monitor. Database health is checked
 // separately so a DB outage doesn't hide that the app itself is up.
 router.get('/healthz', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ status: 'ok' });
+  // Which version is running (written by the deploy scripts), to confirm automatic updates.
+  let version = null;
+  try {
+    version = require('fs').readFileSync(require('path').join(config.paths.root, 'tmp/deployed-commit'), 'utf8').trim().slice(0, 7) || null;
+  } catch {
+    version = null;
+  }
+  res.set('Cache-Control', 'no-store').json({ status: 'ok', version });
 });
 
 router.get('/healthz/db', async (req, res) => {
