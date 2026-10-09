@@ -69,7 +69,8 @@ safe. It finishes by showing the command to create the first CEO/COO login.
 The server **pulls** new versions itself, so no SSH access from outside is needed:
 
 1. Every push and pull request runs the tests on GitHub (`.github/workflows/ci-deploy.yml`, check
-   name **Test**): the full suite against MySQL 8.4, plus a check that `public/css/app.css` was rebuilt.
+   name **Test**): the full suite against MySQL 8.4. (Remember to run `npm run css:build` and commit
+   `public/css/app.css` after changing styles; the server never builds it.)
 2. A cron job on the server runs `scripts/deploy/pull.sh` every 5 minutes. When `main` has a new
    commit **and its Test check passed**, it updates the code (`git reset --hard`, which keeps `.env`,
    `storage/uploads/`, `backups/` and `node_modules/`), then runs `scripts/deploy/remote.sh`:
