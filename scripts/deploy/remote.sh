@@ -18,8 +18,15 @@ if [ ! -f .env ]; then
 fi
 
 # The Node.js version and node_modules that cPanel's "Setup Node.js App" created.
+# cPanel's activate script uses variables that may be unset, so relax `set -u` while loading it.
+if [ ! -f "$ACTIVATE" ]; then
+  echo "✗ $ACTIVATE not found. Check cPanel → Setup Node.js App." >&2
+  exit 1
+fi
+set +u
 # shellcheck disable=SC1090
 source "$ACTIVATE"
+set -u
 echo "→ Node $(node -v), npm $(npm -v)"
 
 # `npm install` (not `npm ci`): on CloudLinux, node_modules is a link into the

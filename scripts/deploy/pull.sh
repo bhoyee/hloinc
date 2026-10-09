@@ -52,7 +52,7 @@ else
   echo "$(ts) ✗ deploy of ${TARGET:0:7} failed; going back to ${CURRENT:0:7}"
   git reset --hard --quiet "$CURRENT"
   # shellcheck disable=SC1090
-  (source "$ACTIVATE" && npm install --omit=dev --no-audit --no-fund --loglevel=error)
+  (set +u; source "$ACTIVATE" && npm install --omit=dev --no-audit --no-fund --loglevel=error)
   touch tmp/restart.txt
   echo "$TARGET" > tmp/skipped-commit
   exit 1
