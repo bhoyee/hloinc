@@ -24,7 +24,7 @@ describe('public site', () => {
   it('reports liveness', async () => {
     const res = await request(app).get('/healthz');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toMatchObject({ status: 'ok' }); // plus the deployed version, when known
   });
 });
 
