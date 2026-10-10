@@ -13,6 +13,7 @@
     "seed": "knex seed:run",
     "demo:remove": "node scripts/demo-remove.js",
     "create-admin": "node scripts/create-admin.js",
+    "alerts:overdue": "node scripts/alerts-overdue.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:a11y": "node tests/e2e/a11y.mjs",

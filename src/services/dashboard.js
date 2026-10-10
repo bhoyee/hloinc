@@ -22,12 +22,8 @@ const count = (query) => query.count({ n: '*' }).first().then((r) => Number(r.n)
  */
 const COLORS = { green: '#12845a', blue: '#2a78d6', yellow: '#eda100', pink: '#e87ba4' };
 
-/** Contact inbox scope for this user: everything, intake only, or nothing. */
-function inboxScope(user) {
-  if (can(user, 'messages.view')) return (q) => q;
-  if (can(user, 'messages.view_intake')) return (q) => q.where({ recipient: 'intake' });
-  return null;
-}
+/** Contact inbox scope for this user (the messages page rules), or null. */
+const inboxScope = (user) => require('./messages').scopeFor(user, { alias: '' });
 
 const shortDate = (iso) =>
   new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`));

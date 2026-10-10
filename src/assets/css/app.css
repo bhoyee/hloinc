@@ -312,8 +312,11 @@
   }
 }
 
-/* A panel whose content scrolls inside a fixed height (dashboard). Slim, quiet scrollbar. */
+/* A panel whose content scrolls inside a fixed height (dashboard, schedule). Slim, quiet scrollbar.
+   position: relative keeps absolutely positioned content (e.g. screen-reader text) inside the
+   panel; without it, that content could stretch the page below the footer. */
 @utility scroll-panel {
+  position: relative;
   scrollbar-width: thin;
   scrollbar-color: #c9d6cf transparent;
   overscroll-behavior: contain;

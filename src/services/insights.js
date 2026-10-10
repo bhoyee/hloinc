@@ -18,11 +18,8 @@ const COLORS = { green: '#12845a', blue: '#2a78d6', yellow: '#eda100', pink: '#e
 const DEFAULT_SCHEDULE = { days: [1, 2, 3, 4, 5], open: 9, close: 17 };
 const RESPONSE_KINDS = ['reply', 'status'];
 
-function inboxScope(user) {
-  if (can(user, 'messages.view')) return (q) => q;
-  if (can(user, 'messages.view_intake')) return (q) => q.where('m.recipient', 'intake');
-  return null;
-}
+/** Contact inbox scope for this user (the messages page rules), or null. */
+const inboxScope = (user) => require('./messages').scopeFor(user, { alias: 'm' });
 
 const hhmm = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
@@ -166,7 +163,7 @@ async function demand(user, today) {
           : { value: pct(serviceRows[0].value, asked), label: `of choices were ${serviceRows[0].label}` },
     },
   ];
-  if (located || can(user, 'messages.view') || can(user, 'messages.view_intake')) {
+  if (located || require('./messages').inboxesFor(user).includes('intake')) {
     charts.push({
       key: 'demand-counties',
       type: 'bars',

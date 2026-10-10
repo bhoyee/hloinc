@@ -3,7 +3,7 @@
 const config = require('../config');
 const users = require('../services/users');
 const roles = require('../services/roles');
-const { can } = require('../auth/permissions');
+const { can, MESSAGE_ACCESS } = require('../auth/permissions');
 const security = require('../services/security');
 
 const AUTH_KEYS = ['userId', 'sessionVersion', 'loginAt', 'lastActivity', 'previousLoginAt', 'pendingMfa', 'mfaSetup'];
@@ -45,6 +45,7 @@ function refreshSessionVersion(req, user) {
  */
 async function loadUser(req, res, next) {
   res.locals.can = () => false;
+  res.locals.hasInbox = false;
   if (!req.session || !req.session.userId) return next();
 
   const user = await users.findById(req.session.userId);
@@ -70,6 +71,7 @@ async function loadUser(req, res, next) {
   req.user = user;
   res.locals.user = user;
   res.locals.can = (permission) => can(user, permission);
+  res.locals.hasInbox = MESSAGE_ACCESS.some((p) => can(user, p));
   next();
 }
 

@@ -22,7 +22,7 @@ describe('default roles (requirements §4)', () => {
   it('gives IT account management but no client information or role editing', () => {
     const it = user('it_admin');
     for (const p of ['accounts.edit', 'accounts.archive', 'accounts.manage_all', 'audit.view']) expect(can(it, p)).toBe(true);
-    for (const p of ['accounts.delete', 'roles.edit', 'messages.view', 'messages.view_intake', 'appointments.view', 'jobs.view', 'site_content.edit']) {
+    for (const p of ['accounts.delete', 'roles.edit', 'messages.view', 'messages.inbox_general', 'messages.inbox_intake', 'appointments.view', 'jobs.view', 'site_content.edit']) {
       expect(can(it, p)).toBe(false);
     }
   });
@@ -35,10 +35,14 @@ describe('default roles (requirements §4)', () => {
     expect(can(r, 'schedule.edit')).toBe(false);
   });
 
-  it('shows Intake Specialists only intake and referral messages', () => {
-    const i = user('intake_specialist');
-    expect(can(i, 'messages.view')).toBe(false);
-    expect(can(i, 'messages.view_intake')).toBe(true);
+  it('gives only Admin every message; other roles get their own inboxes', () => {
+    expect(can(user('admin'), 'messages.view')).toBe(true);
+    const inboxes = (r) => ['general', 'program_coordinator', 'program_director', 'executive', 'intake'].filter((k) => can(user(r), `messages.inbox_${k}`));
+    for (const r of ['intake_specialist', 'reception', 'program_director', 'program_coordinator']) expect(can(user(r), 'messages.view')).toBe(false);
+    expect(inboxes('reception')).toEqual(['general']);
+    expect(inboxes('program_coordinator')).toEqual(['program_coordinator']);
+    expect(inboxes('program_director')).toEqual(['program_director', 'intake']);
+    expect(inboxes('intake_specialist')).toEqual(['intake']);
   });
 
   it('gives Program Directors limited site content editing', () => {
@@ -53,9 +57,9 @@ describe('permission rules', () => {
     expect(normalize(['jobs.delete'])).toEqual(['jobs.view', 'jobs.delete']);
   });
 
-  it('treats "all messages" and "intake only" as alternatives', () => {
-    expect(normalize(['messages.view', 'messages.view_intake'])).toEqual(['messages.view']);
-    expect(normalize(['messages.view_intake', 'messages.edit'])).toEqual(['messages.edit', 'messages.view_intake']);
+  it('treats "all messages" and single inboxes as alternatives', () => {
+    expect(normalize(['messages.view', 'messages.inbox_general'])).toEqual(['messages.view']);
+    expect(normalize(['messages.inbox_general', 'messages.edit'])).toEqual(['messages.edit', 'messages.inbox_general']);
   });
 
   it('drops unknown permissions', () => {

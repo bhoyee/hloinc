@@ -6,6 +6,7 @@
 
 {% block actions %}
   <div class="flex flex-wrap items-center gap-2">
+    {% if m.type == 'message' %}<span class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-800 ring-1 ring-sky-200">{{ icon('mail', 'size-4') }} Contact form</span>{% endif %}
     {% if m.type != 'message' %}<span class="rounded-full {{ 'bg-accent-50 text-accent-700 ring-accent-200' if m.type == 'referral' else 'bg-brand-50 text-brand-800 ring-brand-200' }} px-3 py-1 text-sm font-semibold ring-1">{{ typeLabels[m.type] }}</span>{% endif %}
     {{ badges.status(m.status, statusLabels[m.status]) }}
     {% if m.archived_at %}<span class="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-muted ring-1 ring-line">Archived</span>{% endif %}

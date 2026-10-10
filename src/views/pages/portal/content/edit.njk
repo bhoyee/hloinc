@@ -68,7 +68,7 @@
 
         {% elif section.key == 'recipients' %}
           <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
-            <p class="text-[15px] text-muted">When someone sends the contact form, they choose who it’s for. Each choice is emailed to the address below, and always appears in the portal inbox. Leave one blank to use the main email ({{ mainEmail }}).</p>
+            <p class="text-[15px] text-muted">Each website form is emailed to the team address below, and always appears in the portal too. Use a shared team mailbox rather than one person’s email. Referral and service request emails only say one has arrived: the details stay in the portal. Leave one blank to use the main email ({{ mainEmail }}). Who gets portal alerts is set under Roles &amp; permissions.</p>
             {% for r in recipients %}
               {{ ui.input(r.key, r.label, values, errors, type='email', required=false, autocomplete='off', attrs='maxlength="191" placeholder="' + mainEmail + '"') }}
             {% endfor %}

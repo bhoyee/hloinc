@@ -37,4 +37,55 @@
       </li>
     {% endfor %}
   </ul>
+
+  {# Who is told about new website items (seeing them is the Messages / Appointments permission). #}
+  {% set editableAlerts = can('roles.edit') %}
+  <section id="alerts" class="mt-8 scroll-mt-24 rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="alerts-h">
+    <div class="border-b border-line p-6 sm:p-8">
+      <h2 id="alerts-h" class="flex items-center gap-2 font-display text-xl font-bold">{{ icon('megaphone', 'size-5 text-brand-700') }} Alerts for new website items</h2>
+      <p class="mt-2 max-w-3xl text-[15px] text-muted">
+        Who gets a portal notification when something comes in. Who can <em>see</em> each item is set by the role’s permissions above; this only decides who is told.
+        A role can only be alerted about what it can see. If nobody active has a ticked role, Admin is told instead. Team emails go to the mailboxes under Website content.
+      </p>
+    </div>
+    <form method="post" action="/portal/roles/alerts">
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <div class="scroll-panel overflow-x-auto" tabindex="0" role="region" aria-label="Alerts by role (scrolls sideways)">
+        <table class="w-full min-w-[760px] text-left text-sm">
+          <caption class="sr-only">Which roles are alerted about each kind of website item</caption>
+          <thead class="border-b border-line bg-surface text-xs text-muted">
+            <tr>
+              <th scope="col" class="sticky left-0 bg-surface px-5 py-3 font-semibold uppercase">When</th>
+              {% for r in alertGrid.roles %}<th scope="col" class="px-3 py-3 text-center font-semibold">{{ r.name }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            {% for row in alertGrid.rows %}
+              <tr>
+                <th scope="row" class="sticky left-0 bg-white px-5 py-3 font-semibold text-ink">
+                  {{ row.label }}<span class="block text-xs font-normal text-muted">{{ row.help }}</span>
+                </th>
+                {% for c in row.cells %}
+                  <td class="px-3 py-3 text-center">
+                    {% if c.eligible %}
+                      <input type="checkbox" name="alert_{{ row.key }}" value="{{ c.role }}" class="size-5 accent-brand-700" {% if c.on %}checked{% endif %} {% if not editableAlerts %}disabled{% endif %}
+                             aria-label="{{ row.label }}: alert {{ alertGrid.roles[loop.index0].name }}">
+                    {% else %}
+                      <span class="text-muted" title="This role can’t see these" aria-hidden="true">–</span><span class="sr-only">{{ alertGrid.roles[loop.index0].name }} can’t see these</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if editableAlerts %}
+        <div class="flex flex-wrap items-center gap-3 border-t border-line p-5 sm:px-8">
+          <button type="submit" class="btn-primary">Save alerts</button>
+          <span class="text-sm text-muted">“Waiting too long” is also emailed to the people told, without any client details.</span>
+        </div>
+      {% endif %}
+    </form>
+  </section>
 {% endblock %}

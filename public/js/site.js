@@ -333,25 +333,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const roleEditor = document.querySelector('form[data-role-editor]');
   if (roleEditor) {
     const boxes = (module) => roleEditor.querySelectorAll(`input[name="permissions"]${module ? `[data-module="${module}"]` : ''}`);
+    // Messages: "View all" or single inboxes (alternatives). Acting on messages needs one or the other.
+    const isInbox = (b) => b.value.startsWith('messages.inbox_');
+    const inboxes = () => [...boxes('messages')].filter(isInbox);
     roleEditor.addEventListener('change', (e) => {
       const box = e.target;
       if (box.name !== 'permissions') return;
       const view = roleEditor.querySelector(`input[data-module="${box.dataset.module}"][data-action="view"]`);
-      if (box.checked && box.dataset.action !== 'view' && view && box.value !== 'messages.view_intake') view.checked = true;
-      if (!box.checked && box.dataset.action === 'view') {
+      const messages = box.dataset.module === 'messages';
+      const anyInbox = messages && inboxes().some((b) => b.checked);
+      if (box.checked && box.dataset.action !== 'view' && view && !isInbox(box) && !anyInbox) view.checked = true;
+      if (!box.checked && box.dataset.action === 'view' && !anyInbox) {
         boxes(box.dataset.module).forEach((b) => {
           if (b.dataset.action !== 'extra' || b.value.endsWith('.log') || b.value.endsWith('.edit_limited')) b.checked = false;
         });
       }
-      // "View all messages" and "intake only" are alternatives.
-      if (box.checked && box.value === 'messages.view') roleEditor.querySelector('input[value="messages.view_intake"]').checked = false;
-      if (box.checked && box.value === 'messages.view_intake' && view) view.checked = false;
+      if (box.checked && box.value === 'messages.view') inboxes().forEach((b) => { b.checked = false; });
+      if (box.checked && isInbox(box) && view) view.checked = false;
     });
     roleEditor.querySelectorAll('[data-row-all]').forEach((btn) => btn.addEventListener('click', () => {
-      boxes(btn.dataset.rowAll).forEach((b) => { b.checked = b.value !== 'messages.view_intake'; });
+      boxes(btn.dataset.rowAll).forEach((b) => { b.checked = !isInbox(b); });
     }));
     const all = roleEditor.querySelector('[data-perm-all]');
-    if (all) all.addEventListener('click', () => boxes().forEach((b) => { b.checked = b.value !== 'messages.view_intake'; }));
+    if (all) all.addEventListener('click', () => boxes().forEach((b) => { b.checked = !isInbox(b); }));
     const none = roleEditor.querySelector('[data-perm-none]');
     if (none) none.addEventListener('click', () => boxes().forEach((b) => { b.checked = false; }));
   }

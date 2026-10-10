@@ -32,7 +32,7 @@ const nav = [
 
 /**
  * Contact form recipients, in the order required by §6.5.
- * `category` drives portal inbox access (Intake Specialist sees `intake` only).
+ * Who sees each one in the portal is set per role (Messages permissions: one per choice).
  * Email addresses come from site_settings `contact.recipient_emails` (client question 4),
  * falling back to the main business email.
  */
@@ -51,4 +51,10 @@ const recipients = [
     description: 'Starting services with HLO and referrals.' },
 ];
 
-module.exports = { defaults, nav, recipients };
+/** Team mailboxes: one per contact form choice, plus appointment requests. Set under Website content. */
+const mailboxes = [
+  ...recipients.map((r) => (r.key === 'intake' ? { key: r.key, label: 'Intake specialist (also referrals and service requests)' } : { key: r.key, label: r.label })),
+  { key: 'appointments', label: 'Appointment requests' },
+];
+
+module.exports = { defaults, nav, recipients, mailboxes };

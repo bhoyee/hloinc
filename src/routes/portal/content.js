@@ -181,7 +181,7 @@ async function renderEdit(req, res, { values, errors = {}, status = 200 } = {}) 
     errors,
     dayNames: siteContent.DAY_NAMES,
     hours: hourOptions(),
-    recipients: site.recipients,
+    recipients: site.mailboxes,
     mainEmail: (await require('../../services/content').getBusiness()).email,
   });
 }

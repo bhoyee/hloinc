@@ -38,9 +38,16 @@ const MODULES = [
   {
     key: 'messages',
     label: 'Messages & referrals',
-    description: 'The contact form inbox and website referrals.',
+    description: 'The contact form inbox, referrals and service requests. Without “View all”, a role sees only the inboxes ticked below, plus anything assigned to its people.',
     actions: ['view', 'edit', 'archive', 'delete'],
-    extras: { view_intake: 'See intake and referral messages only' },
+    // One per contact form choice (see lib/site.js recipients).
+    extras: {
+      inbox_general: 'General inquiry messages',
+      inbox_program_coordinator: '“Program coordinator” messages',
+      inbox_program_director: '“Program director” messages',
+      inbox_executive: '“CEO/COO” messages',
+      inbox_intake: 'Intake: referrals, service requests and “Intake specialist” messages',
+    },
     labels: { view: 'View all', edit: 'Reply & update status' },
   },
   {
@@ -109,6 +116,11 @@ const MODULES = [
   },
 ];
 
+/** The per-inbox message permissions, and every permission that opens the inbox at all. */
+const INBOX_PERMISSIONS = Object.keys(MODULES.find((m) => m.key === 'messages').extras).map((k) => `messages.${k}`);
+const MESSAGE_ACCESS = ['messages.view', ...INBOX_PERMISSIONS];
+const inboxPermission = (recipientKey) => `messages.inbox_${recipientKey}`;
+
 /** Every valid permission key, in catalog order. */
 const ALL_PERMISSIONS = MODULES.flatMap((m) => [
   ...m.actions.map((a) => `${m.key}.${a}`),
@@ -119,18 +131,18 @@ const VALID = new Set(ALL_PERMISSIONS);
 /**
  * Tidy a set of permission keys: drop unknown keys, and give "view" to any
  * module where the role can do more (you can't edit what you can't see).
- * "View all messages" makes "intake only" redundant.
+ * "View all messages" makes the single inboxes redundant.
  */
 function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
     const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off'].some(has);
-    if (needsView && m.actions.includes('view') && !(m.key === 'messages' && has('view_intake') && !has('view'))) {
+    if (needsView && m.actions.includes('view') && !(m.key === 'messages' && INBOX_PERMISSIONS.some((k) => set.has(k)) && !has('view'))) {
       set.add(`${m.key}.view`);
     }
   }
-  if (set.has('messages.view')) set.delete('messages.view_intake');
+  if (set.has('messages.view')) for (const k of INBOX_PERMISSIONS) set.delete(k);
   return ALL_PERMISSIONS.filter((k) => set.has(k));
 }
 
@@ -159,7 +171,7 @@ const DEFAULT_ROLES = [
     permissions: [
       'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'appointments.manage_types',
       'schedule.view', 'schedule.edit',
-      'messages.view', 'messages.edit',
+      'messages.inbox_program_director', 'messages.inbox_intake', 'messages.edit',
       'leads.view', 'leads.edit', 'leads.export',
       'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
       'announcements.view', 'announcements.edit', 'announcements.archive',
@@ -174,7 +186,7 @@ const DEFAULT_ROLES = [
     permissions: [
       'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log',
       'schedule.view', 'schedule.edit',
-      'messages.view', 'messages.edit',
+      'messages.inbox_program_coordinator', 'messages.edit',
       'leads.view', 'leads.edit',
       'announcements.view', 'announcements.edit', 'announcements.archive',
     ],
@@ -183,13 +195,13 @@ const DEFAULT_ROLES = [
     key: 'intake_specialist',
     name: 'Intake Specialist',
     description: 'Appointments and the intake / referral inbox.',
-    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.view_intake', 'messages.edit', 'leads.view', 'leads.edit'],
+    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.inbox_intake', 'messages.edit', 'leads.view', 'leads.edit'],
   },
   {
     key: 'reception',
     name: 'Reception',
-    description: 'Front desk: logs walk-in and phone appointments; read-only schedules and messages.',
-    permissions: ['appointments.view', 'appointments.log', 'schedule.view', 'messages.view'],
+    description: 'Front desk: logs walk-in and phone appointments; read-only schedules; General inquiry messages.',
+    permissions: ['appointments.view', 'appointments.log', 'schedule.view', 'messages.inbox_general'],
   },
 ];
 
@@ -218,4 +230,4 @@ function actionColumns(module) {
   }));
 }
 
-module.exports = { ADMIN_ROLE, MODULES, STANDARD_ACTIONS, ALL_PERMISSIONS, DEFAULT_ROLES, normalize, can, hasAll, actionColumns };
+module.exports = { INBOX_PERMISSIONS, MESSAGE_ACCESS, inboxPermission, ADMIN_ROLE, MODULES, STANDARD_ACTIONS, ALL_PERMISSIONS, DEFAULT_ROLES, normalize, can, hasAll, actionColumns };

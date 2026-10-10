@@ -54,4 +54,10 @@ async function getRecipientEmail(recipientKey, { fallback = true } = {}) {
   return emails[recipientKey] || (fallback ? (await getBusiness()).email : '');
 }
 
-module.exports = { getBusiness, getPage, getRecipientEmail, clearCache };
+/** One stored setting (parsed JSON), or `fallback`. */
+async function getSetting(key, fallback = null) {
+  const s = await loadSettings();
+  return s[key] ?? fallback;
+}
+
+module.exports = { getBusiness, getPage, getRecipientEmail, getSetting, clearCache };

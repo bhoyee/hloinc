@@ -2,6 +2,7 @@
 
 const express = require('express');
 const roles = require('../../services/roles');
+const alerts = require('../../services/alerts');
 const { audit } = require('../../services/audit');
 const { requirePermission } = require('../../middleware/auth');
 const { MODULES, ADMIN_ROLE, actionColumns, normalize } = require('../../auth/permissions');
@@ -49,7 +50,25 @@ router.get('/', async (req, res) => {
     subheading: 'Choose what each role can see and do in the portal.',
     crumbs,
     roles: list,
+    alertGrid: await alerts.grid(),
   });
+});
+
+// --- Who is alerted about new website items --------------------------------------------------
+
+router.post('/alerts', requirePermission('roles.edit'), async (req, res) => {
+  const changed = await alerts.save(req.body, req.user);
+  if (changed.length) {
+    await audit(req, {
+      action: 'alerts.update',
+      entityType: 'settings',
+      entityId: 'alerts',
+      summary: `${req.user.name} changed who is alerted about ${changed.map((c) => c.event.toLowerCase()).join(', ')}`,
+      metadata: { changed },
+    });
+  }
+  setFlash(req, 'success', changed.length ? 'Alerts saved. They apply to the next item that comes in.' : 'No changes to save.');
+  res.redirect(303, '/portal/roles#alerts');
 });
 
 // --- Create / edit ---------------------------------------------------------------

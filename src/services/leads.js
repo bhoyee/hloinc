@@ -214,11 +214,11 @@ const get = (id) => base().select('l.*', 'o.name as owner_name').where('l.id', i
 /** Everything linked to a lead, newest first. Message details respect the viewer's inbox access. */
 async function timeline(lead, user) {
   const items = [];
-  const seeAll = can(user, 'messages.view');
-  const seeIntake = can(user, 'messages.view_intake');
+  const scope = require('./messages').scopeFor(user, { alias: '' });
   const msgs = await db('contact_messages').where({ lead_id: lead.id }).select('id', 'reference', 'type', 'recipient', 'status', 'message', 'created_at');
+  const visibleIds = new Set(scope ? await scope(db('contact_messages').where({ lead_id: lead.id })).pluck('id') : []);
   for (const m of msgs) {
-    const visible = seeAll || (seeIntake && m.recipient === 'intake');
+    const visible = visibleIds.has(m.id);
     items.push({
       at: m.created_at,
       kind: m.type,

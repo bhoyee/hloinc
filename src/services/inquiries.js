@@ -4,7 +4,7 @@ const db = require('../db/knex');
 const { notify } = require('./notify');
 const content = require('./content');
 const { recipients } = require('../lib/site');
-const notifications = require('./notifications');
+const alerts = require('./alerts');
 const services = require('../content/services');
 const { OPTIONS, REFERRER_ROLES } = require('../validation/public');
 const config = require('../config');
@@ -24,6 +24,9 @@ const WINDOW_LABELS = { morning: 'Morning (9 a.m. – 12 p.m.)', afternoon: 'Aft
 
 // Emails to the team link straight to the item in the staff portal.
 const TEAM_NOTE = 'Sent automatically by the HLO website. Reply to this email to answer the sender directly.';
+// Referrals and service requests describe a person's disability and support needs, so
+// the team email only says one has arrived; the details stay behind the portal sign-in.
+const PRIVATE_TEAM_NOTE = 'Sent automatically by the HLO website. For privacy, the details are only in the staff portal. Reply to this email to answer the sender directly.';
 const portalButton = (path) => ({ label: 'Open in the staff portal', href: `${config.appUrl}${path}` });
 
 // Confirmations to visitors echo only what is needed to recognise the request:
@@ -88,7 +91,7 @@ async function submitContact(data, { ip }) {
   })]);
 
   await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
-  await notifications.notifyPermission(data.recipient === 'intake' ? ['messages.view', 'messages.view_intake'] : ['messages.view'], {
+  await alerts.send(`message_${data.recipient}`, {
     type: 'message',
     title: `New message from ${data.name}`,
     body: `Sent to ${recipient.label} from the website.`,
@@ -141,30 +144,13 @@ async function submitReferral(data, { ip }) {
     replyTo: data.referrer_email,
     subject: `New referral ${reference} from ${data.referrer_name}`,
     cta: portalButton(`/portal/messages/${id}`),
-    footnote: TEAM_NOTE,
+    footnote: PRIVATE_TEAM_NOTE,
     text: [
-      `New referral from the HLO website (reference ${reference}).`,
+      `A new referral came in through the HLO website (reference ${reference}).`,
       '',
-      'REFERRED BY',
-      `Name: ${data.referrer_name}`,
-      `Role: ${roleLabel}`,
-      `Agency or organization: ${data.organization || 'Not given'}`,
-      `Phone: ${data.referrer_phone}`,
-      `Email: ${data.referrer_email}`,
+      `Referred by: ${data.referrer_name} (${roleLabel}${data.organization ? `, ${data.organization}` : ''})`,
       '',
-      'PERSON BEING REFERRED',
-      `First name or initials: ${data.person_name}`,
-      `County: ${data.county}`,
-      `Current living situation: ${label(OPTIONS.livingSituation, data.living_situation)}`,
-      `DDA eligibility: ${label(OPTIONS.ddaEligibility, data.dda_eligibility)}`,
-      `DDA funding priority: ${label(OPTIONS.priority, data.priority_category)}`,
-      `Person-Centered Plan: ${label(OPTIONS.pcp, data.pcp)}`,
-      `Services needed: ${serviceNames(data.services)}`,
-      `How soon: ${label(OPTIONS.timeline, data.timeline)}`,
-      '',
-      `Additional information: ${data.notes || 'None'}`,
-      '',
-      'The referrer confirmed they are authorized to share this information.',
+      'To protect the person’s privacy, the referral details are only in the staff portal. Sign in to read it and follow up.',
     ].join('\n'),
   }),
   notify({
@@ -197,7 +183,7 @@ async function submitReferral(data, { ip }) {
   })]);
 
   await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
-  await notifications.notifyPermission(['messages.view', 'messages.view_intake'], {
+  await alerts.send('referral', {
     type: 'referral',
     title: `New referral for ${data.person_name}`,
     body: `From ${data.referrer_name} (${roleLabel}) · ${data.county}`,
@@ -243,29 +229,16 @@ async function submitRequest(data, { ip }) {
     notify({
       to: await content.getRecipientEmail('intake'),
       replyTo: data.email,
-      subject: `New service request ${reference} from ${name}`,
+      subject: `New service request ${reference}`,
       cta: portalButton(`/portal/messages/${id}`),
-      footnote: TEAM_NOTE,
+      footnote: PRIVATE_TEAM_NOTE,
       text: [
-        `New request for services from the HLO website (reference ${reference}).`,
+        `A new request for services came in through the HLO website (reference ${reference}).`,
         '',
-        'CONTACT',
-        `Name: ${name}`,
-        `Phone: ${data.phone}`,
-        `Email: ${data.email}`,
-        `Prefers: ${data.preferred_contact === 'email' ? 'Email' : 'Phone'}`,
-        `Best time to call: ${label(OPTIONS.bestTime, data.best_time)}`,
+        `From: ${name} (${label(OPTIONS.relationship, data.relationship).toLowerCase()})`,
+        `Prefers: ${data.preferred_contact === 'email' ? 'Email' : 'Phone'}, ${label(OPTIONS.bestTime, data.best_time).toLowerCase()}`,
         '',
-        'THE PERSON WHO NEEDS SUPPORT',
-        `Relationship: ${label(OPTIONS.relationship, data.relationship)}`,
-        `First name: ${data.individual_first_name || 'Not given'}`,
-        `County: ${data.county || 'Not given'}`,
-        `DDA eligibility: ${label(OPTIONS.ddaEligibility, data.dda_eligibility)}`,
-        `Person-Centered Plan: ${label(OPTIONS.pcp, data.pcp)}`,
-        `DDA funding priority: ${label(OPTIONS.priority, data.priority_category)}`,
-        `Services of interest: ${serviceNames(data.services)}`,
-        '',
-        `Anything else: ${data.message || 'None'}`,
+        'To protect the person’s privacy, the rest of the request is only in the staff portal. Sign in to read it and follow up.',
       ].join('\n'),
     }),
     notify({
@@ -302,7 +275,7 @@ async function submitRequest(data, { ip }) {
   ]);
 
   await db('contact_messages').where({ id }).update({ email_status: toTeam.ok ? 'sent' : 'failed' });
-  await notifications.notifyPermission(['messages.view', 'messages.view_intake'], {
+  await alerts.send('request', {
     type: 'request',
     title: `New service request from ${name}`,
     body: `${label(OPTIONS.relationship, data.relationship)}${data.county ? ` · ${data.county}` : ''}`,
@@ -357,7 +330,7 @@ async function submitAppointmentRequest(data, { ip }) {
       footnote: CONFIRMATION_NOTE,
     }),
     notify({
-      to: await content.getRecipientEmail('intake'),
+      to: await content.getRecipientEmail('appointments'),
       replyTo: data.email,
       subject: `New appointment request ${reference}: ${type.name}`,
       cta: portalButton(`/portal/appointments/${id}`),
@@ -377,10 +350,11 @@ async function submitAppointmentRequest(data, { ip }) {
     }),
   ]);
 
-  await notifications.notifyPermission('appointments.view', {
+  await alerts.send('appointment', {
     type: 'appointment',
     title: `Appointment request: ${type.name}`,
     body: `${data.name} · ${when}`,
+    link: `/portal/appointments/${id}`,
   });
   return { id, reference, acknowledged: toVisitor.ok, staffNotified: toStaff.ok };
 }

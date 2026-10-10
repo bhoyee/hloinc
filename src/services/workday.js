@@ -15,12 +15,8 @@ const schedule = require('./schedule');
 /** How long before something counts as waiting too long (business days). */
 const WAIT = { inbox: 2, appointmentRequest: 1 };
 
-/** Contact inbox scope for this user: everything, intake only, or nothing. */
-function inboxScope(user) {
-  if (can(user, 'messages.view')) return (q) => q;
-  if (can(user, 'messages.view_intake')) return (q) => q.where('recipient', 'intake');
-  return null;
-}
+/** Contact inbox scope for this user (the messages page rules), or null. */
+const inboxScope = (user) => require('./messages').scopeFor(user, { alias: '' });
 
 /** The moment `n` business days (Mon–Fri, Maryland) before `now`. */
 function businessDaysBefore(now, n) {

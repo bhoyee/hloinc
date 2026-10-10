@@ -20,7 +20,7 @@ const FULL = 'site_content.edit';
 const SECTIONS = [
   { key: 'contact', label: 'Contact details', icon: 'phone', description: 'Phone, email and address shown across the site.', permissions: [FULL] },
   { key: 'hours', label: 'Office hours', icon: 'clock', description: 'Opening hours, the “Open now” badge and the walk-in note.', permissions: [FULL, LIMITED] },
-  { key: 'recipients', label: 'Contact form email addresses', icon: 'mail', description: 'Where each contact form choice is emailed.', permissions: [FULL] },
+  { key: 'recipients', label: 'Team email addresses', icon: 'mail', description: 'Where each contact form choice, referrals, service requests and appointment requests are emailed.', permissions: [FULL] },
 ];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -49,7 +49,7 @@ async function current(section) {
   }
   if (section.key === 'recipients') {
     const values = {};
-    for (const r of site.recipients) values[r.key] = await content.getRecipientEmail(r.key, { fallback: false });
+    for (const r of site.mailboxes) values[r.key] = await content.getRecipientEmail(r.key, { fallback: false });
     return values;
   }
   return {};
@@ -91,7 +91,7 @@ function readHours(body) {
 function readRecipients(body) {
   const data = {};
   const errors = {};
-  for (const r of site.recipients) {
+  for (const r of site.mailboxes) {
     const v = str(body[r.key]).toLowerCase();
     if (v && (!EMAIL.test(v) || v.length > 191)) errors[r.key] = 'Enter a valid email address, or leave blank to use the main email.';
     data[r.key] = v;

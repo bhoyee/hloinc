@@ -37,7 +37,7 @@
         {% for key, label in typeLabels %}<option value="{{ key }}" {% if filters.type == key %}selected{% endif %}>{{ label }}s only</option>{% endfor %}
       </select>
     </div>
-    {% if not intakeOnly %}
+    {% if seeAll %}
       <div>
         <label for="f-recipient" class="sr-only">Sent to</label>
         <select id="f-recipient" name="recipient" class="form-control">
@@ -76,6 +76,7 @@
                 <p class="flex min-w-0 flex-wrap items-center gap-2">
                   {% if m.unread %}<span class="size-2.5 shrink-0 rounded-full bg-accent-600" aria-hidden="true"></span>{% endif %}
                   <a href="/portal/messages/{{ m.id }}" class="text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none {{ 'font-bold' if m.unread else 'font-semibold' }}">{{ m.name }}{% if m.unread %}<span class="sr-only"> (unread)</span>{% endif %}</a>
+                  {% if m.type == 'message' %}<span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-800 ring-1 ring-sky-200">{{ icon('mail', 'size-3.5') }} Contact form</span>{% endif %}
                   {% if m.type != 'message' %}<span class="rounded-full px-2 py-0.5 text-xs font-semibold ring-1 {{ 'bg-accent-50 text-accent-700 ring-accent-200' if m.type == 'referral' else 'bg-brand-50 text-brand-800 ring-brand-200' }}">{{ typeLabels[m.type] }}</span>{% endif %}
                   {{ badges.status(m.status, statusLabels[m.status]) }}
                   {% if m.email_status == 'failed' %}<span class="inline-flex items-center gap-1 text-xs font-semibold text-accent-700">{{ icon('exclamation', 'size-3.5') }} Email not delivered</span>{% endif %}

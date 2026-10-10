@@ -1,5 +1,6 @@
 'use strict';
 
+const { MESSAGE_ACCESS } = require('../auth/permissions');
 const db = require('../db/knex');
 const roles = require('./roles');
 const { NAV } = require('../lib/portalNav');
@@ -132,7 +133,7 @@ const providers = [
   },
   {
     label: 'Messages',
-    permission: ['messages.view', 'messages.view_intake'],
+    permission: MESSAGE_ACCESS,
     async run(user, q, limit) {
       const msgs = require('./messages');
       const scope = msgs.scopeFor(user);

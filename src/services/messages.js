@@ -1,7 +1,7 @@
 'use strict';
 
 const db = require('../db/knex');
-const { can } = require('../auth/permissions');
+const { can, inboxPermission } = require('../auth/permissions');
 const { recipients } = require('../lib/site');
 const { notify } = require('./notify');
 const content = require('./content');
@@ -69,14 +69,24 @@ const TABS = {
   all: { label: 'All', where: (q) => q },
 };
 
+/** The contact form inboxes this person can open (all of them with "View all"). Intake includes referrals and service requests. */
+function inboxesFor(user) {
+  if (can(user, 'messages.view')) return recipients.map((r) => r.key);
+  return recipients.filter((r) => can(user, inboxPermission(r.key))).map((r) => r.key);
+}
+
 /**
- * Which messages this person may see: everything, the intake inbox only
- * (intake messages and referrals), or nothing. Returns a query modifier or null.
+ * Which messages this person may see. "View all" (Admin by default): every
+ * message. Otherwise the inboxes ticked for their role, plus anything assigned
+ * to them. No inbox at all: nothing. Returns a query modifier or null. `alias`
+ * is the table alias the query uses for contact_messages ('' for none).
  */
-function scopeFor(user) {
+function scopeFor(user, { alias = 'm' } = {}) {
+  const col = (c) => (alias ? `${alias}.${c}` : c);
   if (can(user, 'messages.view')) return (q) => q;
-  if (can(user, 'messages.view_intake')) return (q) => q.where('m.recipient', 'intake');
-  return null;
+  const mine = inboxesFor(user);
+  if (!mine.length) return null;
+  return (q) => q.where((w) => w.whereIn(col('recipient'), mine).orWhere(col('assigned_to'), user.id));
 }
 
 const { of: ref, normalizeSearch } = require('../lib/reference');
@@ -173,14 +183,13 @@ async function assign(m, assignee, user) {
   return true;
 }
 
-/** Staff who can see this message, for the "Assign to" list. */
-async function assignableStaff(m) {
+/** Staff who work from the inbox, for the "Assign to" list. Assigning a message lets that person see it. */
+async function assignableStaff() {
+  const { MESSAGE_ACCESS } = require('../auth/permissions');
   const roles = await require('./roles').list();
-  const keys = roles
-    .filter((r) => r.permissions.has('messages.view') || (m.recipient === 'intake' && r.permissions.has('messages.view_intake')))
-    .map((r) => r.key);
+  const keys = roles.filter((r) => MESSAGE_ACCESS.some((p) => r.permissions.has(p))).map((r) => r.key);
   if (!keys.length) return [];
-  return db('users').whereIn('role', keys).where({ status: 'active' }).select('id', 'name').orderBy('name');
+  return db('users').whereIn('role', keys).where({ status: 'active' }).select('id', 'name', 'email').orderBy('name');
 }
 
 /** Email a reply to the sender (plain text), and keep a copy in the history. */
@@ -252,6 +261,7 @@ function remove(m) {
 }
 
 module.exports = {
+  inboxesFor,
   detailRows,
   STATUS_LABELS,
   TYPE_LABELS,

@@ -135,7 +135,8 @@ describe('roles & permissions', () => {
 
   it('stops account managers giving out or managing roles above their own', async () => {
     const role = await roles.get('program_coordinator');
-    await roles.update('program_coordinator', { name: role.name, description: role.description, permissions: [...role.permissions, 'accounts.view', 'accounts.edit', 'accounts.archive'] });
+    // Also the General inquiry inbox, so Reception (below) has no access they lack.
+    await roles.update('program_coordinator', { name: role.name, description: role.description, permissions: [...role.permissions, 'accounts.view', 'accounts.edit', 'accounts.archive', 'messages.inbox_general'] });
     const agent = await signIn(await makeUser('program_coordinator'));
 
     const promote = await post(agent, '/portal/accounts/new', '/portal/accounts', { name: 'New Admin', email: 'new.admin@example.com', role: 'admin' });
@@ -194,9 +195,10 @@ describe('global search', () => {
 
 describe('notifications', () => {
   it('tells only staff who can see a new referral', async () => {
-    const intake = await makeUser('intake_specialist');
-    const reception = await makeUser('reception'); // can view all messages
-    const director = await makeUser('program_director'); // can view messages
+    await makeUser('admin'); // sees every message, but isn't alerted by default
+    const intake = await makeUser('intake_specialist'); // referrals land in Intake
+    await makeUser('reception'); // General inquiry only
+    await makeUser('program_director'); // Program director only
     const deactivated = await makeUser('program_coordinator');
     await db('users').where({ id: deactivated.id }).update({ status: 'deactivated' });
 
@@ -206,7 +208,7 @@ describe('notifications', () => {
       person_name: 'Jordan', county: 'Howard County', consent: 'yes', _csrf: csrf,
     });
     const notified = await db('notifications').where({ type: 'referral' }).pluck('user_id');
-    expect(new Set(notified)).toEqual(new Set([intake.id, reception.id, director.id]));
+    expect(notified).toEqual([intake.id]);
   });
 
   it('shows the unread count and marks items read', async () => {

@@ -1,6 +1,6 @@
 {# "Needs attention" and "Today at HLO". Rendered with the dashboard, and again on its own
    (GET /portal/dashboard/panels) when the live refresh sees something has changed. #}
-{% set showAttention = panels.attention.length or can('messages.view') or can('messages.view_intake') or can('appointments.view') %}
+{% set showAttention = panels.attention.length or hasInbox or can('appointments.view') %}
 {% set showToday = panels.today.appointments or panels.today.working %}
 {% if showAttention or showToday %}
 <div class="grid gap-4 lg:gap-5 {{ 'lg:grid-cols-2' if showAttention and showToday }}">

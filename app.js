@@ -9,6 +9,8 @@ const app = createApp();
 
 app.listen(config.port, () => {
   console.log(`HLO Inc. running at ${config.appUrl} (${config.env})`);
+  // Tell managers about website items nobody has picked up (Roles & permissions → Alerts).
+  require('./src/services/alerts').startOverdueChecks();
 });
 
 module.exports = app;

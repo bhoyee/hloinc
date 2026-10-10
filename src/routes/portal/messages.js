@@ -8,6 +8,8 @@ const { z } = require('zod');
 const db = require('../../db/knex');
 const msgs = require('../../services/messages');
 const notifications = require('../../services/notifications');
+const { notify } = require('../../services/notify');
+const config = require('../../config');
 const { audit } = require('../../services/audit');
 const { requirePermission } = require('../../middleware/auth');
 const { setFlash } = require('../../lib/forms');
@@ -35,14 +37,18 @@ router.get('/', async (req, res) => {
   const readIds = new Set(await require('../../db/knex')('message_reads').where({ user_id: req.user.id }).whereIn('message_id', result.items.map((m) => m.id)).pluck('message_id'));
   result.items = result.items.map((m) => ({ ...m, unread: !readIds.has(m.id) && !m.archived_at && m.status !== 'resolved' }));
   const pageUrl = (p) => `/portal/messages?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
-  const intakeOnly = !req.user.permissions.has('messages.view');
+  const seeAll = req.user.permissions.has('messages.view');
+  const mine = msgs.inboxesFor(req.user);
+  const inboxNames = mine.map((k) => `“${msgs.RECIPIENT_LABELS[k]}”`);
   res.render('pages/portal/messages/index.njk', {
     title: 'Messages',
-    subheading: intakeOnly ? 'Intake messages, referrals and service requests from the website.' : 'Contact form messages, referrals and service requests from the website.',
+    subheading: seeAll
+      ? 'Contact form messages, referrals and service requests from the website.'
+      : `${inboxNames.length ? `Sent to ${inboxNames.join(' or ')} on the contact page` : 'Messages from the website'}${mine.includes('intake') ? ', referrals and service requests' : ''}, and ones assigned to you.`,
     crumbs,
     tab,
     filters,
-    intakeOnly,
+    seeAll,
     tabs: Object.entries(msgs.TABS).map(([key, t]) => ({ key, label: t.label })),
     counts: await msgs.tabCounts(req.user),
     ...result,
@@ -94,7 +100,7 @@ async function renderShow(req, res, { values = {}, errors = {}, status = 200 } =
     m,
     answers: msgs.detailRows(m),
     events: await msgs.events(m.id),
-    staff: req.user.permissions.has('messages.edit') ? await msgs.assignableStaff(m) : [],
+    staff: req.user.permissions.has('messages.edit') ? await msgs.assignableStaff() : [],
     statusLabels: msgs.STATUS_LABELS,
     typeLabels: msgs.TYPE_LABELS,
     recipientLabels: msgs.RECIPIENT_LABELS,
@@ -124,10 +130,10 @@ router.post('/:id/status', can('messages.edit'), async (req, res) => {
 
 router.post('/:id/assign', can('messages.edit'), async (req, res) => {
   const raw = req.body.assigned_to === 'me' ? String(req.user.id) : String(req.body.assigned_to || '');
-  const staff = await msgs.assignableStaff(req.msg);
+  const staff = await msgs.assignableStaff();
   const assignee = raw ? staff.find((s) => String(s.id) === raw) : null;
   if (raw && !assignee) {
-    setFlash(req, 'error', 'Choose someone who can see this inbox.');
+    setFlash(req, 'error', 'Choose someone who works from the messages inbox.');
     return back(req, res);
   }
   if (await msgs.assign(req.msg, assignee, req.user)) {
@@ -139,8 +145,22 @@ router.post('/:id/assign', can('messages.edit'), async (req, res) => {
         body: `From ${req.msg.name}`,
         link: `/portal/messages/${req.msg.id}`,
       });
+      const kind = msgs.TYPE_LABELS[req.msg.type].toLowerCase();
+      await notify({
+        to: assignee.email,
+        subject: `${req.user.name} assigned you a ${kind} (${ref(req.msg)})`,
+        text: [
+          `Hello ${assignee.name.split(' ')[0]},`,
+          '',
+          `${req.user.name} assigned you a ${kind} from the website (${ref(req.msg)}). It’s now in your Messages inbox.`,
+        ].join('\n'),
+        cta: { label: 'Open it in the staff portal', href: `${config.appUrl}/portal/messages/${req.msg.id}` },
+        footnote: 'Sent by the HLO staff portal. The details stay in the portal.',
+      });
     }
     setFlash(req, 'success', assignee ? `Assigned to ${assignee.id === req.user.id ? 'you' : assignee.name}.` : 'Unassigned.');
+    // Handed on a message they only saw because it was assigned to them.
+    if (!(await msgs.get(req.user, req.msg.id))) return res.redirect(303, '/portal/messages');
   }
   back(req, res);
 });

@@ -50,7 +50,7 @@ describe('menu counters', () => {
     const id = await message();
     await message({ name: 'Second' });
     const one = await signIn(app, await makeUser('admin'));
-    const two = await signIn(app, await makeUser('program_coordinator'));
+    const two = await signIn(app, await makeUser('reception')); // General inquiry inbox
     const opened = await one.get(`/portal/messages/${id}`);
     expect(badge(opened.text, 'messages')).toBe('1'); // already lower on the message page itself
     expect((await summary(one)).messages).toBe(1);
@@ -60,8 +60,9 @@ describe('menu counters', () => {
 
   it('drops for everyone when a message is resolved or archived', async () => {
     const id = await message();
-    const coordinator = await signIn(app, await makeUser('program_coordinator'));
-    const other = await signIn(app, await makeUser('program_director'));
+    const coordinator = await signIn(app, await makeUser('admin'));
+    const other = await signIn(app, await makeUser('reception'));
+    expect((await summary(other)).messages).toBe(1);
     await post(coordinator, `/portal/messages/${id}`, `/portal/messages/${id}/status`, { status: 'resolved' });
     expect((await summary(other)).messages).toBe(0);
   });
