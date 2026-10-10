@@ -13,6 +13,7 @@ const NAV = [
   { label: 'Messages', href: '/portal/messages', icon: 'inbox', permission: MESSAGE_ACCESS, badge: 'messages', badgeLabel: 'unread' },
   { label: 'Leads', href: '/portal/leads', icon: 'heart', permission: 'leads.view' },
   { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view' },
+  { label: 'Applications', href: '/portal/applications', icon: 'document', permission: 'jobs.applications', badge: 'applications', badgeLabel: 'new' },
   { label: 'Announcements', href: '/portal/announcements', icon: 'megaphone', permission: 'announcements.view' },
   { label: 'Site content', href: '/portal/content', icon: 'document', permission: ['site_content.view', 'site_content.edit', 'site_content.edit_limited'] },
   { label: 'Staff accounts', href: '/portal/accounts', icon: 'users', permission: 'accounts.view', group: 'admin' },

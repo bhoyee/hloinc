@@ -11,6 +11,8 @@ app.listen(config.port, () => {
   console.log(`HLO Inc. running at ${config.appUrl} (${config.env})`);
   // Tell managers about website items nobody has picked up (Roles & permissions → Alerts).
   require('./src/services/alerts').startOverdueChecks();
+  // Scan resumes the virus scanner couldn't check when they arrived.
+  require('./src/services/applications').startRescans();
 });
 
 module.exports = app;

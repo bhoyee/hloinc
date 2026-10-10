@@ -5,6 +5,7 @@
 {% block actions %}
   <div class="flex flex-wrap gap-2">
     <a href="/careers" target="_blank" rel="noopener" class="btn-secondary">{{ icon('external', 'size-4') }} Careers page</a>
+    {% if can('jobs.applications') %}<a href="/portal/applications" class="btn-secondary">{{ icon('document', 'size-4') }} Applications</a>{% endif %}
     {% if can('jobs.edit') %}<a href="/portal/jobs/new" class="btn-primary">{{ icon('plus', 'size-4') }} New job</a>{% endif %}
   </div>
 {% endblock %}
@@ -55,6 +56,10 @@
             <div class="text-sm text-muted lg:w-60 lg:text-right">
               {% if j.status == 'published' and j.published_at %}<p class="font-semibold text-ink">Live since {{ j.published_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }}</p>{% endif %}
               <p>Updated {{ j.updated_at | date({ month: 'short', day: 'numeric' }) }}{% if j.updated_by_name %} by {{ j.updated_by_name }}{% endif %}</p>
+              {% if applicationCounts %}
+                {% set ac = applicationCounts[j.id] %}
+                <a href="/portal/applications?tab=all&job={{ j.id }}" class="relative z-10 mt-1 inline-flex items-center gap-1.5 font-semibold text-brand-700 hover:underline">{{ icon('document', 'size-3.5') }} {{ ac.total if ac else 0 }} {{ 'application' if ac and ac.total == 1 else 'applications' }}{% if ac and ac.fresh %} <span class="rounded-full bg-accent-600 px-1.5 text-xs text-white">{{ ac.fresh }} new</span>{% endif %}</a>
+              {% endif %}
             </div>
           </div>
           <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>

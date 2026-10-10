@@ -1,0 +1,73 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block actions %}
+  <a href="/portal/applications" class="btn-secondary">&larr; All applications</a>
+{% endblock %}
+
+{% block content %}
+  <div class="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+    <div class="space-y-6">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="who-h">
+        <h2 id="who-h" class="text-lg font-bold">Applicant</h2>
+        <dl class="mt-4 grid gap-x-6 gap-y-4 text-[15px] sm:grid-cols-2">
+          <div><dt class="text-sm text-muted">Name</dt><dd class="font-semibold text-ink">{{ a.first_name }} {{ a.last_name }}</dd></div>
+          <div><dt class="text-sm text-muted">Position</dt><dd class="font-semibold text-ink">{% if a.job_id %}<a href="/portal/jobs/{{ a.job_id }}" class="link">{{ a.job_title }}</a>{% else %}{{ a.job_title }} <span class="font-normal text-muted">(job deleted)</span>{% endif %}</dd></div>
+          <div><dt class="text-sm text-muted">Email</dt><dd><a href="mailto:{{ a.email }}" class="font-semibold text-brand-700 hover:underline">{{ a.email }}</a></dd></div>
+          <div><dt class="text-sm text-muted">Phone</dt><dd><a href="{{ a.phone | telHref }}" class="font-semibold text-brand-700 hover:underline">{{ a.phone }}</a></dd></div>
+          <div><dt class="text-sm text-muted">Applied</dt><dd class="font-semibold text-ink">{{ a.created_at | date({ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</dd></div>
+          <div><dt class="text-sm text-muted">Reference</dt><dd class="font-mono font-semibold text-ink">{{ a.reference }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="note-h">
+        <h2 id="note-h" class="text-lg font-bold">Their note</h2>
+        {% if a.cover_note %}<p class="mt-3 text-[15px] whitespace-pre-line text-ink/90">{{ a.cover_note }}</p>
+        {% else %}<p class="mt-3 text-[15px] text-muted">They didn’t add a note.</p>{% endif %}
+      </section>
+    </div>
+
+    <aside class="space-y-6">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="cv-h">
+        <h2 id="cv-h" class="text-lg font-bold">Resume</h2>
+        {% if a.scan_status == 'clean' and a.resume_file %}
+          <p class="mt-3 flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-line">
+            <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">{{ icon('document', 'size-5') }}</span>
+            <span class="min-w-0"><span class="block truncate font-semibold text-ink">{{ a.resume_name }}</span><span class="text-sm text-muted">{{ types[a.resume_type].label }} · {{ ((a.resume_size / 1024) | round | int) if a.resume_size >= 1024 else 'under 1' }} KB</span></span>
+          </p>
+          <a href="/portal/applications/{{ a.id }}/resume" class="btn-primary mt-4 w-full">{{ icon('arrow-right', 'size-4 rotate-90') }} Download resume</a>
+          <p class="mt-3 flex items-start gap-2 text-sm text-muted">{{ icon('shield', 'mt-0.5 size-4 shrink-0 text-brand-700') }} <span>Virus scan passed{% if a.scan_engine %} · {{ a.scan_engine }}{% endif %}{% if a.scanned_at %}, {{ a.scanned_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}{% endif %}. Downloads are recorded in the audit log.</span></p>
+        {% elif a.scan_status == 'pending' %}
+          <p class="mt-3 flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-950">
+            {{ icon('clock', 'mt-0.5 size-5 shrink-0') }}
+            <span><strong>Waiting for the virus scan.</strong> The resume is locked until a scan passes. The portal tries again every 15 minutes.{% if a.scan_detail %} <span class="block text-sm">Last attempt: {{ a.scan_detail }}</span>{% endif %}</span>
+          </p>
+        {% else %}
+          <p class="mt-3 flex gap-3 rounded-2xl border border-accent-200 bg-accent-50 p-4 text-[15px] text-accent-800">
+            {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }}
+            <span><strong>Virus found. The file was deleted.</strong>{% if a.scan_detail %} <span class="block text-sm">{{ a.scan_detail }}</span>{% endif %} Ask the applicant to send a clean copy.</span>
+          </p>
+        {% endif %}
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="status-h">
+        <h2 id="status-h" class="text-lg font-bold">Status</h2>
+        <form method="post" action="/portal/applications/{{ a.id }}/status" class="mt-3 flex gap-2">
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <label for="f-status" class="sr-only">Status</label>
+          <select id="f-status" name="status" class="form-control">
+            {% for key, label in statusLabels %}<option value="{{ key }}" {% if a.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <button type="submit" class="btn-green shrink-0">Save</button>
+        </form>
+      </section>
+
+      {% if can('jobs.delete') %}
+        <form method="post" action="/portal/applications/{{ a.id }}/delete" data-confirm="This permanently deletes the application and the resume. It can’t be undone." data-confirm-title="Delete this application?" data-confirm-button="Delete">
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <button type="submit" class="btn-secondary w-full !text-accent-700">{{ icon('trash', 'size-4') }} Delete application and resume</button>
+        </form>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

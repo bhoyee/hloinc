@@ -54,13 +54,6 @@
           {{ ui.textarea('requirements', 'Requirements', values, errors, required=false, rows=6, maxlength=6000, hint=textHint) }}
         </section>
 
-        <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="apply-h">
-          <div>
-            <h2 id="apply-h" class="text-lg font-bold">Applications</h2>
-            <p class="mt-1 text-sm text-muted">The “Apply” button opens this link in ADP. Applications are never collected on the HLO site.</p>
-          </div>
-          {{ ui.input('apply_url', 'ADP apply link', values, errors, type='url', autocomplete='off', attrs='maxlength="500" inputmode="url"', hint='Paste the job’s link from ADP Workforce Now. It must start with https://') }}
-        </section>
       </fieldset>
 
       {% if editable %}

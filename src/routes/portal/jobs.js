@@ -15,8 +15,7 @@ const crumbs = [{ label: 'Dashboard', href: '/portal' }];
 const jobCrumbs = [...crumbs, { label: 'Jobs', href: '/portal/jobs' }];
 const can = requirePermission;
 
-const FIELDS = ['title', 'department', 'location', 'employment_type', 'pay_range', 'description', 'requirements', 'benefits', 'apply_url'];
-const DEFAULT_APPLY_URL = 'https://workforcenow.adp.com/';
+const FIELDS = ['title', 'department', 'location', 'employment_type', 'pay_range', 'description', 'requirements', 'benefits'];
 
 // --- List -------------------------------------------------------------------------------
 
@@ -28,13 +27,14 @@ router.get('/', async (req, res) => {
   const pageUrl = (p) => `/portal/jobs?${new URLSearchParams(Object.entries({ tab, q, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
   res.render('pages/portal/jobs/index.njk', {
     title: 'Jobs',
-    subheading: 'Positions on the careers page. Applications go through ADP.',
+    subheading: 'Positions on the careers page. People apply on each job’s page with their resume.',
     crumbs,
     tab,
     q,
     tabs: Object.entries(jobs.TABS).map(([key, t]) => ({ key, label: t.label })),
     counts: await jobs.tabCounts(),
     ...result,
+    applicationCounts: userCan(req.user, 'jobs.applications') ? await require('../../services/applications').countsByJob(result.items.map((j) => j.id)) : null,
     statusLabels: jobs.STATUS_LABELS,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
@@ -57,7 +57,7 @@ function renderForm(req, res, { job = null, values, errors = {}, status = 200 })
   });
 }
 
-router.get('/new', can('jobs.edit'), (req, res) => renderForm(req, res, { values: { apply_url: DEFAULT_APPLY_URL, employment_type: 'Full-time' } }));
+router.get('/new', can('jobs.edit'), (req, res) => renderForm(req, res, { values: { employment_type: 'Full-time' } }));
 
 router.post('/', can('jobs.edit'), async (req, res) => {
   const publish = req.body.intent === 'publish';

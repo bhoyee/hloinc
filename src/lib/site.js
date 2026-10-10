@@ -55,6 +55,7 @@ const recipients = [
 const mailboxes = [
   ...recipients.map((r) => (r.key === 'intake' ? { key: r.key, label: 'Intake specialist (also referrals and service requests)' } : { key: r.key, label: r.label })),
   { key: 'appointments', label: 'Appointment requests' },
+  { key: 'careers', label: 'Job applications' },
 ];
 
 module.exports = { defaults, nav, recipients, mailboxes };

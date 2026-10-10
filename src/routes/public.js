@@ -7,12 +7,13 @@ const content = require('../services/content');
 const jobs = require('../services/jobs');
 const announcements = require('../services/announcements');
 const inquiries = require('../services/inquiries');
+const applications = require('../services/applications');
+const { applicationSchema } = require('../validation/applications');
 const services = require('../content/services');
 
 // The services shown in the listings on the home and services pages.
 const listed = services.filter((s) => s.listed !== false);
 const areas = require('../content/areas');
-const resources = require('../content/resources');
 const legal = require('../content/legal');
 const { recipients } = require('../lib/site');
 const {
@@ -102,10 +103,7 @@ router.get('/getting-started', async (req, res) => {
 
 router.get('/resources', (req, res) => {
   res.render('pages/public/resources.njk', {
-    ...meta('resources', 'Resources', 'Independent organizations and Maryland planning resources for people with disabilities and their families.'),
-    // Built-in groups; staff can change, add and remove them in the page editor.
-    resourceGroups: resources.map((g, i) => ({ id: `group${i + 1}`, title: g.group })),
-    resourceItems: Object.fromEntries(resources.map((g, i) => [`group${i + 1}`, g.items.map((r) => ({ name: r.name, href: r.url, description: r.description }))])),
+    ...meta('resources', 'Resources', 'Plain-language explanations of the terms used in Maryland disability services: DDA, HCBS, PCP, ISP and more.'),
   });
 });
 
@@ -167,6 +165,72 @@ router.get('/careers/:slug', async (req, res, next) => {
     job,
     structuredData: jobs.toJobPosting(job, res.locals.site),
   });
+});
+
+// --- Applying for a job ------------------------------------------------------------
+
+function renderApply(req, res, job, { values = {}, errors = {} } = {}) {
+  spam.issueForm(req, 'application');
+  res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/job-apply.njk', {
+    title: `Apply: ${job.title}`,
+    description: `Apply for ${job.title} at Healthy Living Option Inc.`,
+    job,
+    values,
+    errors,
+    maxBytes: applications.MAX_BYTES,
+    maxLabel: applications.MAX_LABEL,
+  });
+}
+
+router.get('/careers/:slug/apply', async (req, res, next) => {
+  const job = await jobs.findPublishedBySlug(req.params.slug);
+  if (!job) return next();
+  renderApply(req, res, job);
+});
+
+router.post('/careers/:slug/apply', async (req, res, next) => {
+  const job = await jobs.findPublishedBySlug(req.params.slug);
+  if (!job) return next();
+  const back = `/careers/${job.slug}/apply`;
+  const sent = 'Thank you. Your application has been sent.';
+  if (spam.botCheck(req, 'application', ['first_name', 'last_name', 'cover_note'])) return dropQuietly(req, res, back, sent);
+
+  const parsed = applicationSchema.safeParse(req.body);
+  const errors = parsed.success ? {} : fieldErrors(parsed.error);
+  if (req.uploadError) errors.resume = req.uploadError;
+  else if (!req.file) errors.resume = 'Attach your resume (PDF or Word .docx).';
+  if (Object.keys(errors).length) return renderApply(req, res, job, { values: req.body, errors });
+
+  const blocked = await humanCheck(req, 'application', parsed.data.email, { ...parsed.data, job: job.id });
+  if (blocked === 'duplicate') return dropQuietly(req, res, back, sent);
+  if (blocked) return renderApply(req, res, job, { values: req.body, errors: blocked });
+
+  let result;
+  try {
+    result = await applications.submit(job, parsed.data, req.file, { ip: req.ip });
+  } catch (err) {
+    if (err.status !== 422) throw err;
+    if (err.infected) {
+      await require('../services/audit').audit(req, {
+        action: 'application.virus_blocked',
+        entityType: 'job',
+        entityId: job.id,
+        summary: `A resume uploaded for “${job.title}” was refused: the virus scan found ${err.infected.detail}`,
+        metadata: { engine: err.infected.engine, detail: err.infected.detail },
+      });
+    }
+    return renderApply(req, res, job, { values: req.body, errors: { [err.field || 'resume']: err.message } });
+  }
+  req.session.applied = { title: job.title, reference: result.reference, emailed: result.acknowledged };
+  res.redirect(303, `/careers/${job.slug}/applied`);
+});
+
+router.get('/careers/:slug/applied', async (req, res, next) => {
+  const job = await jobs.findPublishedBySlug(req.params.slug);
+  const done = req.session.applied;
+  if (!job || !done) return next();
+  delete req.session.applied;
+  res.render('pages/public/job-applied.njk', { title: 'Application sent', description: 'Thank you for applying.', job, done });
 });
 
 // --- Spam handling shared by the public forms ---------------------------------

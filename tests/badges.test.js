@@ -43,7 +43,7 @@ describe('menu counters', () => {
     const html = (await admin.get('/portal')).text;
     expect(badge(html, 'messages')).toBe('2');
     expect(badge(html, 'appointments')).toBe('1');
-    expect(await summary(admin)).toEqual({ messages: 2, appointments: 1, timeOff: 0 });
+    expect(await summary(admin)).toEqual({ messages: 2, appointments: 1, timeOff: 0, applications: 0 });
   });
 
   it('counts messages per person: opening one lowers only your own count', async () => {
@@ -82,7 +82,7 @@ describe('menu counters', () => {
     expect((await summary(intake)).messages).toBe(1);
 
     const it_ = await signIn(app, await makeUser('it_admin'));
-    expect(await summary(it_)).toEqual({ messages: null, appointments: null, timeOff: null });
+    expect(await summary(it_)).toEqual({ messages: null, appointments: null, timeOff: null, applications: null });
     expect((await it_.get('/portal/accounts')).text).not.toContain('data-nav-badge="messages"');
   });
 

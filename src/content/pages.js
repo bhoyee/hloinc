@@ -120,13 +120,11 @@ module.exports = {
       { title: 'A team that listens', text: 'Supportive colleagues and leaders who value every voice.' },
       { title: 'Close to home', text: 'Roles across nine Maryland counties and Baltimore City.' },
     ],
-    // The kinds of roles HLO hires for (HLO's list); live openings come from the Jobs section of the portal.
-    roles: ['Direct Support Staff', 'Program Director / Coordinator', 'Office Secretary / Receptionist', 'Accounting Officer', 'Delegate Nurse'],
     steps: [
       { title: 'Find a role', text: 'Search or browse open positions and read the full details.' },
-      { title: 'Apply on ADP', text: 'Select “Apply on ADP”. Our secure ADP careers portal opens in a new tab.' },
+      { title: 'Apply online', text: 'Select “Apply for this job”, fill in a short form and attach your resume (PDF or Word).' },
       { title: 'Hear from us', text: 'Our team reviews your application and contacts you about next steps.' },
     ],
-    applyNote: 'Applications are handled securely by ADP, our recruitment provider. HLO will never ask for payment to apply.',
+    applyNote: 'Every resume is virus-checked and stored securely, and only HLO’s hiring team can see it. HLO will never ask for payment to apply.',
   },
 };

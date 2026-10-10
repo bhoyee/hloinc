@@ -13,8 +13,8 @@ const crypto = require('crypto');
 
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const CODE_LENGTH = 6;
-const PREFIXES = { message: 'MSG', referral: 'REF', request: 'REQ', appointment: 'APT' };
-const PATTERN = /^HLO-(MSG|REF|REQ|APT)-[2-9A-HJKMNP-Z]{6}$/;
+const PREFIXES = { message: 'MSG', referral: 'REF', request: 'REQ', appointment: 'APT', application: 'APP' };
+const PATTERN = /^HLO-(MSG|REF|REQ|APT|APP)-[2-9A-HJKMNP-Z]{6}$/;
 
 function make(kind) {
   const prefix = PREFIXES[kind];
@@ -44,7 +44,7 @@ const of = (row) => (row && row.reference) || (row && row.id ? `#${row.id}` : ''
 /** Tidy what someone typed when searching (spaces, lower case, missing dashes). */
 function normalizeSearch(q) {
   const compact = String(q).toUpperCase().replace(/[\s-]/g, '');
-  const m = compact.match(/^(?:HLO)?(MSG|REF|REQ|APT)?([2-9A-HJKMNP-Z]{6})$/);
+  const m = compact.match(/^(?:HLO)?(MSG|REF|REQ|APT|APP)?([2-9A-HJKMNP-Z]{6})$/);
   return m ? m[2] : null;
 }
 

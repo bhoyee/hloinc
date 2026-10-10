@@ -11,3 +11,6 @@ coverage/
 # Client documents (never publish)
 *.docx
 *.pdf
+# Job application resumes (encrypted) and scanner scratch files: never in git.
+storage/applications/
+storage/tmp/

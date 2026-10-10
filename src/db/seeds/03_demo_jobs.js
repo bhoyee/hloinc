@@ -3,9 +3,8 @@
 /**
  * DEMO job postings so the Careers pages can be reviewed before the portal's
  * job editor exists (Phase 4). Never runs in production. Pay, requirements
- * and the ADP link are placeholders — HLO supplies the real ones.
+ * are placeholders — HLO supplies the real ones.
  */
-const ADP_PLACEHOLDER = 'https://workforcenow.adp.com/';
 
 const duties = `As a Direct Support Professional (DSP), you help adults with intellectual and developmental disabilities live full, independent lives at home and in their communities. You work one-on-one and in small groups, following each person’s person-centered plan.
 
@@ -42,7 +41,6 @@ exports.seed = async function seed(knex) {
       description: duties,
       requirements,
       benefits,
-      apply_url: ADP_PLACEHOLDER,
       status: 'published',
       published_at: new Date(),
     },
@@ -59,7 +57,6 @@ exports.seed = async function seed(knex) {
       ),
       requirements,
       benefits: '- Paid training and certifications\n- Weekend shift differential\n- Opportunities to pick up extra hours',
-      apply_url: ADP_PLACEHOLDER,
       status: 'published',
       published_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     },
@@ -93,7 +90,6 @@ exports.seed = async function seed(knex) {
         description: duties,
         requirements,
         benefits,
-        apply_url: ADP_PLACEHOLDER,
         status: 'published',
         published_at: new Date(Date.now() - (n + 4) * 24 * 60 * 60 * 1000),
       });

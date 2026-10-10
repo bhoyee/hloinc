@@ -113,6 +113,8 @@ const limiters = {
   global: rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
   // Public forms (contact, appointment requests).
   forms: rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
+  // Job applications (each carries a file): a few per hour.
+  applications: rateLimit({ windowMs: 60 * 60 * 1000, limit: 6, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
   // Staff login attempts per IP (per-account lockout is handled separately).
   login: rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false, skip }),
 };

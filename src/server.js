@@ -96,6 +96,8 @@ function createApp() {
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
   app.use(express.json({ limit: '100kb' }));
   app.use(sessionMiddleware());
+  // Job applications are multipart (with a resume), so read them here for the CSRF check below.
+  app.post('/careers/:slug/apply', limiters.applications, require('./routes/applicationUpload'));
   app.use(csrf());
   app.use(flashMiddleware);
   // Page content for the templates (published, or drafts in the visual editor).

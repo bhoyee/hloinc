@@ -16,7 +16,7 @@ describe('public pages', () => {
     ['/services/respite-care', 'What support can include'],
     ['/service-areas', 'St. Mary’s County'],
     ['/getting-started', 'I am making a referral'],
-    ['/resources', 'independent of HLO'],
+    ['/resources', 'Words you may hear along the way'],
     ['/careers', 'Open positions'],
     ['/contact', 'Send us a message'],
     ['/appointments/request', 'Request an appointment'],
@@ -26,10 +26,10 @@ describe('public pages', () => {
     expect(res.text).toContain(text);
   });
 
-  it('lists HLO’s six approved services, and no nursing or transportation', async () => {
+  it('lists HLO’s approved services (not Employment), and no nursing or transportation', async () => {
     const res = await request(app).get('/services');
     const slugs = new Set([...res.text.matchAll(/<a href="\/services\/([a-z-]+)" class="group flex h-full/g)].map((m) => m[1]));
-    expect([...slugs].sort()).toEqual(['community-development-services', 'community-residential-services', 'employment-services', 'personal-supports', 'respite-care', 'supported-living']);
+    expect([...slugs].sort()).toEqual(['community-development-services', 'community-residential-services', 'personal-supports', 'respite-care', 'supported-living']);
     expect(res.text).not.toMatch(/nursing|transportation/i);
   });
 
@@ -252,10 +252,11 @@ describe('careers', () => {
     expect(res.text).not.toContain('Secret Draft Role');
   });
 
-  it('shows a published job with its ADP apply link', async () => {
+  it('shows a published job with its Apply button (our own form, not ADP)', async () => {
     const res = await request(app).get('/careers/direct-support-professional');
     expect(res.status).toBe(200);
-    expect(res.text).toContain('href="https://workforcenow.adp.com/example"');
+    expect(res.text).toContain('href="/careers/direct-support-professional/apply"');
+    expect(res.text).not.toContain('workforcenow.adp.com');
   });
 
   it('hides draft jobs', async () => {
@@ -337,7 +338,7 @@ describe('services help', () => {
     expect(res.text).toContain('href="/getting-started#compare"');
     expect(res.text).toContain('href="/contact?to=intake"');
     // Every quick-guide entry resolves to a real service.
-    expect(res.text.match(/May suit: [A-Z]/g)).toHaveLength(6);
+    expect(res.text.match(/May suit: [A-Z]/g)).toHaveLength(5);
   });
 });
 

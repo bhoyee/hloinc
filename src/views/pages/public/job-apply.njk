@@ -1,0 +1,88 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  {% call ui.pageHero('Apply', job.title, null, [{ label: 'Careers', href: '/careers' }, { label: job.title, href: '/careers/' + job.slug }, { label: 'Apply' }]) %}
+    <ul class="mt-6 flex flex-wrap gap-2 text-sm font-medium">
+      {% if job.location %}<li class="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-ink ring-1 ring-line">{{ icon('map-pin', 'size-4 text-accent-600') }} {{ job.location }}</li>{% endif %}
+      {% if job.employment_type %}<li class="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-ink ring-1 ring-line">{{ icon('clock', 'size-4 text-accent-600') }} {{ job.employment_type }}</li>{% endif %}
+      {% if job.pay_range %}<li class="inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-3.5 py-2 font-semibold text-white">{{ job.pay_range }}</li>{% endif %}
+    </ul>
+  {% endcall %}
+
+  <section class="section">
+    <div class="container-page grid gap-12 lg:grid-cols-[1.5fr_1fr]">
+      <div class="min-w-0">
+        {{ ui.flash(flash) }}
+        <form id="apply-form" method="post" action="/careers/{{ job.slug }}/apply" enctype="multipart/form-data" class="relative space-y-8" novalidate data-once>
+          {{ ui.errorSummary(errors) }}
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          {{ ui.honeypot() }}
+
+          <fieldset class="card space-y-6">
+            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
+              <span class="grid size-9 place-items-center rounded-full bg-accent-600 font-display text-base text-white">1</span> About you
+            </legend>
+            <div class="clear-both grid gap-6 sm:grid-cols-2">
+              {{ ui.input('first_name', 'First name', values, errors, autocomplete='given-name') }}
+              {{ ui.input('last_name', 'Last name', values, errors, autocomplete='family-name') }}
+              {{ ui.input('email', 'Email', values, errors, type='email', autocomplete='email') }}
+              {{ ui.input('phone', 'Phone', values, errors, type='tel', autocomplete='tel') }}
+            </div>
+          </fieldset>
+
+          <fieldset class="card space-y-6">
+            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
+              <span class="grid size-9 place-items-center rounded-full bg-brand-700 font-display text-base text-white">2</span> Your resume
+            </legend>
+            <div class="clear-both">
+              <label for="f-resume" class="form-label">Resume</label>
+              <label for="f-resume" class="mt-2 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition hover:border-brand-400 hover:bg-brand-50/40 {{ 'border-accent-300 bg-accent-50/40' if errors.resume else 'border-line' }}">
+                <span class="grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700">{{ icon('document', 'size-6') }}</span>
+                <span class="font-semibold text-ink" data-file-name>Choose a file</span>
+                <span class="text-sm text-muted" data-file-hint>PDF or Word (.docx), up to {{ maxLabel }}</span>
+              </label>
+              <input id="f-resume" name="resume" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                     class="sr-only" required aria-required="true" data-file-input data-max-bytes="{{ maxBytes }}" data-max-label="{{ maxLabel }}"
+                     {% if errors.resume %}aria-invalid="true" aria-describedby="f-resume-error f-resume-hint"{% else %}aria-describedby="f-resume-hint"{% endif %}>
+              <p id="f-resume-hint" class="form-hint flex items-start gap-2">{{ icon('shield', 'mt-0.5 size-4 shrink-0 text-brand-700') }} <span>Every file is checked for viruses before our team can open it. {% if errors.resume or errors.first_name or errors.email or errors.phone %}Please attach your resume again.{% endif %}</span></p>
+              {{ ui.fieldError('resume', errors) }}
+            </div>
+            {{ ui.textarea('cover_note', 'Anything you’d like to tell us?', values, errors, required=false, rows=5, maxlength=3000, hint='Optional. For example, when you could start, or why this role interests you.') }}
+          </fieldset>
+
+          <div>
+            <label class="flex gap-3 text-[15px] text-ink" for="f-consent">
+              <input id="f-consent" type="checkbox" name="consent" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" required
+                {% if values.consent == 'yes' %}checked{% endif %}
+                {% if errors.consent %}aria-invalid="true" aria-describedby="f-consent-error"{% endif %}>
+              <span>I agree that HLO may keep my details and resume to consider me for this and similar roles, as described in the <a href="/privacy" class="link">Privacy Policy</a>.</span>
+            </label>
+            {{ ui.fieldError('consent', errors) }}
+          </div>
+
+          {{ ui.captcha(turnstileSiteKey, errors) }}
+          <div class="flex flex-wrap items-center gap-4">
+            <button type="submit" class="btn-primary">Send application {{ icon('arrow-right', 'size-4') }}</button>
+            <a href="/careers/{{ job.slug }}" class="btn-secondary">Back to the job</a>
+          </div>
+        </form>
+      </div>
+
+      <aside class="space-y-5 lg:sticky lg:top-28 lg:self-start">
+        <div class="rounded-3xl bg-brand-900 p-6 text-white sm:p-7">
+          <h2 class="text-lg font-bold text-white">What happens next</h2>
+          <ol class="mt-4 space-y-4 text-[15px] text-brand-100">
+            <li class="flex gap-3"><span class="grid size-7 shrink-0 place-items-center rounded-full bg-white/15 font-bold text-white">1</span> You get an email confirming we received your application.</li>
+            <li class="flex gap-3"><span class="grid size-7 shrink-0 place-items-center rounded-full bg-white/15 font-bold text-white">2</span> Our team reviews your resume.</li>
+            <li class="flex gap-3"><span class="grid size-7 shrink-0 place-items-center rounded-full bg-white/15 font-bold text-white">3</span> If it’s a good match, we contact you to arrange a conversation.</li>
+          </ol>
+        </div>
+        <p class="flex items-start gap-3 rounded-2xl border border-line bg-white p-5 text-[15px] text-muted">
+          {{ icon('lock', 'mt-0.5 size-5 shrink-0 text-brand-700') }}
+          <span>Your resume is stored securely and only seen by HLO’s hiring team. HLO will never ask you to pay anything to apply.</span>
+        </p>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

@@ -61,8 +61,10 @@ const MODULES = [
   {
     key: 'jobs',
     label: 'Jobs & careers',
-    description: 'Job postings on the careers page.',
+    description: 'Job postings on the careers page, and the applications people send.',
     actions: ['view', 'edit', 'archive', 'delete'],
+    // Only Admin by default: applications hold applicants' personal details and resumes.
+    extras: { applications: 'See job applications and download resumes (with “Delete permanently”: delete applications)' },
   },
   {
     key: 'announcements',
@@ -137,7 +139,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && INBOX_PERMISSIONS.some((k) => set.has(k)) && !has('view'))) {
       set.add(`${m.key}.view`);
     }

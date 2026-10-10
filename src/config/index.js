@@ -41,6 +41,23 @@ const schema = z.object({
   TURNSTILE_SITE_KEY: z.string().default(''),
   TURNSTILE_SECRET_KEY: z.string().default(''),
   FORMS_MAX_PER_EMAIL_PER_DAY: z.coerce.number().int().positive().default(10),
+
+  // Virus scanning of uploaded resumes (ClamAV). "auto" uses the clamd daemon if
+  // CLAMD_SOCKET / CLAMD_HOST is set, otherwise clamdscan or clamscan if installed.
+  // "basic" (built-in checks only) is refused in production.
+  // "cloudmersive" (or "auto" with CLOUDMERSIVE_API_KEY set) scans in Cloudmersive's cloud, for
+  // shared hosting where ClamAV can't run.
+  VIRUS_SCAN: z.enum(['auto', 'cloudmersive', 'clamd', 'clamdscan', 'clamscan', 'basic']).default('auto'),
+  CLOUDMERSIVE_API_KEY: z.string().default(''),
+  // Largest resume accepted, in MB (Cloudmersive's free plan scans files up to 2.5 MB).
+  RESUME_MAX_MB: z.coerce.number().positive().max(20).default(5),
+  CLAMD_SOCKET: z.string().default(''),
+  CLAMD_HOST: z.string().default(''),
+  CLAMD_PORT: z.coerce.number().int().positive().default(3310),
+  CLAMSCAN_PATH: z.string().default(''),
+  // clamscan only: its virus database folder, and ClamAV's certificate folder (both found automatically if blank).
+  CLAMAV_DATABASE: z.string().default(''),
+  CLAMAV_CERTS_DIR: z.string().default(''),
   // Test/preview copies: tell search engines not to index anything.
   NOINDEX: bool,
 });
@@ -104,6 +121,17 @@ module.exports = {
     // Submissions faster than this are treated as bots.
     minSubmitSeconds: env.NODE_ENV === 'test' ? 0 : 3,
     maxPerEmailPerDay: env.FORMS_MAX_PER_EMAIL_PER_DAY,
+  },
+  virusScan: {
+    mode: env.VIRUS_SCAN,
+    clamdSocket: env.CLAMD_SOCKET,
+    clamdHost: env.CLAMD_HOST,
+    clamdPort: env.CLAMD_PORT,
+    clamscanPath: env.CLAMSCAN_PATH,
+    cloudmersiveKey: env.CLOUDMERSIVE_API_KEY,
+    resumeMaxBytes: Math.round(env.RESUME_MAX_MB * 1024 * 1024),
+    database: env.CLAMAV_DATABASE,
+    certsDir: env.CLAMAV_CERTS_DIR,
   },
   turnstile: {
     enabled: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),

@@ -15,7 +15,6 @@ const PUBLIC_FIELDS = [
   'description',
   'requirements',
   'benefits',
-  'apply_url',
   'published_at',
 ];
 
@@ -251,7 +250,7 @@ async function move(job, action, user) {
 }
 
 async function copy(job, user) {
-  const fields = ['department', 'location', 'employment_type', 'pay_range', 'description', 'requirements', 'benefits', 'apply_url'];
+  const fields = ['department', 'location', 'employment_type', 'pay_range', 'description', 'requirements', 'benefits'];
   const title = `${job.title} (copy)`.slice(0, 160);
   return create({ title, ...Object.fromEntries(fields.map((f) => [f, job[f] ?? ''])) }, user);
 }

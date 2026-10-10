@@ -1,0 +1,86 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% macro scanBadge(a) %}
+  {% if a.scan_status == 'clean' %}<span class="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800 ring-1 ring-brand-200">{{ icon('shield', 'size-3.5') }} Scanned</span>
+  {% elif a.scan_status == 'pending' %}<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">{{ icon('clock', 'size-3.5') }} Waiting for scan</span>
+  {% else %}<span class="inline-flex items-center gap-1 rounded-full bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-800 ring-1 ring-accent-200">{{ icon('exclamation', 'size-3.5') }} Virus found, file deleted</span>{% endif %}
+{% endmacro %}
+
+{% block actions %}
+  <a href="/portal/jobs" class="btn-secondary">{{ icon('briefcase', 'size-4') }} Jobs</a>
+{% endblock %}
+
+{% block content %}
+  {% if not scanner.ok %}
+    <p class="mb-5 flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-950" role="status">
+      {{ icon('exclamation', 'mt-0.5 size-5 shrink-0') }}
+      <span><strong>Virus scanner not available ({{ scanner.label }}).</strong> Applications are still saved, but their resumes stay locked until a scan passes. Ask your web host to enable ClamAV.</span>
+    </p>
+  {% endif %}
+
+  <nav aria-label="Application lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft" data-live-also>
+    {% for t in tabs %}
+      <a href="/portal/applications?tab={{ t.key }}{% if job %}&job={{ job }}{% endif %}{% if q %}&q={{ q | urlencode }}{% endif %}" {% if t.key == tab %}aria-current="page"{% endif %}
+         class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
+        {{ t.label }}
+        <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == tab else 'bg-surface ring-1 ring-line' }}">{{ counts[t.key] }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <form method="get" data-live-filter="#app-results" action="/portal/applications" role="search" aria-label="Search applications" class="mb-5 flex flex-col gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:flex-row">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="relative flex-1">
+      <label for="f-q" class="sr-only">Search by name, email, job or reference</label>
+      <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+      <input id="f-q" type="search" name="q" value="{{ q }}" placeholder="Name, email, job or reference" class="form-control !pl-12" maxlength="100">
+    </div>
+    <div class="sm:w-72">
+      <label for="f-job" class="sr-only">Job</label>
+      <select id="f-job" name="job" class="form-control">
+        <option value="">All jobs</option>
+        {% for j in jobs %}<option value="{{ j.id }}" {% if job == j.id | string %}selected{% endif %}>{{ j.title }} ({{ j.n }})</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-green" data-live-hide>Search</button>
+  </form>
+
+  <div id="app-results" data-live-results>
+  {{ ui.listBar(pager, 'applications') }}
+
+  {% if items.length %}
+    <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+      {% for a in items %}
+        <li class="group relative transition-colors hover:bg-surface focus-within:bg-surface {{ 'bg-amber-50/40' if a.status == 'new' }}">
+          <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
+            <span class="hidden size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100 sm:grid">{{ icon('document', 'size-5') }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="flex flex-wrap items-center gap-2">
+                {% if a.status == 'new' %}<span class="size-2.5 shrink-0 rounded-full bg-accent-600" aria-hidden="true"></span>{% endif %}
+                <a href="/portal/applications/{{ a.id }}" class="text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none {{ 'font-bold' if a.status == 'new' else 'font-semibold' }}">{{ a.first_name }} {{ a.last_name }}</a>
+                <span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-line">{{ statusLabels[a.status] }}</span>
+                {{ scanBadge(a) }}
+              </p>
+              <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                <span class="inline-flex items-center gap-1">{{ icon('briefcase', 'size-3.5') }} {{ a.job_title }}</span>
+                <span>{{ a.email }}</span>
+                {% if a.resume_type %}<span>{{ types[a.resume_type].label }} resume</span>{% endif %}
+              </p>
+            </div>
+            <span class="shrink-0 text-sm text-muted"><span class="font-mono text-xs">{{ a.reference }}</span> · {{ a.created_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</span>
+          </div>
+          <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
+        </li>
+      {% endfor %}
+    </ul>
+    {{ ui.pager(pager, 'applications') }}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+      <span class="icon-tile mx-auto">{{ icon('document', 'size-6') }}</span>
+      <p class="mt-4 text-lg font-semibold text-ink">{% if q or job %}Nothing matches those filters{% elif tab == 'new' %}No new applications{% else %}Nothing here{% endif %}</p>
+      <p class="mt-1 text-muted">Applications sent from the careers page appear here.</p>
+    </div>
+  {% endif %}
+  </div>
+{% endblock %}

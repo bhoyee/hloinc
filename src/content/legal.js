@@ -88,7 +88,8 @@ const privacy = {
       id: 'careers',
       heading: 'Job applications',
       paragraphs: [
-        'Job applications are handled through ADP, our recruitment provider. When you select “Apply”, you leave this website and ADP’s privacy policy applies to the information you give them.',
+        'When you apply for a job on our careers page, we collect your name, email address, phone number, your resume and anything you choose to tell us. We use them only to consider you for that role and similar roles at HLO.',
+        'Every resume is checked for viruses by an automated security scanning service, which scans it in memory and does not keep a copy, and is then stored encrypted. It is never sent by email, and only HLO staff responsible for hiring can open it. You can ask us to delete your application at any time by contacting us.',
       ],
     },
     {
@@ -201,7 +202,7 @@ const terms = {
       id: 'third-party',
       heading: 'Third-party websites',
       paragraphs: [
-        'Links to other websites, including our recruitment provider ADP and the organizations on our Resources page, are provided for convenience. We do not control those websites and are not responsible for their content, availability or practices.',
+        'Links to other websites are provided for convenience. We do not control those websites and are not responsible for their content, availability or practices.',
       ],
     },
     {
@@ -360,7 +361,7 @@ const cookies = {
       id: 'third-party',
       heading: 'Other websites',
       paragraphs: [
-        'When you follow a link to another website, such as ADP for job applications or Google Maps for directions, that website may set its own cookies under its own policy.',
+        'When you follow a link to another website, such as Google Maps for directions, that website may set its own cookies under its own policy.',
         'Our contact page can show a Google map of our office. The map loads only if you select “Show map”; until then, nothing is loaded from Google. Once loaded, Google may set cookies under its own privacy policy.',
       ],
     },

@@ -90,13 +90,13 @@ describe('jobs manager: create and publish', () => {
     expect((await request(app).get(`/careers/${job.slug}`)).status).toBe(404);
   });
 
-  it('requires a secure https apply link', async () => {
+  it('no longer asks for an ADP link: people apply on the HLO website', async () => {
     const director = await signIn(app, await makeUser('program_director'));
-    for (const apply_url of ['http://adp.com/x', 'javascript:alert(1)', 'workforcenow.adp.com', '']) {
-      const res = await post(director, '/portal/jobs/new', '/portal/jobs', { ...JOB, apply_url, intent: 'draft' });
-      expect(res.status).toBe(422);
-    }
-    expect(Number((await db('jobs').count({ n: '*' }).first()).n)).toBe(0);
+    const form = await director.get('/portal/jobs/new');
+    expect(form.text).not.toContain('name="apply_url"');
+    const { apply_url, ...withoutLink } = JOB;
+    expect((await post(director, '/portal/jobs/new', '/portal/jobs', { ...withoutLink, intent: 'draft' })).status).toBe(303);
+    expect((await db('jobs').first()).apply_url).toBeNull();
   });
 
   it('escapes anything that looks like code on the public page', async () => {

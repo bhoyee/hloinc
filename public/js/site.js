@@ -329,6 +329,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Resume picker (job applications): show the chosen file; flag size or type problems before sending.
+  document.querySelectorAll('input[data-file-input]').forEach((input) => {
+    const zone = input.closest('div');
+    const nameEl = zone && zone.querySelector('[data-file-name]');
+    const hintEl = zone && zone.querySelector('[data-file-hint]');
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file || !nameEl) return;
+      const mb = (file.size / 1048576).toFixed(file.size < 1048576 ? 2 : 1);
+      const okType = /\.(pdf|docx)$/i.test(file.name);
+      const okSize = file.size <= Number(input.dataset.maxBytes || 0);
+      nameEl.textContent = file.name;
+      hintEl.textContent = !okType ? 'Please choose a PDF or Word .docx file.' : !okSize ? `This file is ${mb} MB. The limit is ${input.dataset.maxLabel || '5 MB'}.` : `${mb} MB · ready to send`;
+      hintEl.classList.toggle('text-accent-700', !okType || !okSize);
+      input.setCustomValidity(okType && okSize ? '' : hintEl.textContent);
+    });
+  });
+
   // Role editor: giving an action ticks View; removing View clears the row.
   const roleEditor = document.querySelector('form[data-role-editor]');
   if (roleEditor) {
