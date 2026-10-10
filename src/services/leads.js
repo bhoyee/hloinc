@@ -49,7 +49,8 @@ const likeOf = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /** Merge newly chosen services into what the lead already has. */
 function mergeServices(current, extra) {
-  const list = Array.isArray(current) ? current : current ? JSON.parse(current) : [];
+  const parsed = require('../lib/stored').fromDb(current);
+  const list = Array.isArray(parsed) ? parsed : [];
   const merged = [...new Set([...list, ...(extra || [])])];
   return merged.length ? JSON.stringify(merged) : null;
 }

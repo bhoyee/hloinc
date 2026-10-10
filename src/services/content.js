@@ -4,6 +4,7 @@ const db = require('../db/knex');
 const site = require('../lib/site');
 const pages = require('../content/pages');
 const { formatPhone } = require('../validation/phone');
+const { fromDb } = require('../lib/stored');
 
 const TTL_MS = 60 * 1000;
 let cache = { at: 0, settings: null };
@@ -14,7 +15,7 @@ async function loadSettings() {
     const rows = await db('site_settings').select('key', 'value');
     const settings = {};
     for (const row of rows) {
-      settings[row.key] = JSON.parse(row.value);
+      settings[row.key] = fromDb(row.value);
     }
     cache = { at: Date.now(), settings };
   } catch (err) {

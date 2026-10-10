@@ -21,7 +21,7 @@ async function twoStepOn() {
   if (Date.now() - cache.at < TTL_MS) return cache.on;
   try {
     const row = await db('site_settings').where({ key: KEY }).first();
-    const on = row ? JSON.parse(row.value) !== false : true;
+    const on = row ? require('../lib/stored').fromDb(row.value) !== false : true;
     cache = { at: Date.now(), on };
   } catch (err) {
     // Fail safe: if the setting can't be read, keep two-step on.

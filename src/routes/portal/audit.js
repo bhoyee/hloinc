@@ -79,7 +79,7 @@ router.get('/', async (req, res) => {
     e.label = ACTION_LABELS[e.action] || e.action;
     e.tone = /failed|locked|delete|deactivate/.test(e.action) ? 'red' : /login|logout/.test(e.action) ? 'grey' : 'green';
     try {
-      e.details = e.metadata ? JSON.stringify(JSON.parse(e.metadata), null, 2) : null;
+      e.details = e.metadata ? JSON.stringify(require('../../lib/stored').fromDb(e.metadata), null, 2) : null;
     } catch {
       e.details = null;
     }

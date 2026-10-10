@@ -27,8 +27,18 @@ async function run(knex, to) {
   }
   const setting = await knex('site_settings').where({ key: 'business.phone' }).first();
   if (setting) {
-    const next = convert(JSON.parse(setting.value), to);
-    await knex('site_settings').where({ key: 'business.phone' }).update({ value: JSON.stringify(next) });
+    // The value may arrive as JSON text, already parsed, or as plain text (it differs between databases).
+    let current = setting.value;
+    if (typeof current === 'string') {
+      try {
+        current = JSON.parse(current);
+      } catch {
+        // plain text: use as is
+      }
+    }
+    if (typeof current === 'string') {
+      await knex('site_settings').where({ key: 'business.phone' }).update({ value: JSON.stringify(convert(current, to)) });
+    }
   }
 }
 
