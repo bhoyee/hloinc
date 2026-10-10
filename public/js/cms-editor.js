@@ -86,6 +86,60 @@
     });
   });
 
+  // Ask the page to finish the edit in progress (it saves it), then wait for it.
+  function flush() {
+    return new Promise((resolve) => {
+      const done = (e) => {
+        if (e.origin !== location.origin || !e.data || e.data.source !== 'cms-frame' || e.data.type !== 'flushed') return;
+        window.removeEventListener('message', done);
+        clearTimeout(timer);
+        resolve(e.data.ok !== false);
+      };
+      const timer = setTimeout(() => {
+        window.removeEventListener('message', done);
+        resolve(true);
+      }, 9000);
+      window.addEventListener('message', done);
+      try {
+        frame.contentWindow.postMessage({ source: 'cms-editor', type: 'flush' }, location.origin);
+      } catch {
+        clearTimeout(timer);
+        resolve(true);
+      }
+    });
+  }
+
+  // Save draft: everything is kept as a draft to continue later.
+  const saveDraftBtn = document.querySelector('[data-save-draft]');
+  if (saveDraftBtn) {
+    saveDraftBtn.addEventListener('click', async () => {
+      saveDraftBtn.disabled = true;
+      setStatus('Saving draft…', 'draft');
+      const ok = await flush();
+      await refreshStatus();
+      if (ok) setStatus(publishBtn && !publishBtn.disabled ? 'Draft saved · continue any time, then Publish' : 'Saved · nothing new to publish', publishBtn && !publishBtn.disabled ? 'draft' : 'live');
+      else setStatus('Not saved. Please try again.', 'error');
+      saveDraftBtn.disabled = false;
+    });
+  }
+
+  // Cancel: keep the draft and go back to where you came from (or Site content).
+  const cancelBtn = document.querySelector('[data-cancel]');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', async () => {
+      cancelBtn.disabled = true;
+      await flush();
+      let back = '/portal/content';
+      try {
+        const ref = new URL(document.referrer);
+        if (ref.origin === location.origin && ref.pathname.startsWith('/portal') && !ref.pathname.startsWith('/portal/content/pages/')) back = ref.pathname + ref.search;
+      } catch {
+        // no usable previous page
+      }
+      window.location.href = back;
+    });
+  }
+
   // Publish / discard.
   if (publishBtn) {
     publishBtn.addEventListener('click', async () => {

@@ -148,6 +148,8 @@ router.get('/careers', async (req, res) => {
     criteria,
     options,
     filtered: Object.values(criteria).some(Boolean),
+    // No jobs at all: the page shows a clear "no openings" message instead of search and filters.
+    hasOpenings: result.total > 0 || (await jobs.anyPublished()),
     pageLinks: pageList(result.page, result.pages).map((p) => (p ? { page: p, url: pageUrl(p) } : null)),
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,

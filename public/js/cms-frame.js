@@ -73,8 +73,12 @@
   }
 
   // ── Saving ──────────────────────────────────────────────────────────────────
+  // Saves still in flight, so "Save draft" and "Cancel" can wait for them.
+  let inFlight = 0;
+
   async function save(changes, { reload = false } = {}) {
     tell({ type: 'saving' });
+    inFlight += 1;
     try {
       const res = await fetch(api('/draft'), {
         method: 'POST',
@@ -95,6 +99,8 @@
       toast(err.message, 'error');
       tell({ type: 'error', message: err.message });
       return false;
+    } finally {
+      inFlight -= 1;
     }
   }
 
@@ -426,6 +432,18 @@
   tell({ type: 'ready', docs, settings, path: location.pathname });
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.source !== 'cms-editor') return;
+    // "Save draft" / "Cancel" in the toolbar: finish the text being typed (which saves it), then report back.
+    if (e.data.type === 'flush') {
+      const active = document.activeElement;
+      if (active && active.isContentEditable) active.blur();
+      const started = Date.now();
+      const wait = () => {
+        if (inFlight > 0 && Date.now() - started < 8000) return setTimeout(wait, 100);
+        tell({ type: 'flushed', ok: inFlight === 0 });
+      };
+      setTimeout(wait, 50);
+      return;
+    }
     if (e.data.type === 'settings') {
       const values = e.data.values.map((v) => ({ key: v.key, type: 'plain', value: v.value }));
       save({ values }, { reload: true });

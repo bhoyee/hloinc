@@ -18,6 +18,11 @@ const PUBLIC_FIELDS = [
   'published_at',
 ];
 
+/** Is any job on the careers page right now (ignoring any search)? */
+async function anyPublished() {
+  return Boolean(await db('jobs').where({ status: 'published' }).first('id'));
+}
+
 function listPublished() {
   return db('jobs').select(PUBLIC_FIELDS).where({ status: 'published' }).orderBy('published_at', 'desc');
 }
@@ -260,6 +265,7 @@ function remove(id) {
 }
 
 module.exports = {
+  anyPublished,
   listPublished,
   searchPublished,
   filterOptions,

@@ -9,7 +9,7 @@
   {% set careersCta2 = cms.link('careers.hero.cta2', 'How to apply', '#how-to-apply') %}
   {% call ui.pageHero(cms.text('careers.hero.eyebrow', 'Careers'), cms.text('careers.hero.title', copy.title), cms.text('careers.hero.intro', copy.intro), [{ label: 'Careers' }], cms.image('careers.hero.image', 'careers-team', 'Colleagues smiling and talking around a meeting table')) %}
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href="{{ careersCta1.href }}" {{ careersCta1.attrs }} class="btn-primary">{{ careersCta1.label }} {{ icon('arrow-right', 'size-4') }}</a>
+      {% if hasOpenings %}<a href="{{ careersCta1.href }}" {{ careersCta1.attrs }} class="btn-primary">{{ careersCta1.label }} {{ icon('arrow-right', 'size-4') }}</a>{% endif %}
       <a href="{{ careersCta2.href }}" {{ careersCta2.attrs }} class="btn-secondary">{{ careersCta2.label }}</a>
     </div>
   {% endcall %}
@@ -26,6 +26,7 @@
         </div>
       </div>
 
+      {% if hasOpenings %}
       <form method="get" action="/careers#positions" role="search" aria-label="Search open positions"
             class="mt-8 rounded-3xl border border-line bg-surface p-4 sm:p-5" data-live-search="#job-results">
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-[2fr_1fr_1fr_1fr_auto]">
@@ -52,6 +53,7 @@
         </div>
       </form>
 
+      {% endif %}
       <p class="sr-only" aria-live="polite" data-results-status></p>
       <div id="job-results" class="transition-opacity duration-150 aria-busy:opacity-50" data-results>
         {% include "partials/careers-results.njk" %}

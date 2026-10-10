@@ -75,9 +75,12 @@
     <a href="/careers#positions" class="btn-secondary mt-6">See all open positions</a>
   </div>
 {% else %}
-  <div class="mt-4 rounded-3xl border-2 border-dashed border-line p-10 text-center">
-    <span class="icon-tile mx-auto">{{ icon('briefcase', 'size-6') }}</span>
-    <p class="mt-4 text-lg font-semibold text-ink">There are no open positions right now.</p>
-    <p class="mt-1 text-muted">New roles are posted here first. Please check back soon.</p>
+  {# No jobs posted at all. #}
+  {% set noJobsContact = cms.link('careers.empty.cta', 'Contact us', '/contact') %}
+  <div class="mt-8 rounded-3xl border border-line bg-white px-6 py-12 text-center shadow-soft sm:px-10 sm:py-14" role="status">
+    <span class="mx-auto grid size-16 place-items-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">{{ icon('briefcase', 'size-8') }}</span>
+    <h3 class="mt-5 text-2xl font-extrabold sm:text-3xl">{{ cms.text('careers.empty.title', 'We don’t have any openings at the moment') }}</h3>
+    <p class="mx-auto mt-3 max-w-xl text-lg text-muted">{{ cms.text('careers.empty.text', 'Please check back soon. New roles are posted here first.') }}</p>
+    <a href="{{ noJobsContact.href }}" {{ noJobsContact.attrs }} class="btn-secondary mt-7">{{ icon('mail', 'size-4') }} {{ noJobsContact.label }}</a>
   </div>
 {% endif %}

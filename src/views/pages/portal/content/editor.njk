@@ -47,7 +47,9 @@
       {% endif %}
       <a href="{{ previewUrl }}" target="_blank" rel="noopener" class="btn-secondary !px-4 !py-2">{{ icon('eye', 'size-4') }}<span class="hidden lg:inline">Preview</span></a>
       {% if editable %}
+        <button type="button" class="btn !px-4 !py-2 bg-white text-accent-700 ring-2 ring-accent-600 ring-inset hover:bg-accent-600 hover:text-white" data-cancel title="Go back. Your draft is kept, so you can continue later.">{{ icon('close', 'size-4') }} Cancel</button>
         <button type="button" class="btn-secondary !px-4 !py-2" data-discard disabled>Discard</button>
+        <button type="button" class="btn-green !px-4 !py-2" data-save-draft title="Save your changes as a draft to continue later. Visitors don’t see them until you publish.">{{ icon('document', 'size-4') }} Save draft</button>
         <button type="button" class="btn-primary !px-5 !py-2" data-publish disabled>{{ icon('check', 'size-4') }} Publish</button>
       {% else %}
         <span class="rounded-full bg-surface px-3 py-1.5 text-sm font-semibold text-muted ring-1 ring-line">{{ icon('lock', 'inline size-3.5') }} View only</span>
@@ -57,7 +59,7 @@
 
   {% if editable %}
     <p class="shrink-0 bg-brand-950 px-4 py-2 text-center text-xs text-brand-100 sm:text-sm">
-      Click any text to edit it · click a photo to change it · hover a card or section for more options. Changes save as a draft; visitors see them after you <strong class="text-white">Publish</strong>.
+      Click any text to edit it · click a photo to change it · hover a card or section for more options. Changes are kept as a draft (<strong class="text-white">Save draft</strong> to continue later); visitors see them after you <strong class="text-white">Publish</strong>.
     </p>
   {% endif %}
 
