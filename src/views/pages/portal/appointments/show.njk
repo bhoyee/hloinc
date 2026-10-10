@@ -25,6 +25,7 @@
           <div><dt class="text-sm font-semibold text-muted">Email</dt><dd class="mt-0.5 font-medium">{% if a.email %}<a href="mailto:{{ a.email }}" class="link">{{ a.email }}</a>{% else %}<span class="text-muted">Not given</span>{% endif %}</dd></div>
           <div><dt class="text-sm font-semibold text-muted">Phone</dt><dd class="mt-0.5 font-medium">{% if a.phone %}<a href="{{ a.phone | telHref }}" class="link">{{ a.phone }}</a>{% else %}<span class="text-muted">Not given</span>{% endif %}</dd></div>
           <div><dt class="text-sm font-semibold text-muted">Appointment type</dt><dd class="mt-0.5 font-medium text-ink">{{ a.type_name }}</dd></div>
+          {% if a.reference %}<div><dt class="text-sm font-semibold text-muted">Reference</dt><dd class="mt-0.5 font-mono font-semibold text-ink">{{ a.reference }}</dd></div>{% endif %}
           <div><dt class="text-sm font-semibold text-muted">Received</dt><dd class="mt-0.5 font-medium text-ink">{{ a.created_at | dateTime }}</dd></div>
           {% if a.requested_date %}
             <div class="sm:col-span-2 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
@@ -100,6 +101,13 @@
 
     <div class="space-y-6">
       {# Status #}
+      {% if a.lead_id and can('leads.view') %}
+        <a href="/portal/leads/{{ a.lead_id }}" class="group flex items-center gap-3 rounded-3xl border border-line bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200">
+          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">{{ icon('heart', 'size-5') }}</span>
+          <span class="min-w-0 flex-1"><span class="block font-semibold text-ink group-hover:text-brand-700">View lead</span><span class="block text-sm text-muted">Everything from this person, stage and owner</span></span>
+          {{ icon('chevron-right', 'size-5 text-brand-700') }}
+        </a>
+      {% endif %}
       <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="status-h">
         <div class="flex items-center justify-between gap-3">
           <h2 id="status-h" class="text-lg font-bold">Status</h2>

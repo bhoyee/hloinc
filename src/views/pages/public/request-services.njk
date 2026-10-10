@@ -3,13 +3,21 @@
 {% import "partials/sections.njk" as shared %}
 
 {% block content %}
-  {{ ui.pageHero(cms.text('request-services.hero.eyebrow', 'For individuals and families'), cms.text('request-services.hero.title', 'Request services'), cms.text('request-services.hero.intro', 'We would love to help as much as we can. Reach out and set a day for a consultation with one of our representatives. We can address your questions and concerns before you decide on our services.'), [{ label: 'Request services' }], cms.image('request-services.hero.image', 'personal-support-smile', 'Woman smiling up at her support person')) }}
+  {% set apptLink = cms.link('request-services.hero.appointment', 'Request an appointment', '/appointments/request') %}
+  {% call ui.pageHero(cms.text('request-services.hero.eyebrow', 'For individuals and families'), cms.text('request-services.hero.title', 'Request services'), cms.text('request-services.hero.intro', 'We would love to help as much as we can. Reach out and set a day for a consultation with one of our representatives. We can address your questions and concerns before you decide on our services.'), [{ label: 'Request services' }], cms.image('request-services.hero.image', 'personal-support-smile', 'Woman smiling up at her support person')) %}
+    {# For people who would rather book a time to talk than fill in the form. #}
+    <div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+      <a href="#request-form" class="btn-primary">{{ cms.text('request-services.hero.formButton', 'Fill in the form') }} {{ icon('arrow-right', 'size-4') }}</a>
+      <a href="{{ apptLink.href }}" {{ apptLink.attrs }} class="btn-dark">{{ icon('calendar', 'size-4') }} {{ apptLink.label }}</a>
+    </div>
+    <p class="mt-4 text-[15px] text-muted">{{ cms.text('request-services.hero.apptNote', 'Prefer to talk it through first? Request an appointment, or call') }} <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a>.</p>
+  {% endcall %}
 
   <section class="section">
     <div class="container-page grid gap-12 lg:grid-cols-[1.5fr_1fr]">
       <div class="min-w-0">
         {{ ui.flash(flash) }}
-        <form method="post" action="/request-services" class="relative space-y-8" novalidate data-once>
+        <form id="request-form" method="post" action="/request-services" class="relative scroll-mt-28 space-y-8" novalidate data-once>
           {{ ui.errorSummary(errors) }}
           <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
           {{ ui.honeypot() }}

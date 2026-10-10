@@ -48,6 +48,7 @@ router.use('/jobs', requirePermission('jobs.view'), require('./jobs'));
 router.use('/announcements', requirePermission('announcements.view'), require('./announcements'));
 router.use('/content', requirePermission(['site_content.view', 'site_content.edit', 'site_content.edit_limited']), require('./content'));
 router.use('/messages', requirePermission(['messages.view', 'messages.view_intake']), require('./messages'));
+router.use('/leads', requirePermission('leads.view'), require('./leads'));
 router.use('/accounts', requirePermission('accounts.view'), require('./accounts'));
 router.use('/roles', requirePermission('roles.view'), require('./roles'));
 router.use('/audit', requirePermission('audit.view'), require('./audit'));

@@ -1,0 +1,154 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/lead-ui.njk" as lu %}
+
+{% set editable = can('leads.edit') %}
+
+{% block actions %}
+  {{ lu.stage(l.stage, stages) }}
+{% endblock %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="min-w-0 space-y-6">
+
+      {# Who they are #}
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="who-h">
+        <div class="flex items-start gap-4">
+          <span class="grid size-12 shrink-0 place-items-center rounded-full bg-brand-700 font-display text-lg font-bold text-white" aria-hidden="true">{{ l.name | first | upper }}</span>
+          <div class="min-w-0">
+            <h2 id="who-h" class="text-lg font-bold">{{ l.name }}</h2>
+            <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
+              {% if l.email %}<a href="mailto:{{ l.email }}" class="link">{{ l.email }}</a>{% endif %}
+              {% if l.phone %}<a href="{{ l.phone | telHref }}" class="link">{{ l.phone }}</a>{% endif %}
+              {% if not l.email and not l.phone %}<span class="text-muted">No contact details</span>{% endif %}
+            </p>
+            {% if l.referred_by %}<p class="mt-1 text-sm text-muted">Contact details are the referrer’s: {{ l.referred_by }}</p>{% endif %}
+          </div>
+        </div>
+        <dl class="mt-6 grid gap-x-6 gap-y-4 text-[15px] sm:grid-cols-2">
+          <div><dt class="text-sm font-semibold text-muted">First came in as</dt><dd class="mt-0.5 text-ink">{{ originLabels[l.origin] }} · {{ l.created_at | date({ month: 'short', day: 'numeric', year: 'numeric' }) }}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Last activity</dt><dd class="mt-0.5 text-ink">{{ l.last_activity_at | dateTime }}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">County</dt><dd class="mt-0.5 text-ink">{{ l.county or 'Not given' }}</dd></div>
+          <div><dt class="text-sm font-semibold text-muted">Services of interest</dt><dd class="mt-0.5 text-ink">{{ serviceNames | join(', ') if serviceNames.length else 'Not given' }}</dd></div>
+        </dl>
+      </section>
+
+      {# Everything in one place #}
+      <section id="timeline" class="scroll-mt-24 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="tl-h">
+        <h2 id="tl-h" class="text-lg font-bold">Timeline</h2>
+        {% if editable %}
+          <form method="post" action="/portal/leads/{{ l.id }}/note" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start" novalidate data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <div class="min-w-0 flex-1">
+              <label for="f-note" class="sr-only">Add a note</label>
+              <textarea id="f-note" name="note" rows="2" maxlength="2000" class="form-control" placeholder="Add a note, e.g. “Left a voicemail, will try again Thursday.”" {% if errors.note %}aria-invalid="true" aria-describedby="f-note-error"{% endif %}>{{ values.note }}</textarea>
+              {{ ui.fieldError('note', errors) }}
+            </div>
+            <button type="submit" class="btn-green shrink-0">{{ icon('plus', 'size-4') }} Add note</button>
+          </form>
+        {% endif %}
+        {% if timeline.length %}
+          <ol class="relative mt-6 space-y-5 border-l-2 border-line pl-6">
+            {% for t in timeline %}
+              {% set isEvent = t.kind.startsWith('event-') %}
+              <li class="relative">
+                <span class="absolute top-0.5 -left-[2.1rem] grid size-7 place-items-center rounded-full ring-4 ring-white
+                  {{ 'bg-amber-100 text-amber-900' if t.kind == 'event-note' else ('bg-surface text-muted ring-line' if isEvent else ('bg-accent-600 text-white' if t.kind == 'referral' else 'bg-brand-700 text-white')) }}" aria-hidden="true">
+                  {{ icon({ request: 'heart', referral: 'document', message: 'mail', appointment: 'calendar', 'event-note': 'pencil', 'event-stage': 'refresh', 'event-owner': 'users', 'event-details': 'pencil' }[t.kind], 'size-3.5') }}
+                </span>
+                <div class="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                  <p class="text-[15px] font-semibold text-ink">
+                    {% if t.href %}<a href="{{ t.href }}" class="hover:text-brand-700">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}
+                    {% if t.reference %}<span class="ml-1 font-mono text-xs font-normal text-muted">{{ t.reference }}</span>{% endif %}
+                    {% if t.status %}<span class="ml-1 text-xs font-medium text-muted">· {{ t.status | replace('_', ' ') }}</span>{% endif %}
+                  </p>
+                  <time class="shrink-0 text-sm text-muted">{{ t.at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</time>
+                </div>
+                {% if t.scheduledAt %}<p class="text-sm text-muted">Booked for {{ t.scheduledAt | dateTime }}</p>{% endif %}
+                {% if t.text %}<p class="mt-1 line-clamp-3 text-[15px] whitespace-pre-line text-ink/85">{{ t.text }}</p>
+                {% elif not isEvent and not t.href and t.kind != 'appointment' %}<p class="mt-1 text-sm text-muted">Sent to an inbox you can’t open.</p>{% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="mt-4 text-muted">Nothing yet.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="min-w-0 space-y-4 xl:sticky xl:top-24" aria-label="Handling">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="stage-h">
+        <h2 id="stage-h" class="text-base font-bold">Stage</h2>
+        {% if editable %}
+          <form method="post" action="/portal/leads/{{ l.id }}/stage" class="mt-3 space-y-2">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <fieldset>
+              <legend class="sr-only">Stage</legend>
+              <div class="grid gap-1.5">
+                {% for key, s in stages %}
+                  <label class="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 ring-1 transition {{ 'bg-brand-50 ring-brand-300' if l.stage == key else 'ring-line hover:bg-surface' }}">
+                    <input type="radio" name="stage" value="{{ key }}" class="size-4 accent-brand-700" {% if l.stage == key %}checked{% endif %}>
+                    <span class="text-[15px] font-medium text-ink">{{ s.label }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </fieldset>
+            <button type="submit" class="btn-green w-full !py-2">Save stage</button>
+          </form>
+        {% else %}
+          <p class="mt-3">{{ lu.stage(l.stage, stages) }}</p>
+        {% endif %}
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="owner-h">
+        <h2 id="owner-h" class="text-base font-bold">Owner</h2>
+        <p class="mt-1 text-[15px] text-ink">{{ l.owner_name or 'Nobody yet' }}</p>
+        {% if editable %}
+          <form method="post" action="/portal/leads/{{ l.id }}/owner" class="mt-3 flex gap-2">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <label for="f-owner" class="sr-only">Owner</label>
+            <select id="f-owner" name="owner_id" class="form-control !py-2">
+              <option value="">Nobody</option>
+              {% for o in owners %}<option value="{{ o.id }}" {% if l.owner_id == o.id %}selected{% endif %}>{{ o.name }}{% if o.id == user.id %} (me){% endif %}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn-secondary shrink-0 !px-4 !py-2">Save</button>
+          </form>
+        {% endif %}
+      </section>
+
+      {% if editable %}
+        <details class="group/d rounded-3xl border border-line bg-white shadow-soft" {% if errors.name or errors.email or errors.phone or errors.county %}open{% endif %}>
+          <summary class="flex cursor-pointer list-none items-center justify-between p-6 text-base font-bold">
+            Edit details
+            <span class="text-muted transition group-open/d:rotate-90" aria-hidden="true">{{ icon('chevron-right', 'size-4') }}</span>
+          </summary>
+          <form method="post" action="/portal/leads/{{ l.id }}/details" class="space-y-4 px-6 pb-6" novalidate data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            {{ ui.input('name', 'Name', values, errors, autocomplete='off') }}
+            {{ ui.input('email', 'Email', values, errors, type='email', required=false, autocomplete='off') }}
+            {{ ui.input('phone', 'Phone', values, errors, type='tel', required=false, autocomplete='off') }}
+            <div>
+              <label for="f-county" class="form-label">County <span class="font-normal text-muted">(optional)</span></label>
+              <select id="f-county" name="county" class="form-control">
+                <option value="">Not given</option>
+                {% for c in counties %}<option value="{{ c }}" {% if values.county == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                {% if values.county and values.county not in counties %}<option value="{{ values.county }}" selected>{{ values.county }}</option>{% endif %}
+              </select>
+            </div>
+            <button type="submit" class="btn-green w-full !py-2">Save details</button>
+          </form>
+        </details>
+      {% endif %}
+
+      {% if can('leads.delete') %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+          <form method="post" action="/portal/leads/{{ l.id }}/delete" data-confirm="Delete this lead and its notes? Their messages and appointments are kept.">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete lead</button>
+          </form>
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

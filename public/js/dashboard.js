@@ -15,7 +15,8 @@
   if (!dataEl) return;
 
   const TZ = 'America/New_York';
-  const REFRESH_MS = 30000;
+  // Silent refresh: every 10 seconds, and straight away when the tab comes back or something is saved in another tab.
+  const REFRESH_MS = 10000;
   const SVG = 'http://www.w3.org/2000/svg';
   const INK = { grid: '#e6ece9', axis: '#c9d4ce', label: '#5b6b63', surface: '#ffffff', band: '#f3f7f5' };
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -97,6 +98,8 @@
     }
     return tip;
   }
+  const show = (chart, v) => (v === null || v === undefined ? '—' : `${v.toLocaleString('en-US')}${chart.valueSuffix || ''}`);
+
   function showTip(box, chart, i, anchorX, anchorY) {
     const tip = tooltipFor(box);
     tip.replaceChildren();
@@ -113,14 +116,14 @@
       key.style.backgroundColor = s.color;
       const value = document.createElement('strong');
       value.className = 'font-semibold text-ink tabular-nums';
-      value.textContent = s.values[i].toLocaleString('en-US');
+      value.textContent = show(chart, s.values[i]);
       const name = document.createElement('span');
       name.className = 'text-muted';
       name.textContent = s.name;
       row.append(key, value, name);
       tip.appendChild(row);
     }
-    if (chart.series.length > 1) {
+    if (chart.series.length > 1 && !chart.noTotals) {
       const total = document.createElement('p');
       total.className = 'mt-1 border-t border-line pt-1 text-xs text-muted';
       total.textContent = `Total ${plural(chart.totals[i], chart.unit)}`;
@@ -236,7 +239,7 @@
     const pw = W - m.left - m.right;
     const ph = H - m.top - m.bottom;
     const n = chart.categories.length;
-    const { max, step } = niceScale(Math.max(1, ...chart.series.flatMap((s) => s.values)));
+    const { max, step } = niceScale(Math.max(1, ...chart.series.flatMap((s) => s.values).filter((v) => v !== null)));
     const x = (i) => m.left + (n === 1 ? pw / 2 : (pw * i) / (n - 1));
     const y = (v) => m.top + ph - (v / max) * ph;
 
@@ -253,15 +256,24 @@
       text(svg, x(i), H - 8, chart.categories[i], { 'text-anchor': last ? 'end' : i === 0 ? 'start' : 'middle', 'font-weight': last ? 700 : 400, fill: last ? '#0f1c16' : INK.label });
     }
     const cross = el('line', { y1: m.top, y2: m.top + ph, stroke: INK.axis, 'stroke-width': 1, visibility: 'hidden', 'shape-rendering': 'crispEdges' }, svg);
-    if (chart.series.length === 1) {
+    if (chart.series.length === 1 && !chart.series[0].values.includes(null)) {
       const s = chart.series[0];
       el('path', { d: `M${x(0)},${y(0)}${s.values.map((v, i) => `L${x(i)},${y(v)}`).join('')}L${x(n - 1)},${y(0)}Z`, fill: s.color, 'fill-opacity': 0.1 }, svg);
     }
     for (const s of chart.series) {
-      el('polyline', { points: s.values.map((v, i) => `${x(i)},${y(v)}`).join(' '), fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+      // One line per run of weeks that have data; a lone week shows as a dot.
+      let run = [];
+      const flush = () => {
+        if (run.length > 1) el('polyline', { points: run.map((i) => `${x(i)},${y(s.values[i])}`).join(' '), fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+        else if (run.length === 1) el('circle', { cx: x(run[0]), cy: y(s.values[run[0]]), r: 3, fill: s.color }, svg);
+        run = [];
+      };
+      s.values.forEach((v, i) => (v === null ? flush() : run.push(i)));
+      flush();
     }
     // End markers (latest week), ringed in the surface colour.
     for (const s of chart.series) {
+      if (s.values[n - 1] === null) continue;
       el('circle', { cx: x(n - 1), cy: y(s.values[n - 1]), r: 4, fill: s.color, stroke: INK.surface, 'stroke-width': 2 }, svg);
     }
     const dots = chart.series.map((s) => el('circle', { r: 4, fill: s.color, stroke: INK.surface, 'stroke-width': 2, visibility: 'hidden' }, svg));
@@ -271,6 +283,7 @@
       cross.setAttribute('x2', x(i));
       cross.setAttribute('visibility', 'visible');
       chart.series.forEach((s, k) => {
+        if (s.values[i] === null) return dots[k].setAttribute('visibility', 'hidden');
         dots[k].setAttribute('cx', x(i));
         dots[k].setAttribute('cy', y(s.values[i]));
         dots[k].setAttribute('visibility', 'visible');
@@ -366,7 +379,7 @@
     const card = document.querySelector(`[data-chart-card="${CSS.escape(chart.key)}"]`);
     const tbody = card && card.querySelector('[data-chart-table] tbody');
     if (!tbody) return;
-    const multi = chart.series.length > 1;
+    const multi = chart.series.length > 1 && !chart.noTotals;
     const rows = chart.categories.map((cat, i) => {
       const tr = document.createElement('tr');
       const th = document.createElement('th');
@@ -377,7 +390,7 @@
       for (const s of chart.series) {
         const td = document.createElement('td');
         td.className = 'py-2 pr-4 text-right';
-        td.textContent = s.values[i];
+        td.textContent = show(chart, s.values[i]);
         tr.appendChild(td);
       }
       if (multi) {
@@ -398,6 +411,7 @@
   let failures = 0;
   let timer = 0;
   let busy = false;
+  let again = false;
 
   function setLive(ok, when) {
     if (liveText) liveText.textContent = ok ? `Live · updated ${fmtShort.format(when)}` : 'Reconnecting…';
@@ -406,7 +420,7 @@
   }
 
   function applyTiles(tiles) {
-    for (const t of tiles) {
+    for (const t of tiles.flatMap((tile) => tile.parts || [tile])) {
       const valueEl = document.querySelector(`[data-tile="${CSS.escape(t.key)}"] [data-tile-value]`);
       if (!valueEl || valueEl.textContent.trim() === String(t.value)) continue;
       valueEl.textContent = t.value;
@@ -429,9 +443,29 @@
     }
   }
 
+  /**
+   * Swap in fresh HTML for every live section (attention, today, staff board,
+   * activity, security, next shift). Skipped while someone is typing in one,
+   * so a half-written note is never lost; it catches up on the next round.
+   */
+  async function refreshSections() {
+    const regions = [...document.querySelectorAll('[data-live-region]')];
+    if (!regions.length) return true;
+    if (regions.some((r) => r.contains(document.activeElement) && document.activeElement.matches('input, textarea, select'))) return false;
+    const res = await fetch('/portal/dashboard/panels', { headers: { Accept: 'text/html' }, cache: 'no-store' });
+    if (!res.ok || res.redirected) return false;
+    const fresh = new DOMParser().parseFromString(await res.text(), 'text/html');
+    for (const region of regions) {
+      const next = fresh.querySelector(`[data-live-region="${CSS.escape(region.dataset.liveRegion)}"]`);
+      if (next && next.innerHTML !== region.innerHTML) region.innerHTML = next.innerHTML;
+    }
+    return true;
+  }
+
   async function refresh() {
     clearTimeout(timer);
-    if (busy || document.visibilityState !== 'visible') return;
+    if (busy) { again = true; return; } // a change came in mid-refresh: go again right after
+    if (document.visibilityState !== 'visible') return;
     busy = true;
     try {
       const res = await fetch('/portal/dashboard/data', { headers: { Accept: 'application/json' }, cache: 'no-store' });
@@ -441,6 +475,7 @@
       const next = await res.json();
       applyTiles(next.tiles);
       applyOffice(next.office);
+      if (next.sections !== data.sections && !(await refreshSections())) next.sections = data.sections; // try again next round
       for (const chart of next.charts) {
         const box = chartBox(chart.key);
         if (!box) continue;
@@ -463,6 +498,11 @@
     } finally {
       busy = false;
     }
+    if (again && !failures) {
+      again = false;
+      return refresh();
+    }
+    again = false;
     // Back off gently if the server can't be reached.
     timer = setTimeout(refresh, failures ? Math.min(REFRESH_MS * 2 ** failures, 5 * 60000) : REFRESH_MS);
   }
@@ -473,4 +513,14 @@
     // Coming back to the tab: catch up straight away.
     if (document.visibilityState === 'visible') refresh();
   });
+  window.addEventListener('focus', () => refresh());
+  // Something was saved in another portal tab (site.js): update now rather than at the next tick.
+  try {
+    const channel = new BroadcastChannel('hlo-portal');
+    channel.addEventListener('message', (e) => {
+      if (e.data === 'changed') refresh();
+    });
+  } catch {
+    // Older browsers: the 10-second refresh still catches up.
+  }
 })();

@@ -71,6 +71,11 @@ function createApp() {
     });
   }
   app.use(compression());
+  // Site images may be shown elsewhere, e.g. the logo in emails read in webmail.
+  app.use('/img', (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
   app.use(
     express.static(config.paths.public, {
       maxAge: config.isProd ? '7d' : 0,

@@ -12,6 +12,7 @@ const db = require('../db/knex');
 const { can } = require('../auth/permissions');
 const { officeStatus, marylandDateTime, marylandParts, addDaysIso, weekStartIso } = require('../lib/hours');
 const { SOURCE_LABELS } = require('./appointments');
+const insights = require('./insights');
 
 const count = (query) => query.count({ n: '*' }).first().then((r) => Number(r.n));
 
@@ -70,26 +71,32 @@ async function tiles(user, today) {
     });
   }
   if (can(user, 'appointments.view')) {
+    // One card with two parts, so the dashboard stays at six cards or fewer.
     list.push({
-      key: 'requests',
-      label: 'Appointment requests',
+      key: 'appointments',
+      label: 'Appointments',
       icon: 'calendar',
-      value: await count(db('appointments').where({ status: 'requested' })),
-      note: 'Waiting to be confirmed',
-      href: '/portal/appointments?tab=requests',
-    });
-    list.push({
-      key: 'today',
-      label: 'Appointments today',
-      icon: 'clock',
-      value: await count(
-        db('appointments')
-          .where({ status: 'confirmed' })
-          .where('scheduled_at', '>=', marylandDateTime(today, '00:00'))
-          .where('scheduled_at', '<', marylandDateTime(addDaysIso(today, 1), '00:00'))
-      ),
-      note: 'Open the calendar',
-      href: `/portal/appointments/calendar?date=${today}`,
+      parts: [
+        {
+          key: 'requests',
+          label: 'Requests',
+          value: await count(db('appointments').where({ status: 'requested' })),
+          note: 'To confirm',
+          href: '/portal/appointments?tab=requests',
+        },
+        {
+          key: 'today',
+          label: 'Today',
+          value: await count(
+            db('appointments')
+              .where({ status: 'confirmed' })
+              .where('scheduled_at', '>=', marylandDateTime(today, '00:00'))
+              .where('scheduled_at', '<', marylandDateTime(addDaysIso(today, 1), '00:00'))
+          ),
+          note: 'Confirmed',
+          href: `/portal/appointments/calendar?date=${today}`,
+        },
+      ],
     });
   }
   if (can(user, 'jobs.view')) {
@@ -243,15 +250,18 @@ async function signIns(today) {
   };
 }
 
-async function charts(user, today) {
+async function charts(user, today, schedule) {
   if (!can(user, 'reports.view')) return [];
   const list = [];
   if (can(user, 'appointments.view')) list.push(await appointmentsByWeek(today));
   list.push(await enquiriesByWeek(user, today));
+  // Service quality and planning (intake inbox).
+  list.push(await insights.responseTime(user, today, schedule || undefined));
+  list.push(...(await insights.demand(user, today)));
   if (can(user, 'appointments.view')) list.push(await bookingSources(today));
   if (can(user, 'audit.view')) list.push(await signIns(today));
-  // Per-category totals, for tooltips and the table view.
-  return list.filter(Boolean).map((c) => ({ ...c, totals: c.categories.map((_, i) => c.series.reduce((sum, s) => sum + s.values[i], 0)) }));
+  // Per-category totals, for tooltips and the table view (empty weeks count as 0).
+  return list.filter(Boolean).map((c) => ({ ...c, totals: c.categories.map((_, i) => c.series.reduce((sum, s) => sum + (s.values[i] || 0), 0)) }));
 }
 
 /** "Office open · until 5 PM" / "Office closed · opens tomorrow at 9 AM". */
@@ -268,7 +278,7 @@ async function snapshot(user, schedule) {
     updatedAt: now.toISOString(),
     office: schedule ? officeLine(schedule, now) : null,
     tiles: await tiles(user, today),
-    charts: await charts(user, today),
+    charts: await charts(user, today, schedule),
   };
 }
 

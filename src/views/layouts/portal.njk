@@ -15,7 +15,7 @@
        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition {{ 'bg-white/10 text-white' if item.active else 'hover:bg-white/5 hover:text-white' }}">
       {{ icon(item.icon, 'size-5 ' + ('text-accent-500' if item.active else 'text-brand-300')) }} {{ item.label }}
       {% if item.badge %}
-        {# Red counter, kept up to date by site.js (every 30 seconds). #}
+        {# Red counter, kept up to date by site.js (every 15 seconds, and at once after a save in another tab). #}
         <span class="ml-auto min-w-6 rounded-full bg-accent-600 px-1.5 py-0.5 text-center text-xs leading-4 font-bold text-white shadow-sm {{ '' if n else 'hidden' }}" data-nav-badge="{{ item.badge }}" aria-hidden="true">{{ n if n < 100 else '99+' }}</span>
         <span class="sr-only" data-nav-badge-label="{{ item.badge }}" data-label="{{ item.badgeLabel }}">{% if n %}, {{ n }} {{ item.badgeLabel }}{% endif %}</span>
       {% endif %}

@@ -2,6 +2,8 @@
 
 const nodemailer = require('nodemailer');
 const config = require('../config');
+const emailLayout = require('../lib/emailLayout');
+const site = require('../lib/site');
 
 let transporter;
 
@@ -24,9 +26,25 @@ function getTransporter() {
   return transporter;
 }
 
+/** Business details for the email footer; falls back to the defaults if the database is unavailable. */
+async function businessDetails() {
+  try {
+    return await require('./content').getBusiness();
+  } catch {
+    return site.defaults;
+  }
+}
+
+// Tests read what was sent from here.
+const outbox = [];
+
 const channels = {
-  async email({ to, subject, text, replyTo }) {
-    const info = await getTransporter().sendMail({ from: config.mail.from, to, subject, text, replyTo });
+  // Every email goes out as plain text plus a branded HTML version of the same text.
+  async email({ to, subject, text, replyTo, cta, footnote }) {
+    const html = emailLayout.render({ subject, text, cta, footnote, business: await businessDetails() });
+    const mail = { from: config.mail.from, to, subject, text, html, replyTo };
+    if (config.isTest) outbox.push(mail);
+    const info = await getTransporter().sendMail(mail);
     if (config.mail.transport !== 'sendmail' && !config.mail.host && !config.isTest) console.log('[email:dev]', { to, subject, text });
     return info;
   },
@@ -35,7 +53,7 @@ const channels = {
 };
 
 /**
- * Send a plain-text notification. Returns { ok, error } instead of throwing
+ * Send a notification (email: plain text plus branded HTML). Returns { ok, error } instead of throwing
  * so callers can show an honest message when delivery fails (§7).
  */
 async function notify({ channel = 'email', ...message }) {
@@ -50,4 +68,4 @@ async function notify({ channel = 'email', ...message }) {
   }
 }
 
-module.exports = { notify };
+module.exports = { notify, _outbox: outbox };

@@ -1,5 +1,6 @@
 'use strict';
 
+const { of: ref } = require('../../lib/reference');
 const express = require('express');
 const { z } = require('zod');
 const db = require('../../db/knex');
@@ -22,8 +23,12 @@ const replySchema = z.string().trim().min(5, 'Write your reply first.').max(5000
 router.get('/', async (req, res) => {
   const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
   const tab = msgs.TABS[req.query.tab] ? req.query.tab : 'new';
-  const filters = { q: str(req.query.q), type: str(req.query.type), recipient: str(req.query.recipient), mine: req.query.mine === '1' ? '1' : '' };
-  const result = await msgs.list(req.user, { tab, ...filters, mine: filters.mine === '1', page: req.query.page });
+  const filters = {
+    q: str(req.query.q), type: str(req.query.type), recipient: str(req.query.recipient), mine: req.query.mine === '1' ? '1' : '',
+    // From the dashboard's "Needs attention" links.
+    unassigned: req.query.unassigned === '1' ? '1' : '', failed: req.query.failed === '1' ? '1' : '',
+  };
+  const result = await msgs.list(req.user, { tab, ...filters, mine: filters.mine === '1', unassigned: filters.unassigned === '1', failed: filters.failed === '1', page: req.query.page });
   const readIds = new Set(await require('../../db/knex')('message_reads').where({ user_id: req.user.id }).whereIn('message_id', result.items.map((m) => m.id)).pluck('message_id'));
   result.items = result.items.map((m) => ({ ...m, unread: !readIds.has(m.id) && !m.archived_at && m.status !== 'resolved' }));
   const pageUrl = (p) => `/portal/messages?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
@@ -72,7 +77,7 @@ async function auditView(req) {
     .where('created_at', '>', new Date(Date.now() - 30 * 60 * 1000))
     .first();
   if (!recent) {
-    await audit(req, { action: 'message.view', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} viewed ${req.msg.type} #${req.msg.id} (${req.msg.name})` });
+    await audit(req, { action: 'message.view', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} viewed ${req.msg.type} ${ref(req.msg)} (${req.msg.name})` });
   }
 }
 
@@ -107,7 +112,7 @@ const back = (req, res, hash = '') => res.redirect(303, `/portal/messages/${req.
 router.post('/:id/status', can('messages.edit'), async (req, res) => {
   const status = Object.hasOwn(msgs.STATUS_LABELS, req.body.status) ? req.body.status : null;
   if (status && (await msgs.setStatus(req.msg, status, req.user))) {
-    await audit(req, { action: 'message.status', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} marked ${req.msg.type} #${req.msg.id} as ${msgs.STATUS_LABELS[status].toLowerCase()}` });
+    await audit(req, { action: 'message.status', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} marked ${req.msg.type} ${ref(req.msg)} as ${msgs.STATUS_LABELS[status].toLowerCase()}` });
     setFlash(req, 'success', `Marked as ${msgs.STATUS_LABELS[status].toLowerCase()}.`);
   }
   back(req, res);
@@ -122,7 +127,7 @@ router.post('/:id/assign', can('messages.edit'), async (req, res) => {
     return back(req, res);
   }
   if (await msgs.assign(req.msg, assignee, req.user)) {
-    await audit(req, { action: 'message.assign', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${assignee ? `assigned ${req.msg.type} #${req.msg.id} to ${assignee.name}` : `unassigned ${req.msg.type} #${req.msg.id}`}` });
+    await audit(req, { action: 'message.assign', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${assignee ? `assigned ${req.msg.type} ${ref(req.msg)} to ${assignee.name}` : `unassigned ${req.msg.type} ${ref(req.msg)}`}` });
     if (assignee && assignee.id !== req.user.id) {
       await notifications.notifyUser(assignee.id, {
         type: req.msg.type,
@@ -140,7 +145,7 @@ router.post('/:id/note', can('messages.edit'), async (req, res) => {
   const parsed = noteSchema.safeParse(req.body.note);
   if (!parsed.success) return renderShow(req, res, { values: req.body, errors: { note: parsed.error.issues[0].message }, status: 422 });
   await msgs.addEvent(req.msg.id, req.user, 'note', parsed.data);
-  await audit(req, { action: 'message.note', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} added a note to ${req.msg.type} #${req.msg.id}` });
+  await audit(req, { action: 'message.note', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} added a note to ${req.msg.type} ${ref(req.msg)}` });
   setFlash(req, 'success', 'Note added.');
   back(req, res, '#history');
 });
@@ -149,7 +154,7 @@ router.post('/:id/reply', can('messages.edit'), async (req, res) => {
   const parsed = replySchema.safeParse(req.body.reply);
   if (!parsed.success) return renderShow(req, res, { values: req.body, errors: { reply: parsed.error.issues[0].message }, status: 422 });
   const sent = await msgs.reply(req.msg, req.user, parsed.data);
-  await audit(req, { action: 'message.reply', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${sent ? 'emailed a reply to' : 'tried to email a reply to'} ${req.msg.name} (#${req.msg.id})` });
+  await audit(req, { action: 'message.reply', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${sent ? 'emailed a reply to' : 'tried to email a reply to'} ${req.msg.name} (${ref(req.msg)})` });
   setFlash(req, sent ? 'success' : 'error', sent ? `Reply emailed to ${req.msg.email}.` : `The reply couldn’t be emailed, so ${req.msg.name} hasn’t received it. It’s saved below; please try again later or call them.`);
   back(req, res, '#history');
 });
@@ -163,7 +168,7 @@ router.post('/:id/resend', can('messages.edit'), async (req, res) => {
 router.post('/:id/archive', can('messages.archive'), async (req, res) => {
   const archive = req.body.action !== 'restore';
   await msgs.setArchived(req.msg, archive);
-  await audit(req, { action: archive ? 'message.archive' : 'message.restore', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${archive ? 'archived' : 'restored'} ${req.msg.type} #${req.msg.id} (${req.msg.name})` });
+  await audit(req, { action: archive ? 'message.archive' : 'message.restore', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${archive ? 'archived' : 'restored'} ${req.msg.type} ${ref(req.msg)} (${req.msg.name})` });
   setFlash(req, 'success', archive ? 'Archived. You can restore it from the Archived tab.' : 'Restored to the inbox.');
   back(req, res);
 });
@@ -174,7 +179,7 @@ router.post('/:id/delete', can('messages.delete'), async (req, res) => {
     return back(req, res);
   }
   await msgs.remove(req.msg);
-  await audit(req, { action: 'message.delete', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} permanently deleted ${req.msg.type} #${req.msg.id} (${req.msg.name})` });
+  await audit(req, { action: 'message.delete', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} permanently deleted ${req.msg.type} ${ref(req.msg)} (${req.msg.name})` });
   setFlash(req, 'success', 'Deleted permanently.');
   res.redirect(303, '/portal/messages?tab=archived');
 });

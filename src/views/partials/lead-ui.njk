@@ -1,0 +1,29 @@
+{# Small pieces shared by the lead pages. #}
+
+{% macro stage(key, stages) %}
+  {% set tone = stages[key].tone %}
+  <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1
+    {{ {
+      red: 'bg-accent-50 text-accent-700 ring-accent-200',
+      amber: 'bg-amber-50 text-amber-900 ring-amber-200',
+      blue: 'bg-[#eaf2fc] text-[#1f5fae] ring-[#c9ddf5]',
+      green: 'bg-brand-50 text-brand-800 ring-brand-200',
+      grey: 'bg-surface text-muted ring-line'
+    }[tone] }}">
+    <span class="size-1.5 rounded-full {{ { red: 'bg-accent-600', amber: 'bg-amber-500', blue: 'bg-[#2a78d6]', green: 'bg-brand-600', grey: 'bg-[#93a49b]' }[tone] }}" aria-hidden="true"></span>
+    {{ stages[key].label }}
+  </span>
+{% endmacro %}
+
+{# How a lead came in: one small chip per kind, with a count when more than one. #}
+{% macro touches(t) %}
+  <span class="flex flex-wrap gap-1.5">
+    {% for key, label, ic in [['request', 'Request', 'heart'], ['referral', 'Referral', 'document'], ['appointment', 'Appointment', 'calendar'], ['message', 'Message', 'mail']] %}
+      {% if t[key] %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink ring-1 ring-line">
+          {{ icon(ic, 'size-3.5 text-muted') }} {{ label }}{% if t[key] > 1 %} <span class="text-muted">×{{ t[key] }}</span>{% endif %}
+        </span>
+      {% endif %}
+    {% endfor %}
+  </span>
+{% endmacro %}

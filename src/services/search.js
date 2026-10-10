@@ -11,6 +11,8 @@ const { can } = require('../auth/permissions');
  * (appointments, messages…) add a provider here when they're built.
  */
 
+const { normalizeSearch } = require('../lib/reference');
+
 const likeOf = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 const EXTRA_PAGES = [
@@ -71,14 +73,17 @@ const providers = [
     async run(user, q, limit) {
       const rows = await db('appointments as a')
         .leftJoin('appointment_types as t', 't.id', 'a.type_id')
-        .select('a.id', 'a.name', 'a.status', 'a.scheduled_at', 'a.requested_date', 't.name as type_name')
-        .where((w) => w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q)))
+        .select('a.id', 'a.reference', 'a.name', 'a.status', 'a.scheduled_at', 'a.requested_date', 't.name as type_name')
+        .where((w) => {
+          w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q));
+          if (normalizeSearch(q)) w.orWhere('a.reference', 'like', `%-${normalizeSearch(q)}`);
+        })
         .orderBy('a.created_at', 'desc')
         .limit(limit);
       const fmt = (d) => new Date(d).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
       return rows.map((a) => ({
         title: a.name,
-        subtitle: `${a.type_name} · ${a.status.replace('_', '-')}${a.scheduled_at ? ` · ${fmt(a.scheduled_at)}` : ''}`,
+        subtitle: `${a.reference ? `${a.reference} · ` : ''}${a.type_name} · ${a.status.replace('_', '-')}${a.scheduled_at ? ` · ${fmt(a.scheduled_at)}` : ''}`,
         href: `/portal/appointments/${a.id}`,
         icon: 'calendar',
       }));
@@ -104,19 +109,44 @@ const providers = [
     },
   },
   {
+    label: 'Leads',
+    permission: 'leads.view',
+    async run(user, q, limit) {
+      const leads = require('./leads');
+      const digits = q.replace(/\D/g, '');
+      const rows = await db('leads')
+        .select('id', 'name', 'stage', 'origin', 'referred_by', 'county')
+        .where((w) => {
+          w.where('name', 'like', likeOf(q)).orWhere('email', 'like', likeOf(q)).orWhere('referred_by', 'like', likeOf(q));
+          if (digits.length >= 4) w.orWhere('phone_digits', 'like', `%${digits}%`);
+        })
+        .orderBy('last_activity_at', 'desc')
+        .limit(limit);
+      return rows.map((l) => ({
+        title: l.name,
+        subtitle: `Lead · ${leads.STAGES[l.stage].label}${l.referred_by ? ` · referred by ${l.referred_by}` : l.county ? ` · ${l.county}` : ''}`,
+        href: `/portal/leads/${l.id}`,
+        icon: 'heart',
+      }));
+    },
+  },
+  {
     label: 'Messages',
     permission: ['messages.view', 'messages.view_intake'],
     async run(user, q, limit) {
       const msgs = require('./messages');
       const scope = msgs.scopeFor(user);
       const rows = await scope(db('contact_messages as m'))
-        .select('m.id', 'm.type', 'm.name', 'm.recipient', 'm.status', 'm.created_at')
-        .where((w) => w.where('m.name', 'like', likeOf(q)).orWhere('m.email', 'like', likeOf(q)).orWhere('m.phone', 'like', likeOf(q)))
+        .select('m.id', 'm.reference', 'm.type', 'm.name', 'm.recipient', 'm.status', 'm.created_at')
+        .where((w) => {
+          w.where('m.name', 'like', likeOf(q)).orWhere('m.email', 'like', likeOf(q)).orWhere('m.phone', 'like', likeOf(q));
+          if (normalizeSearch(q)) w.orWhere('m.reference', 'like', `%-${normalizeSearch(q)}`);
+        })
         .orderBy('m.created_at', 'desc')
         .limit(limit);
       return rows.map((m) => ({
         title: m.name,
-        subtitle: `${msgs.TYPE_LABELS[m.type]} to ${msgs.RECIPIENT_LABELS[m.recipient] || m.recipient} · ${msgs.STATUS_LABELS[m.status]}`,
+        subtitle: `${m.reference ? `${m.reference} · ` : ''}${msgs.TYPE_LABELS[m.type]} to ${msgs.RECIPIENT_LABELS[m.recipient] || m.recipient} · ${msgs.STATUS_LABELS[m.status]}`,
         href: `/portal/messages/${m.id}`,
         icon: m.type === 'referral' ? 'document' : m.type === 'request' ? 'heart' : 'mail',
       }));

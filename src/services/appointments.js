@@ -37,6 +37,8 @@ function base() {
     );
 }
 
+const { insertWithReference, normalizeSearch } = require('../lib/reference');
+
 const likeOf = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /** Tabs on the appointments screen. */
@@ -67,7 +69,11 @@ async function list({ tab = 'requests', q = '', status = '', type = '', source =
   const query = base();
   TABS[tab].apply(query);
   if (q) {
-    query.where((w) => w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q)));
+    const code = normalizeSearch(q);
+    query.where((w) => {
+      w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q));
+      if (code) w.orWhere('a.reference', 'like', `%-${code}`);
+    });
   }
   if (status && STATUS_LABELS[status]) query.where('a.status', status);
   if (type) query.where('a.type_id', Number(type));
@@ -122,7 +128,7 @@ async function transition(id, action, changes = {}) {
 }
 
 async function create(row) {
-  const [id] = await db('appointments').insert(row);
+  const { id } = await insertWithReference(db, 'appointments', row, 'appointment');
   return get(id);
 }
 

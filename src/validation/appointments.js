@@ -1,6 +1,7 @@
 'use strict';
 
 const { z } = require('zod');
+const { phoneField } = require('./phone');
 const { isIsoDate } = require('../lib/hours');
 
 const date = z.string({ error: 'Choose a date.' }).refine(isIsoDate, 'Choose a valid date.');
@@ -25,13 +26,7 @@ const scheduleSchema = z.object({
   override: yes, // book anyway despite capacity / office hours
 });
 
-const phoneOrEmpty = z
-  .string()
-  .trim()
-  .max(40)
-  .refine((v) => v === '' || (/^[+()\-.\s\d]{7,}$/.test(v) && v.replace(/\D/g, '').length >= 10), 'Enter a valid phone number.')
-  .optional()
-  .default('');
+const phoneOrEmpty = phoneField().optional().default('');
 
 const emailOrEmpty = z
   .string()

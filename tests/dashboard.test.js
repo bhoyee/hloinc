@@ -104,13 +104,13 @@ describe('dashboard data (silent refresh)', () => {
     const res = await agent.get('/portal/dashboard/data');
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toContain('no-store');
-    expect(res.body.tiles.find((t) => t.key === 'requests').value).toBe(1);
-    expect(res.body.charts.map((c) => c.key)).toEqual(['appointments', 'enquiries', 'sources', 'signins']);
+    expect(res.body.tiles.find((t) => t.key === 'appointments').parts.find((p) => p.key === 'requests').value).toBe(1);
+    expect(res.body.charts.map((c) => c.key)).toEqual(['appointments', 'enquiries', 'response', 'demand-services', 'demand-counties', 'sources', 'signins']);
     expect(res.body.office.label).toMatch(/^Office (open|closed)/);
 
     await db('appointments').insert({ type_id: typeId, source: 'phone', status: 'requested', name: 'B', phone: '410-555-0100' });
     const again = await agent.get('/portal/dashboard/data');
-    expect(again.body.tiles.find((t) => t.key === 'requests').value).toBe(2);
+    expect(again.body.tiles.find((t) => t.key === 'appointments').parts.find((p) => p.key === 'requests').value).toBe(2);
   });
 
   it('counts appointments by week and outcome, and the attendance rate', async () => {
@@ -137,7 +137,7 @@ describe('dashboard data (silent refresh)', () => {
     // Program Director: charts yes, but no audit log, so no sign-in chart.
     const director = await signIn(await makeUser('program_director'));
     const d = (await director.get('/portal/dashboard/data')).body;
-    expect(d.charts.map((c) => c.key)).toEqual(['appointments', 'enquiries', 'sources']);
+    expect(d.charts.map((c) => c.key)).toEqual(['appointments', 'enquiries', 'response', 'demand-services', 'demand-counties', 'sources']);
     expect(d.tiles.map((t) => t.key)).not.toContain('staff');
 
     // IT: staff accounts only; no client information and no charts.

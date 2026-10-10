@@ -1,0 +1,29 @@
+{# Staff board (internal announcements). Refreshed live with the rest of the dashboard. #}
+  {% if board.length or can('announcements.edit') %}
+    <section id="staff-board" class="mt-8 scroll-mt-24" aria-labelledby="board-h">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <h2 id="board-h" class="text-base font-bold text-ink">Staff board</h2>
+        {% if can('announcements.edit') %}<a href="/portal/announcements/new" class="text-sm font-semibold text-brand-700 hover:text-brand-800">{{ icon('plus', 'inline size-4') }} Post an announcement</a>{% endif %}
+      </div>
+      {% if board.length %}
+        <ul class="grid gap-4 lg:grid-cols-2">
+          {% for a in board %}
+            <li class="relative overflow-hidden rounded-3xl border border-line bg-white p-5 pl-6 shadow-soft sm:p-6 sm:pl-7 {{ 'lg:col-span-2' if loop.first and board.length is odd }}">
+              <span class="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-accent-500 to-accent-700" aria-hidden="true"></span>
+              <div class="flex items-start gap-4">
+                <span class="icon-tile-red hidden size-11 sm:grid">{{ icon('megaphone', 'size-5') }}</span>
+                <div class="min-w-0">
+                  <h3 class="font-display text-lg font-bold text-ink">{{ a.title }}</h3>
+                  <p class="mt-1 text-[15px] text-ink/90">{{ a.body }}</p>
+                  {% if a.link_url %}<a href="{{ a.link_url }}" class="link mt-2 inline-block text-sm" {% if a.link_url.startsWith('https://') %}target="_blank" rel="noopener"{% endif %}>{{ a.link_label or 'Learn more' }}</a>{% endif %}
+                  <p class="mt-3 text-xs text-muted">{{ a.author or 'HLO' }} · {{ a.starts_at | date({ month: 'short', day: 'numeric' }) }}{% if a.ends_at %} · until {{ a.ends_at | date({ month: 'short', day: 'numeric' }) }}{% endif %}</p>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="rounded-3xl border-2 border-dashed border-line p-6 text-center text-sm text-muted">No staff announcements right now. Anything you post for staff appears here for everyone.</p>
+      {% endif %}
+    </section>
+  {% endif %}

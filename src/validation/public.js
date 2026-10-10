@@ -1,6 +1,7 @@
 'use strict';
 
 const { z } = require('zod');
+const { phoneField } = require('./phone');
 const { recipients } = require('../lib/site');
 const services = require('../content/services');
 const areas = require('../content/areas');
@@ -22,13 +23,7 @@ const email = z
   .max(191, 'Email address is too long.')
   .pipe(z.email('Enter a valid email address, like name@example.com.'));
 
-const phone = z
-  .string()
-  .trim()
-  .max(40)
-  .refine((v) => v === '' || /^[+()\-.\s\d]{7,}$/.test(v) && v.replace(/\D/g, '').length >= 10, {
-    message: 'Enter a valid phone number, like 410-555-0123.',
-  });
+const phone = phoneField();
 
 const contactSchema = z.object({
   recipient: z.enum(

@@ -33,8 +33,9 @@
    npm run create-admin -- --name "Full Name" --email admin@hloinc.com
    ```
    (`create-admin` lives in `scripts/` and only needs production dependencies.)
-   The first Admin signs in at `/portal`, sets up two-step sign-in, then invites everyone else from
-   **Accounts** (staff choose their own passwords from the emailed link).
+   The first Admin signs in at `/portal` with email and password, then invites everyone else from
+   **Accounts** (staff choose their own passwords from the emailed link). Two-step sign-in starts
+   **off**; the Admin can switch it on for everyone under **Administration → Security settings**.
 6. **Restart** the app from the Node.js App screen and open `/healthz` and `/healthz/db`.
 7. **HTTPS** — enable AutoSSL / Let's Encrypt for the domain. Secure cookies and HSTS
    are on automatically when `NODE_ENV=production`.
@@ -111,6 +112,41 @@ Replies from visitors still reach the right person: staff emails use the visitor
 and replies to visitors use the HLO team address as *Reply-To*. To send from Microsoft 365
 instead later, HLO's Microsoft 365 admin creates the mailbox and sending permission, and only
 the `SMTP_*` / `MAIL_FROM` values change.
+
+## Demo data on the preview site
+
+So HLO can try the dashboard charts, inbox and Leads page with realistic numbers, the
+preview site can be filled with made-up data: one staff account per role, about three
+months of appointments, referrals, service requests and messages, staff replies, leads
+and sign-ins. Everything is clearly fake (`@example.com` / `@hloinc.test` emails,
+555-01xx phone numbers) and can be removed in one step. Demo job postings are never added
+on a server, because the Careers page is public.
+
+**Turn it on** (cPanel → Terminal, in the app folder):
+
+```bash
+cd ~/preview.hloinc.com          # the app folder
+echo 'DEMO_DATA=true' >> .env
+echo 'DEMO_PASSWORD=choose-a-long-password-here' >> .env   # 12+ characters; not the one in the code
+npx knex seed:run                 # or wait for the next deploy
+```
+
+The demo staff sign in as `admin@hloinc.test`, `director@hloinc.test`,
+`coordinator@hloinc.test`, `intake@hloinc.test`, `reception@hloinc.test` and
+`it@hloinc.test`, all with the `DEMO_PASSWORD` above. Without `DEMO_PASSWORD` the demo
+records are still added, but no demo staff accounts are created.
+
+**Remove it** when HLO has finished testing:
+
+```bash
+npm run demo:remove
+sed -i 's/^DEMO_DATA=true/DEMO_DATA=false/' .env   # so the next deploy doesn't add it again
+```
+
+This deletes only the demo staff, demo visitors' records and leads that belonged only to
+them. Real accounts, real enquiries and settings are not touched.
+
+**Never set `DEMO_DATA=true` on the main site.**
 
 ## Going live on www.hloinc.com (after HLO approves the preview)
 

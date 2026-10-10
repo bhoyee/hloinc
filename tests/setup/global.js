@@ -14,5 +14,7 @@ module.exports = async function setup() {
   const db = require('../../src/db/knex');
   await db.migrate.latest();
   await db.seed.run();
+  // Migration 020 starts real installs with two-step off; tests start from "not chosen" (on) and set it themselves.
+  await db('site_settings').where({ key: 'security.two_step' }).del();
   await db.destroy();
 };

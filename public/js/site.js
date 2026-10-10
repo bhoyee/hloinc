@@ -405,9 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch { /* offline: try again next time */ }
   }
   if (notifBtn) {
-    setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 30000);
+    setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 15000);
     // Coming back to a tab: check straight away (the session may have ended while it was hidden).
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadNotifications(); });
+    // Saved something in another tab: update the menu counters now.
+    try { new BroadcastChannel('hlo-portal').addEventListener('message', (e) => { if (e.data === 'changed') loadNotifications(); }); } catch { /* older browsers */ }
     const readAll = document.querySelector('[data-notif-read-all]');
     readAll.addEventListener('click', async () => {
       await fetch('/portal/notifications/read-all', { method: 'POST', headers: { Accept: 'application/json', 'x-csrf-token': csrf ? csrf.content : '' } });
@@ -515,5 +517,36 @@ document.addEventListener('DOMContentLoaded', () => {
         card.style.transform = '';
       });
     });
+  }
+
+  // Phone fields: only phone characters can be typed, and a complete US number
+  // is tidied to 410-555-0123 when the field is left. The server checks it again.
+  document.querySelectorAll('input[data-phone]').forEach((input) => {
+    input.addEventListener('input', () => {
+      const cleaned = input.value.replace(/[^\d\s().+-]/g, '');
+      if (cleaned !== input.value) input.value = cleaned;
+    });
+    input.addEventListener('blur', () => {
+      let digits = input.value.replace(/\D/g, '');
+      if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
+      if (digits.length === 10) input.value = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    });
+  });
+
+  // Live dashboard: when something is saved in the portal (a shift, an appointment,
+  // a note…), tell any open dashboard tab to refresh now instead of at its next tick.
+  if (location.pathname.startsWith('/portal')) {
+    const SAVED = 'hlo-portal-saved';
+    document.addEventListener('submit', (e) => {
+      if (e.target instanceof HTMLFormElement && e.target.method.toLowerCase() === 'post') {
+        try { sessionStorage.setItem(SAVED, '1'); } catch { /* private mode */ }
+      }
+    });
+    try {
+      if (sessionStorage.getItem(SAVED)) {
+        sessionStorage.removeItem(SAVED);
+        new BroadcastChannel('hlo-portal').postMessage('changed');
+      }
+    } catch { /* older browsers: dashboards still refresh every few seconds */ }
   }
 });

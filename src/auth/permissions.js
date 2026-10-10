@@ -42,6 +42,14 @@ const MODULES = [
     labels: { view: 'View all', edit: 'Reply & update status' },
   },
   {
+    key: 'leads',
+    label: 'Leads',
+    description: 'Everyone who has reached out (requests, referrals, appointments, enquiries) and where they are in intake.',
+    actions: ['view', 'edit', 'delete'],
+    extras: { export: 'Export leads to a spreadsheet (CSV)' },
+    labels: { edit: 'Update stage, owner & notes' },
+  },
+  {
     key: 'jobs',
     label: 'Jobs & careers',
     description: 'Job postings on the careers page.',
@@ -114,7 +122,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && has('view_intake') && !has('view'))) {
       set.add(`${m.key}.view`);
     }
@@ -149,6 +157,7 @@ const DEFAULT_ROLES = [
       'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'appointments.manage_types',
       'schedule.view', 'schedule.edit',
       'messages.view', 'messages.edit',
+      'leads.view', 'leads.edit', 'leads.export',
       'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
       'announcements.view', 'announcements.edit', 'announcements.archive', 'announcements.delete',
       'site_content.edit_limited',
@@ -163,6 +172,7 @@ const DEFAULT_ROLES = [
       'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log',
       'schedule.view', 'schedule.edit',
       'messages.view', 'messages.edit',
+      'leads.view', 'leads.edit',
       'announcements.view', 'announcements.edit', 'announcements.archive',
     ],
   },
@@ -170,7 +180,7 @@ const DEFAULT_ROLES = [
     key: 'intake_specialist',
     name: 'Intake Specialist',
     description: 'Appointments and the intake / referral inbox.',
-    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.view_intake', 'messages.edit'],
+    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.view_intake', 'messages.edit', 'leads.view', 'leads.edit'],
   },
   {
     key: 'reception',

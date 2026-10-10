@@ -10,7 +10,7 @@ const AUTH_KEYS = ['userId', 'sessionVersion', 'loginAt', 'lastActivity', 'previ
 
 // Background requests (the notification bell and dashboard refreshes) don't count as activity,
 // so an open but unattended tab still times out.
-const BACKGROUND_PATHS = new Set(['/notifications/summary', '/dashboard/data']);
+const BACKGROUND_PATHS = new Set(['/notifications/summary', '/dashboard/data', '/dashboard/panels']);
 
 /** Forget who is signed in, but keep the session (and its CSRF token). */
 function clearAuth(req) {

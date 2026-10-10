@@ -4,8 +4,9 @@
  * Portal-wide security settings, changed by the CEO/COO under
  * Administration → Security settings.
  *
- * Two-step sign-in (authenticator app) is ON by default. When it is switched
- * OFF, everyone signs in with email and password only, and no role is made
+ * Two-step sign-in (authenticator app) starts OFF on a new installation
+ * (migration 020); the CEO/COO switches it on here. When it is OFF, everyone
+ * signs in with email and password only, and no role is made
  * to set it up. People's authenticator set-ups are kept, so switching it back
  * on works straight away.
  */

@@ -10,6 +10,7 @@ const NAV = [
   { label: 'Appointments', href: '/portal/appointments', icon: 'calendar', permission: ['appointments.view', 'appointments.log'], badge: 'appointments', badgeLabel: 'waiting to be confirmed' },
   { label: 'Schedule', href: '/portal/schedule', icon: 'clock' },
   { label: 'Messages', href: '/portal/messages', icon: 'inbox', permission: ['messages.view', 'messages.view_intake'], badge: 'messages', badgeLabel: 'unread' },
+  { label: 'Leads', href: '/portal/leads', icon: 'heart', permission: 'leads.view' },
   { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view' },
   { label: 'Announcements', href: '/portal/announcements', icon: 'megaphone', permission: 'announcements.view' },
   { label: 'Site content', href: '/portal/content', icon: 'document', permission: ['site_content.view', 'site_content.edit', 'site_content.edit_limited'] },

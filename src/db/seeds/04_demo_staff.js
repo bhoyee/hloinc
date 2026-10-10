@@ -2,12 +2,12 @@
 
 /**
  * DEMO staff accounts, one per role, so each role's view of the portal can be
- * tried. Development only — never runs in production. Emails use the
- * reserved .test domain, so nothing can be delivered to a real person.
+ * tried. Runs in development, and on a server only with DEMO_DATA=true and a
+ * DEMO_PASSWORD in its .env (see src/db/demo.js). Emails use the reserved
+ * .test domain, so nothing can be delivered to a real person.
  */
 const bcrypt = require('bcryptjs');
-
-const PASSWORD = 'Portal-Demo-2026!';
+const demo = require('../demo');
 
 const STAFF = [
   ['Avery Admin', 'admin@hloinc.test', 'admin'],
@@ -19,9 +19,14 @@ const STAFF = [
 ];
 
 exports.seed = async function seed(knex) {
-  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') return;
+  if (!demo.allowed()) return;
+  const password = demo.staffPassword();
+  if (!password) {
+    console.warn('Demo staff not created: set DEMO_PASSWORD (12+ characters) in .env to add them.');
+    return;
+  }
 
-  const hash = await bcrypt.hash(PASSWORD, 10);
+  const hash = await bcrypt.hash(password, 10);
   for (const [name, email, role] of STAFF) {
     const exists = await knex('users').where({ email }).first();
     if (!exists) {

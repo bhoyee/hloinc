@@ -18,6 +18,7 @@
       <ul class="mt-4 space-y-2.5 text-[15px] text-brand-200">
         {% for l in cms.list('site.footer.start', [
           { label: 'Request services', href: '/request-services' }, { label: 'Make a referral', href: '/referrals' },
+          { label: 'Request an appointment', href: '/appointments/request' },
           { label: 'Join our team', href: '/careers' }, { label: 'Resources', href: '/resources' }
         ]) %}
           <li {{ l.attrs }}><a class="hover:text-white" href="{{ l.href }}" {{ l.hrefAttrs }}>{{ l.text('label') }}</a></li>

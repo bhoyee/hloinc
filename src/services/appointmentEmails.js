@@ -17,7 +17,7 @@ async function footer() {
   return { b, lines: ['', `${b.legalName}`, address, `${b.phone} · ${b.hours}`] };
 }
 
-/** Plain-text emails to the visitor (requirements §5.1: email only, no SMS). */
+/** Emails to the visitor (branded by notify) (requirements §5.1: email only, no SMS). */
 async function confirmed(appt, { rescheduled = false, message = '' } = {}) {
   if (!appt.email) return { ok: false, error: 'No email address' };
   const { b, lines } = await footer();
@@ -27,14 +27,20 @@ async function confirmed(appt, { rescheduled = false, message = '' } = {}) {
     text: [
       `Hello ${appt.name},`,
       '',
-      rescheduled ? 'Your appointment with HLO has a new time:' : 'Your appointment with HLO is confirmed:',
+      rescheduled ? `Your appointment with ${b.legalName} has a new time.` : `Your appointment with ${b.legalName} is confirmed.`,
       '',
-      `${appt.type_name}`,
-      `${when(appt.scheduled_at)} (about ${appt.duration_minutes || 30} minutes)`,
+      'YOUR APPOINTMENT',
+      ...(appt.reference ? [`Reference: ${appt.reference}`] : []),
+      `Appointment: ${appt.type_name}`,
+      `Date and time: ${when(appt.scheduled_at)}`,
+      `Length: About ${appt.duration_minutes || 30} minutes`,
+      `Where: ${lines[2]}`,
       '',
       ...(message ? [message, ''] : []),
       `If you need to change or cancel, please call us at ${b.phone}.`,
-      ...lines,
+      '',
+      'Warm regards,',
+      `The ${b.legalName} team`,
     ].join('\n'),
   });
 }
@@ -48,13 +54,18 @@ async function cancelled(appt, { reason = '' } = {}) {
     text: [
       `Hello ${appt.name},`,
       '',
-      appt.scheduled_at
-        ? `Your appointment (${appt.type_name}, ${when(appt.scheduled_at)}) has been cancelled.`
-        : `Your request for an appointment (${appt.type_name}) has been cancelled.`,
+      appt.scheduled_at ? 'Your appointment has been cancelled.' : 'Your request for an appointment has been cancelled.',
+      '',
+      'CANCELLED',
+      ...(appt.reference ? [`Reference: ${appt.reference}`] : []),
+      `Appointment: ${appt.type_name}`,
+      ...(appt.scheduled_at ? [`Was booked for: ${when(appt.scheduled_at)}`] : []),
       ...(reason ? ['', reason] : []),
       '',
       `To arrange a new time, call us at ${b.phone} or request an appointment on our website.`,
-      ...lines,
+      '',
+      'Warm regards,',
+      `The ${b.legalName} team`,
     ].join('\n'),
   });
 }

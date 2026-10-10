@@ -7,31 +7,56 @@ const { recipients } = require('../lib/site');
 const notifications = require('./notifications');
 const services = require('../content/services');
 const { OPTIONS, REFERRER_ROLES } = require('../validation/public');
+const config = require('../config');
+const { insertWithReference } = require('../lib/reference');
+const leads = require('./leads');
+
+/** Link a submission to its lead. Never lets a problem here lose the submission itself. */
+async function linkLead(fn, id, data) {
+  try {
+    await fn(id, data);
+  } catch (err) {
+    console.error('Could not link submission to a lead:', err.message);
+  }
+}
 
 const WINDOW_LABELS = { morning: 'Morning (9 a.m. – 12 p.m.)', afternoon: 'Afternoon (12 p.m. – 5 p.m.)' };
+
+// Emails to the team link straight to the item in the staff portal.
+const TEAM_NOTE = 'Sent automatically by the HLO website. Reply to this email to answer the sender directly.';
+const portalButton = (path) => ({ label: 'Open in the staff portal', href: `${config.appUrl}${path}` });
+
+// Confirmations to visitors echo only what is needed to recognise the request:
+// email is not a secure channel, so eligibility and plan details stay out.
+const CONFIRMATION_NOTE = 'This is an automatic confirmation. To add anything, reply to this email or call us.';
+const sooner = (business) => `If you need to reach us sooner, call ${business.phone} (${business.hours}). For a life-threatening emergency, call 911.`;
 
 /**
  * Save a contact form message, then email it to the chosen recipient.
  * The message is kept even if email fails, so it still reaches the portal inbox.
  */
 async function submitContact(data, { ip }) {
-  const [id] = await db('contact_messages').insert({
+  const { id, reference } = await insertWithReference(db, 'contact_messages', {
     recipient: data.recipient,
     name: data.name,
     email: data.email,
     phone: data.phone || null,
     message: data.message,
     ip,
-  });
+  }, 'message');
+  await linkLead(leads.attachMessage, id, data);
 
   const recipient = recipients.find((r) => r.key === data.recipient);
   const to = await content.getRecipientEmail(data.recipient);
-  const result = await notify({
+  const business = await content.getBusiness();
+  const [result, toVisitor] = await Promise.all([notify({
     to,
     replyTo: data.email,
-    subject: `Website message for ${recipient.label} from ${data.name}`,
+    subject: `Website message ${reference} for ${recipient.label} from ${data.name}`,
+    cta: portalButton(`/portal/messages/${id}`),
+    footnote: TEAM_NOTE,
     text: [
-      `New message from the HLO website (reference #${id}).`,
+      `New message from the HLO website (reference ${reference}).`,
       '',
       `To: ${recipient.label}`,
       `Name: ${data.name}`,
@@ -40,7 +65,27 @@ async function submitContact(data, { ip }) {
       '',
       data.message,
     ].join('\n'),
-  });
+  }),
+  notify({
+    to: data.email,
+    replyTo: to,
+    subject: 'We received your message',
+    text: [
+      `Hello ${data.name},`,
+      '',
+      `Thank you for contacting ${business.legalName}. Your message has reached our team (${recipient.label}), and we will reply as soon as we can during office hours.`,
+      '',
+      'YOUR MESSAGE',
+      `Reference: ${reference}`,
+      `Sent to: ${recipient.label}`,
+      '',
+      sooner(business),
+      '',
+      'Warm regards,',
+      `The ${business.legalName} team`,
+    ].join('\n'),
+    footnote: CONFIRMATION_NOTE,
+  })]);
 
   await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
   await notifications.notifyPermission(data.recipient === 'intake' ? ['messages.view', 'messages.view_intake'] : ['messages.view'], {
@@ -49,7 +94,7 @@ async function submitContact(data, { ip }) {
     body: `Sent to ${recipient.label} from the website.`,
     link: `/portal/messages/${id}`,
   });
-  return { id, emailed: result.ok };
+  return { id, reference, emailed: result.ok, acknowledged: toVisitor.ok };
 }
 
 const label = (list, key) => (key && list[key]) || 'Not given';
@@ -77,7 +122,7 @@ async function submitReferral(data, { ip }) {
   };
   const roleLabel = REFERRER_ROLES[data.referrer_role];
 
-  const [id] = await db('contact_messages').insert({
+  const { id, reference } = await insertWithReference(db, 'contact_messages', {
     type: 'referral',
     recipient: 'intake',
     name: data.referrer_name,
@@ -86,14 +131,19 @@ async function submitReferral(data, { ip }) {
     message: data.notes || '(No additional information)',
     details: JSON.stringify(details),
     ip,
-  });
+  }, 'referral');
+  await linkLead(leads.attachReferral, id, data);
 
-  const result = await notify({
-    to: await content.getRecipientEmail('intake'),
+  const business = await content.getBusiness();
+  const intake = await content.getRecipientEmail('intake');
+  const [result, toReferrer] = await Promise.all([notify({
+    to: intake,
     replyTo: data.referrer_email,
-    subject: `New referral #${id} from ${data.referrer_name}`,
+    subject: `New referral ${reference} from ${data.referrer_name}`,
+    cta: portalButton(`/portal/messages/${id}`),
+    footnote: TEAM_NOTE,
     text: [
-      `New referral from the HLO website (reference #${id}).`,
+      `New referral from the HLO website (reference ${reference}).`,
       '',
       'REFERRED BY',
       `Name: ${data.referrer_name}`,
@@ -116,7 +166,35 @@ async function submitReferral(data, { ip }) {
       '',
       'The referrer confirmed they are authorized to share this information.',
     ].join('\n'),
-  });
+  }),
+  notify({
+    to: data.referrer_email,
+    replyTo: intake,
+    subject: 'Thank you for your referral',
+    text: [
+      `Hello ${data.referrer_name},`,
+      '',
+      `Thank you for referring someone to ${business.legalName}. Your referral has reached our intake team.`,
+      '',
+      'YOUR REFERRAL',
+      `Reference: ${reference}`,
+      `Person referred: ${data.person_name}`,
+      `County: ${data.county}`,
+      `Services needed: ${serviceNames(data.services)}`,
+      '',
+      'WHAT HAPPENS NEXT',
+      '',
+      '- Our intake team reviews the referral.',
+      `- We contact you at ${data.referrer_phone} or by email to talk it through.`,
+      '- Together with the person, their family and their coordinator, we look at how our services could fit.',
+      '',
+      sooner(business),
+      '',
+      'Warm regards,',
+      `The ${business.legalName} intake team`,
+    ].join('\n'),
+    footnote: CONFIRMATION_NOTE,
+  })]);
 
   await db('contact_messages').where({ id }).update({ email_status: result.ok ? 'sent' : 'failed' });
   await notifications.notifyPermission(['messages.view', 'messages.view_intake'], {
@@ -125,7 +203,7 @@ async function submitReferral(data, { ip }) {
     body: `From ${data.referrer_name} (${roleLabel}) · ${data.county}`,
     link: `/portal/messages/${id}`,
   });
-  return { id, emailed: result.ok };
+  return { id, reference, emailed: result.ok, acknowledged: toReferrer.ok };
 }
 
 /**
@@ -148,7 +226,7 @@ async function submitRequest(data, { ip }) {
     services: data.services,
   };
 
-  const [id] = await db('contact_messages').insert({
+  const { id, reference } = await insertWithReference(db, 'contact_messages', {
     type: 'request',
     recipient: 'intake',
     name,
@@ -157,16 +235,19 @@ async function submitRequest(data, { ip }) {
     message: data.message || '(No message)',
     details: JSON.stringify(details),
     ip,
-  });
+  }, 'request');
+  await linkLead(leads.attachRequest, id, data);
 
   const business = await content.getBusiness();
   const [toTeam, toVisitor] = await Promise.all([
     notify({
       to: await content.getRecipientEmail('intake'),
       replyTo: data.email,
-      subject: `New service request #${id} from ${name}`,
+      subject: `New service request ${reference} from ${name}`,
+      cta: portalButton(`/portal/messages/${id}`),
+      footnote: TEAM_NOTE,
       text: [
-        `New request for services from the HLO website (reference #${id}).`,
+        `New request for services from the HLO website (reference ${reference}).`,
         '',
         'CONTACT',
         `Name: ${name}`,
@@ -189,17 +270,34 @@ async function submitRequest(data, { ip }) {
     }),
     notify({
       to: data.email,
+      replyTo: await content.getRecipientEmail('intake'),
       subject: 'We received your request for services',
       text: [
         `Hello ${data.first_name},`,
         '',
-        `Thank you for contacting ${business.legalName}. We received your request for services (reference #${id}).`,
-        `A member of our team will ${data.preferred_contact === 'email' ? 'email' : 'call'} you to talk through the options.`,
+        `Thank you for reaching out to ${business.legalName}. We have received your request for services, and a member of our intake team will be in touch.`,
         '',
-        `If you need to reach us sooner, call ${business.phone} (${business.hours}).`,
+        'YOUR REQUEST',
+        `Reference: ${reference}`,
+        `Services of interest: ${serviceNames(data.services)}`,
+        `We will contact you by: ${data.preferred_contact === 'email' ? `Email (${data.email})` : `Phone (${data.phone})`}`,
+        `Best time: ${label(OPTIONS.bestTime, data.best_time)}`,
         '',
-        business.legalName,
+        'WHAT HAPPENS NEXT',
+        '',
+        '- Our intake team reviews your request.',
+        `- We ${data.preferred_contact === 'email' ? 'email' : 'call'} you to learn about the person, answer your questions and explain how our services could fit.`,
+        '- If it is a good fit, we work with you and your Coordinator of Community Services on the next steps.',
+        '',
+        'You do not need to have every answer ready. We will go through it together.',
+        '',
+        sooner(business),
+        '',
+        'Warm regards,',
+        `The ${business.legalName} intake team`,
       ].join('\n'),
+      cta: { label: 'Learn about our services', href: `${config.appUrl}/services` },
+      footnote: CONFIRMATION_NOTE,
     }),
   ]);
 
@@ -210,14 +308,14 @@ async function submitRequest(data, { ip }) {
     body: `${label(OPTIONS.relationship, data.relationship)}${data.county ? ` · ${data.county}` : ''}`,
     link: `/portal/messages/${id}`,
   });
-  return { id, emailed: toTeam.ok, acknowledged: toVisitor.ok };
+  return { id, reference, emailed: toTeam.ok, acknowledged: toVisitor.ok };
 }
 
 /** Save a website appointment request (status Requested) and acknowledge it by email. */
 async function submitAppointmentRequest(data, { ip }) {
   const type = await db('appointment_types').where({ id: data.type_id, active: true }).first();
 
-  const [id] = await db('appointments').insert({
+  const { id, reference } = await insertWithReference(db, 'appointments', {
     type_id: data.type_id,
     source: 'website',
     status: 'requested',
@@ -229,7 +327,8 @@ async function submitAppointmentRequest(data, { ip }) {
     requested_window: data.requested_window,
     notes: data.notes || null,
     ip,
-  });
+  }, 'appointment');
+  await linkLead(leads.attachAppointment, id, data);
 
   const business = await content.getBusiness();
   const when = `${formatDate(data.requested_date)}, ${WINDOW_LABELS[data.requested_window]}`;
@@ -241,22 +340,30 @@ async function submitAppointmentRequest(data, { ip }) {
       text: [
         `Hello ${data.name},`,
         '',
-        `Thank you for contacting ${business.legalName}. We received your request for: ${type.name}.`,
+        `Thank you for contacting ${business.legalName}. We have received your appointment request.`,
+        '',
+        'YOUR REQUEST',
+        `Reference: ${reference}`,
+        `Appointment: ${type.name}`,
         `Preferred time: ${when}`,
         '',
-        'This is not yet a confirmed appointment. A member of our team will contact you to confirm.',
+        'This is not yet a confirmed appointment. A member of our team will contact you to confirm a date and time.',
         '',
-        `If you need to reach us sooner, call ${business.phone} (${business.hours}).`,
+        sooner(business),
         '',
-        business.legalName,
+        'Warm regards,',
+        `The ${business.legalName} team`,
       ].join('\n'),
+      footnote: CONFIRMATION_NOTE,
     }),
     notify({
       to: await content.getRecipientEmail('intake'),
       replyTo: data.email,
-      subject: `New appointment request #${id}: ${type.name}`,
+      subject: `New appointment request ${reference}: ${type.name}`,
+      cta: portalButton(`/portal/appointments/${id}`),
+      footnote: TEAM_NOTE,
       text: [
-        `New appointment request from the website (reference #${id}).`,
+        `New appointment request from the website (reference ${reference}).`,
         '',
         `Type: ${type.name}`,
         `Preferred: ${when}`,
@@ -275,7 +382,7 @@ async function submitAppointmentRequest(data, { ip }) {
     title: `Appointment request: ${type.name}`,
     body: `${data.name} · ${when}`,
   });
-  return { id, acknowledged: toVisitor.ok, staffNotified: toStaff.ok };
+  return { id, reference, acknowledged: toVisitor.ok, staffNotified: toStaff.ok };
 }
 
 function formatDate(isoDate) {

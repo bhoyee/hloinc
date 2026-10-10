@@ -230,8 +230,8 @@ router.post('/contact', limiters.forms, async (req, res) => {
     req,
     'success',
     result.emailed
-      ? 'Thank you. Your message has been sent and our team will reply as soon as possible.'
-      : 'Thank you. Your message was saved and our team will see it, but our email notification did not go through. If your message is urgent, please call us.'
+      ? `Thank you. Your message has been sent and our team will reply as soon as possible. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`
+      : `Thank you. Your message was saved (reference ${result.reference}) and our team will see it, but our email notification did not go through. If your message is urgent, please call us.`
   );
   res.redirect(303, '/contact');
 });
@@ -272,8 +272,8 @@ router.post('/referrals', limiters.forms, async (req, res) => {
     req,
     'success',
     result.emailed
-      ? 'Thank you. Your referral has been sent to our intake team, who will be in touch.'
-      : 'Thank you. Your referral was saved and our intake team will see it, but our email notification did not go through. If it is urgent, please call us.'
+      ? `Thank you. Your referral has been sent to our intake team, who will be in touch. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`
+      : `Thank you. Your referral was saved (reference ${result.reference}) and our intake team will see it, but our email notification did not go through. If it is urgent, please call us.`
   );
   res.redirect(303, '/referrals');
 });
@@ -312,8 +312,8 @@ router.post('/request-services', limiters.forms, async (req, res) => {
     req,
     'success',
     result.emailed
-      ? `Thank you, ${parsed.data.first_name}. We received your request and a member of our team will be in touch${result.acknowledged ? '. We have emailed you a copy' : ''}.`
-      : 'Thank you. Your request was saved and our team will see it, but our email notification did not go through. If it is urgent, please call us.'
+      ? `Thank you, ${parsed.data.first_name}. We received your request and a member of our team will be in touch. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`
+      : `Thank you. Your request was saved (reference ${result.reference}) and our team will see it, but our email notification did not go through. If it is urgent, please call us.`
   );
   res.redirect(303, '/request-services');
 });
@@ -356,8 +356,8 @@ router.post('/appointments/request', limiters.forms, async (req, res) => {
     req,
     'success',
     result.acknowledged
-      ? 'Thank you. We received your request and sent a copy to your email. This is not yet confirmed: our team will contact you to confirm a time.'
-      : 'Thank you. We received your request, but we could not send you a confirmation email. Our team will contact you to confirm a time.'
+      ? `Thank you. We received your request (reference ${result.reference}) and sent a copy to your email. This is not yet confirmed: our team will contact you to confirm a time.`
+      : `Thank you. We received your request (reference ${result.reference}), but we could not send you a confirmation email. Our team will contact you to confirm a time.`
   );
   res.redirect(303, '/appointments/request');
 });

@@ -1,6 +1,7 @@
 'use strict';
 
 const { z } = require('zod');
+const { phoneField } = require('./phone');
 
 const email = z
   .string({ error: 'Enter an email address.' })
@@ -45,13 +46,7 @@ const name = z
   .min(2, 'Enter a name.')
   .max(120, 'Keep the name under 120 characters.');
 
-const phone = z
-  .string()
-  .trim()
-  .max(40)
-  .refine((v) => v === '' || (/^[+()\-.\s\d]{7,}$/.test(v) && v.replace(/\D/g, '').length >= 10), 'Enter a valid phone number.')
-  .optional()
-  .default('');
+const phone = phoneField().optional().default('');
 
 const accountSchema = z.object({
   name,

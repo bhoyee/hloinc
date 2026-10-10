@@ -138,6 +138,10 @@
 @utility btn-secondary {
   @apply btn bg-white text-brand-800 ring-1 ring-line ring-inset hover:bg-brand-50 hover:ring-brand-200;
 }
+/* Slate = appointments, a third action set apart from the red and green. */
+@utility btn-dark {
+  @apply btn bg-[#1e293b] text-white shadow-sm shadow-[#0f172a]/25 hover:bg-[#0f172a];
+}
 @utility btn-light {
   @apply btn bg-white text-brand-900 hover:bg-brand-50;
 }

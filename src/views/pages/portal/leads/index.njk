@@ -1,0 +1,99 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/lead-ui.njk" as lu %}
+
+{% block actions %}
+  {% if can('leads.export') %}
+    <a href="{{ exportUrl }}" class="btn-secondary">{{ icon('document', 'size-4') }} Export CSV</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+  <nav aria-label="Lead stages" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+    {% for t in tabs %}
+      {% set n = stageCounts[t.key] if t.key != 'all' else (stageCounts.open + (stageCounts.client or 0) + (stageCounts.not_fit or 0)) %}
+      <a href="/portal/leads?tab={{ t.key }}" {% if t.key == filters.tab %}aria-current="page"{% endif %}
+         class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == filters.tab else 'text-muted hover:bg-surface hover:text-ink' }}">
+        {{ t.label }}
+        <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == filters.tab else ('bg-accent-600 text-white' if t.key == 'new' and n else 'bg-surface ring-1 ring-line') }}">{{ n or 0 }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <form method="get" action="/portal/leads" role="search" aria-label="Filter leads" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_auto] xl:items-center">
+    <input type="hidden" name="tab" value="{{ filters.tab }}">
+    <div class="relative sm:col-span-2 xl:col-span-1">
+      <label for="f-q" class="sr-only">Search by name, email, phone, county or reference</label>
+      <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Name, email, phone, county or reference" class="form-control !pl-12" maxlength="100">
+    </div>
+    <div>
+      <label for="f-origin" class="sr-only">Came in through</label>
+      <select id="f-origin" name="origin" class="form-control">
+        <option value="">Any way in</option>
+        {% for key in ['request', 'referral', 'appointment', 'message'] %}<option value="{{ key }}" {% if filters.origin == key %}selected{% endif %}>{{ originLabels[key] }}s</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="f-owner" class="sr-only">Owner</label>
+      <select id="f-owner" name="owner" class="form-control">
+        <option value="">Any owner</option>
+        <option value="me" {% if filters.owner == 'me' %}selected{% endif %}>Mine</option>
+        <option value="none" {% if filters.owner == 'none' %}selected{% endif %}>Nobody yet</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-green">Filter</button>
+  </form>
+
+  {% if items.length %}
+    <div class="overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+      <table class="w-full text-left text-[15px]">
+        <caption class="sr-only">Leads, most recent activity first</caption>
+        <thead class="hidden border-b border-line bg-surface text-xs font-semibold tracking-wide text-muted uppercase lg:table-header-group">
+          <tr>
+            <th scope="col" class="px-6 py-3">Lead</th>
+            <th scope="col" class="px-4 py-3">Came in via</th>
+            <th scope="col" class="px-4 py-3">County</th>
+            <th scope="col" class="px-4 py-3">Last activity</th>
+            <th scope="col" class="px-4 py-3">Stage</th>
+            <th scope="col" class="px-6 py-3">Owner</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          {% for l in items %}
+            <tr class="group relative block px-5 py-4 transition-colors hover:bg-surface focus-within:bg-surface sm:px-6 lg:table-row lg:p-0 {{ 'bg-amber-50/40' if l.stage == 'new' }}">
+              <td class="block lg:table-cell lg:px-6 lg:py-4">
+                <a href="/portal/leads/{{ l.id }}" class="font-semibold text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ l.name }}</a>
+                <span class="block truncate text-sm text-muted">
+                  {% if l.referred_by %}Referred by {{ l.referred_by }}{% else %}{{ l.email or l.phone or 'No contact details' }}{% endif %}
+                </span>
+              </td>
+              <td class="mt-2 block lg:mt-0 lg:table-cell lg:px-4 lg:py-4">{{ lu.touches(l.touches) }}</td>
+              <td class="hidden text-sm text-muted lg:table-cell lg:px-4 lg:py-4">{{ l.county or '—' }}</td>
+              <td class="mt-2 inline-block text-sm text-muted lg:mt-0 lg:table-cell lg:px-4 lg:py-4">{{ l.last_activity_at | date({ month: 'short', day: 'numeric' }) }}</td>
+              <td class="mt-2 ml-2 inline-block lg:mt-0 lg:ml-0 lg:table-cell lg:px-4 lg:py-4">{{ lu.stage(l.stage, stages) }}</td>
+              <td class="mt-1 block text-sm lg:mt-0 lg:table-cell lg:px-6 lg:py-4">
+                {% if l.owner_name %}<span class="inline-flex items-center gap-1.5 text-ink">{{ icon('users', 'size-4 text-muted') }} {{ l.owner_name }}</span>
+                {% else %}<span class="text-muted lg:inline hidden">Nobody yet</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pages > 1 %}
+      <nav aria-label="Lead pages" class="mt-6 flex items-center justify-between">
+        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
+        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
+        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+      <span class="icon-tile mx-auto">{{ icon('heart', 'size-6') }}</span>
+      <p class="mt-4 text-lg font-semibold text-ink">{% if filters.q or filters.origin or filters.owner %}Nothing matches those filters{% else %}No leads here yet{% endif %}</p>
+      <p class="mt-1 text-muted">Requests, referrals, appointments and enquiries from the website appear here automatically.</p>
+    </div>
+  {% endif %}
+{% endblock %}

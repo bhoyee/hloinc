@@ -79,6 +79,8 @@ function scopeFor(user) {
   return null;
 }
 
+const { of: ref, normalizeSearch } = require('../lib/reference');
+
 const likeOf = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 function base(user) {
@@ -95,15 +97,21 @@ async function tabCounts(user) {
 
 const PER_PAGE = 25;
 
-async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine = false, page = 1 } = {}) {
+async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine = false, unassigned = false, failed = false, page = 1 } = {}) {
   const query = TABS[tab].where(base(user));
   const keyword = String(q).trim().slice(0, 100);
   if (keyword) {
     const like = likeOf(keyword);
-    query.where((w) => w.where('m.name', 'like', like).orWhere('m.email', 'like', like).orWhere('m.phone', 'like', like).orWhere('m.message', 'like', like));
+    const code = normalizeSearch(keyword);
+    query.where((w) => {
+      w.where('m.name', 'like', like).orWhere('m.email', 'like', like).orWhere('m.phone', 'like', like).orWhere('m.message', 'like', like);
+      if (code) w.orWhere('m.reference', 'like', `%-${code}`);
+    });
   }
   if (TYPE_LABELS[type]) query.where('m.type', type);
   if (RECIPIENT_LABELS[recipient]) query.where('m.recipient', recipient);
+  if (unassigned) query.whereNull('m.assigned_to').whereIn('m.status', ['new', 'in_progress']);
+  if (failed) query.where('m.email_status', 'failed');
   if (mine) query.where('m.assigned_to', user.id);
 
   const { total } = await query.clone().count({ total: '*' }).first();
@@ -111,7 +119,7 @@ async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine
   const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
   const items = await query
     .leftJoin('users as a', 'a.id', 'm.assigned_to')
-    .select('m.id', 'm.type', 'm.recipient', 'm.name', 'm.email', 'm.phone', 'm.message', 'm.details', 'm.status', 'm.email_status', 'm.archived_at', 'm.created_at', 'm.assigned_to', 'a.name as assigned_name')
+    .select('m.id', 'm.reference', 'm.type', 'm.recipient', 'm.name', 'm.email', 'm.phone', 'm.message', 'm.details', 'm.status', 'm.email_status', 'm.archived_at', 'm.created_at', 'm.assigned_to', 'a.name as assigned_name')
     .orderBy('m.created_at', tab === 'new' ? 'asc' : 'desc') // oldest new message first: it's waited longest
     .orderBy('m.id', 'desc')
     .limit(PER_PAGE)
@@ -153,6 +161,7 @@ async function setStatus(m, status, user) {
   if (!STATUS_LABELS[status] || m.status === status) return false;
   await db('contact_messages').where({ id: m.id }).update({ status, updated_at: new Date() });
   await addEvent(m.id, user, 'status', `${STATUS_LABELS[m.status]} → ${STATUS_LABELS[status]}`);
+  await require('./leads').markContacted(m.lead_id, user);
   return true;
 }
 
@@ -181,7 +190,7 @@ async function reply(m, user, text) {
   const result = await notify({
     to: m.email,
     replyTo: from,
-    subject: `Re: your ${KIND[m.type] || 'message'} to ${business.legalName} (ref #${m.id})`,
+    subject: `Re: your ${KIND[m.type] || 'message'} to ${business.legalName} (ref ${ref(m)})`,
     text: [
       `Hello ${m.name},`,
       '',
@@ -198,6 +207,7 @@ async function reply(m, user, text) {
   });
   await addEvent(m.id, user, 'reply', text, { email_status: result.ok ? 'sent' : 'failed' });
   if (result.ok && m.status === 'new') await setStatus(m, 'in_progress', user);
+  else if (result.ok) await require('./leads').markContacted(m.lead_id, user);
   return result.ok;
 }
 
@@ -208,7 +218,7 @@ async function resendToTeam(m) {
   const lines =
     m.type === 'referral'
       ? [
-          `Referral from the HLO website (reference #${m.id}), re-sent from the staff portal.`,
+          `Referral from the HLO website (reference ${ref(m)}), re-sent from the staff portal.`,
           '',
           `Referred by: ${m.name} <${m.email}>${m.phone ? `, ${m.phone}` : ''}`,
           `Person being referred: ${d.person_name || 'Not given'} (${d.county || 'county not given'})`,
@@ -216,7 +226,7 @@ async function resendToTeam(m) {
           `Notes: ${m.message}`,
         ]
       : [
-          `Message from the HLO website (reference #${m.id}), re-sent from the staff portal.`,
+          `Message from the HLO website (reference ${ref(m)}), re-sent from the staff portal.`,
           '',
           `To: ${RECIPIENT_LABELS[m.recipient] || m.recipient}`,
           `From: ${m.name} <${m.email}>${m.phone ? `, ${m.phone}` : ''}`,
@@ -226,7 +236,7 @@ async function resendToTeam(m) {
   const result = await notify({
     to,
     replyTo: m.email,
-    subject: `${m.type === 'referral' ? 'Referral' : m.type === 'request' ? 'Service request' : 'Website message'} #${m.id} from ${m.name}`,
+    subject: `${m.type === 'referral' ? 'Referral' : m.type === 'request' ? 'Service request' : 'Website message'} ${ref(m)} from ${m.name}`,
     text: lines.join('\n'),
   });
   await db('contact_messages').where({ id: m.id }).update({ email_status: result.ok ? 'sent' : 'failed' });

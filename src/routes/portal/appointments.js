@@ -1,5 +1,6 @@
 'use strict';
 
+const { of: ref } = require('../../lib/reference');
 const express = require('express');
 const db = require('../../db/knex');
 const appts = require('../../services/appointments');
@@ -194,11 +195,16 @@ router.post('/', can('appointments.log'), async (req, res) => {
     created_by: req.user.id,
     handled_by: req.user.id,
   });
+  try {
+    await require('../../services/leads').attachAppointment(appt.id, { name: d.name, email: d.email, phone: d.phone }, { byStaff: true });
+  } catch (err) {
+    console.error('Could not link appointment to a lead:', err.message);
+  }
   await audit(req, {
     action: 'appointment.log',
     entityType: 'appointment',
     entityId: appt.id,
-    summary: `${req.user.name} logged a ${appts.SOURCE_LABELS[d.source].toLowerCase()} appointment (#${appt.id}, ${type.name})`,
+    summary: `${req.user.name} logged a ${appts.SOURCE_LABELS[d.source].toLowerCase()} appointment (${ref(appt)}, ${type.name})`,
     metadata: problems.length ? { bookedAnyway: problems } : undefined,
   });
   await notifyAssignee(req, appt, null);
@@ -307,7 +313,7 @@ async function auditView(req) {
     .where('created_at', '>', new Date(Date.now() - 30 * 60 * 1000))
     .first();
   if (!recent) {
-    await audit(req, { action: 'appointment.view', entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} viewed appointment #${req.appt.id} (${req.appt.name})` });
+    await audit(req, { action: 'appointment.view', entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} viewed appointment ${ref(req.appt)} (${req.appt.name})` });
   }
 }
 
@@ -374,13 +380,14 @@ router.post('/:id/schedule', can('appointments.edit'), async (req, res) => {
     assigned_to: d.assigned_to,
     handled_by: req.user.id,
   });
+  if (updated) await require('../../services/leads').markContacted(a.lead_id, req.user);
   await audit(req, {
     action: wasConfirmed ? 'appointment.reschedule' : 'appointment.confirm',
     entityType: 'appointment',
     entityId: a.id,
     summary: wasConfirmed
-      ? `${req.user.name} changed appointment #${a.id} to ${emails.when(start)}`
-      : `${req.user.name} confirmed appointment #${a.id} for ${emails.when(start)}`,
+      ? `${req.user.name} changed appointment ${ref(a)} to ${emails.when(start)}`
+      : `${req.user.name} confirmed appointment ${ref(a)} for ${emails.when(start)}`,
     metadata: problems.length ? { bookedAnyway: problems } : undefined,
   });
   await notifyAssignee(req, updated, a.assigned_to);
@@ -407,7 +414,7 @@ router.post('/:id/status', can('appointments.edit'), async (req, res) => {
     setFlash(req, 'error', 'That change isn’t possible for this appointment.');
   } else {
     const verb = { complete: 'marked as completed', no_show: 'marked as a no-show', reopen: 'reopened' }[action];
-    await audit(req, { action: `appointment.${action}`, entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} ${verb} appointment #${req.appt.id}` });
+    await audit(req, { action: `appointment.${action}`, entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} ${verb} appointment ${ref(req.appt)}` });
     setFlash(req, 'success', `Appointment ${verb}.`);
   }
   res.redirect(303, `/portal/appointments/${req.appt.id}`);
@@ -421,7 +428,7 @@ router.post('/:id/cancel', can('appointments.archive'), async (req, res) => {
     setFlash(req, 'error', 'This appointment can’t be cancelled.');
     return res.redirect(303, `/portal/appointments/${req.appt.id}`);
   }
-  await audit(req, { action: 'appointment.cancel', entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} cancelled appointment #${req.appt.id}${d.reason ? ` (${d.reason})` : ''}` });
+  await audit(req, { action: 'appointment.cancel', entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} cancelled appointment ${ref(req.appt)}${d.reason ? ` (${d.reason})` : ''}` });
   let msg = 'Appointment cancelled.';
   let kind = 'success';
   if (d.notify === 'yes') {
@@ -443,7 +450,7 @@ router.post('/:id/notes', can('appointments.edit'), async (req, res) => {
     return res.redirect(303, `/portal/appointments/${req.appt.id}`);
   }
   await appts.updateNotes(req.appt.id, parsed.data.staff_notes);
-  await audit(req, { action: 'appointment.notes', entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} updated staff notes on appointment #${req.appt.id}` });
+  await audit(req, { action: 'appointment.notes', entityType: 'appointment', entityId: req.appt.id, summary: `${req.user.name} updated staff notes on appointment ${ref(req.appt)}` });
   setFlash(req, 'success', 'Notes saved.');
   res.redirect(303, `/portal/appointments/${req.appt.id}#notes`);
 });
@@ -457,10 +464,10 @@ router.post('/:id/delete', can('appointments.delete'), async (req, res) => {
     action: 'appointment.delete',
     entityType: 'appointment',
     entityId: req.appt.id,
-    summary: `${req.user.name} permanently deleted appointment #${req.appt.id} (${req.appt.type_name})`,
+    summary: `${req.user.name} permanently deleted appointment ${ref(req.appt)} (${req.appt.type_name})`,
   });
   await appts.remove(req.appt.id);
-  setFlash(req, 'success', `Appointment #${req.appt.id} permanently deleted.`);
+  setFlash(req, 'success', `Appointment ${ref(req.appt)} permanently deleted.`);
   res.redirect(303, '/portal/appointments?tab=all');
 });
 

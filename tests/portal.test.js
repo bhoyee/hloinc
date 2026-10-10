@@ -177,7 +177,7 @@ describe('permissions', () => {
   it('shows dashboard tiles only for what the role can see', async () => {
     const reception = await signIn(await makeUser('reception'));
     const dash = await reception.agent.get('/portal');
-    expect(dash.text).toContain('Appointment requests');
+    expect(dash.text).toContain('data-tile="appointments"');
     expect(dash.text).not.toContain('Open jobs');
     expect(dash.text).not.toContain('Active staff accounts');
   });

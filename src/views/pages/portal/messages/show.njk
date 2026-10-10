@@ -32,7 +32,8 @@
           <dl class="shrink-0 text-sm text-muted sm:text-right">
             <dt class="sr-only">Received</dt><dd>{{ m.created_at | dateTime }}</dd>
             <dt class="sr-only">Sent to</dt><dd>To <strong class="font-semibold text-ink">{{ recipientLabels[m.recipient] or m.recipient }}</strong></dd>
-            <dt class="sr-only">Reference</dt><dd>Ref #{{ m.id }}</dd>
+            <dt class="sr-only">Reference</dt><dd>Ref <span class="font-mono font-semibold text-ink">{{ m.reference or ('#' + m.id) }}</span></dd>
+            {% if m.ip %}<dt class="sr-only">Sent from</dt><dd>From IP {{ m.ip }}</dd>{% endif %}
           </dl>
         </header>
 
@@ -118,6 +119,13 @@
     </div>
 
     <aside class="min-w-0 space-y-4 xl:sticky xl:top-24" aria-label="Handling">
+      {% if m.lead_id and can('leads.view') %}
+        <a href="/portal/leads/{{ m.lead_id }}" class="group flex items-center gap-3 rounded-3xl border border-line bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200">
+          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">{{ icon('heart', 'size-5') }}</span>
+          <span class="min-w-0 flex-1"><span class="block font-semibold text-ink group-hover:text-brand-700">View lead</span><span class="block text-sm text-muted">Everything from this person, stage and owner</span></span>
+          {{ icon('chevron-right', 'size-5 text-brand-700') }}
+        </a>
+      {% endif %}
       <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="status-h">
         <h2 id="status-h" class="text-lg font-bold">Status</h2>
         {% if editable %}

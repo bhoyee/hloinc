@@ -9,6 +9,7 @@
  * Director, §4) covers office hours here, and the careers page in the editor.
  */
 const db = require('../db/knex');
+const { isUsPhone, normalizePhone, PHONE_MAX } = require('../validation/phone');
 const { can } = require('../auth/permissions');
 const site = require('../lib/site');
 const content = require('./content');
@@ -62,7 +63,8 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function readContact(body) {
   const data = { phone: str(body.phone), email: str(body.email).toLowerCase(), street: str(body.street), city: str(body.city), state: str(body.state).toUpperCase(), zip: str(body.zip) };
   const errors = {};
-  if (!/^[+()\-.\s\d]{7,}$/.test(data.phone) || data.phone.replace(/\D/g, '').length < 10) errors.phone = 'Enter a valid phone number.';
+  if (data.phone.length > PHONE_MAX || !isUsPhone(data.phone)) errors.phone = 'Enter a valid US phone number, like 410-555-0123.';
+  else data.phone = normalizePhone(data.phone);
   if (!EMAIL.test(data.email) || data.email.length > 191) errors.email = 'Enter a valid email address.';
   if (!data.street || data.street.length > 160) errors.street = 'Enter the street address.';
   if (!data.city || data.city.length > 80) errors.city = 'Enter the city.';

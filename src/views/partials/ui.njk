@@ -93,6 +93,7 @@
   <div>
     <label for="f-{{ name }}" class="form-label">{{ label }}{% if not required %} <span class="font-normal text-muted">(optional)</span>{% endif %}</label>
     <input id="f-{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ values[name] }}" class="form-control"
+      {% if type == 'tel' %}maxlength="20" inputmode="tel" data-phone{% elif type == 'email' %}maxlength="191"{% elif type in ['text', 'search'] %}maxlength="200"{% endif %}
       {% if required %}required aria-required="true"{% endif %}
       {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
       {% if errors[name] %}aria-invalid="true"{% endif %}
