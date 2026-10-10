@@ -5,6 +5,8 @@ const { notify } = require('./notify');
 const content = require('./content');
 const { recipients } = require('../lib/site');
 const notifications = require('./notifications');
+const services = require('../content/services');
+const { OPTIONS, REFERRER_ROLES } = require('../validation/public');
 
 const WINDOW_LABELS = { morning: 'Morning (9 a.m. – 12 p.m.)', afternoon: 'Afternoon (12 p.m. – 5 p.m.)' };
 
@@ -50,20 +52,30 @@ async function submitContact(data, { ip }) {
   return { id, emailed: result.ok };
 }
 
+const label = (list, key) => (key && list[key]) || 'Not given';
+const serviceNames = (slugs) => {
+  const names = services.filter((s) => slugs.includes(s.slug)).map((s) => s.name);
+  return names.length ? names.join(', ') : 'Not sure yet';
+};
+
 /**
  * Save a referral into the intake inbox (type "referral") and email the intake
  * team. Like contact messages, it is kept even if the email fails.
  */
-async function submitReferral(data, { ip, roleLabel, serviceNames }) {
+async function submitReferral(data, { ip }) {
   const details = {
     referrer_role: data.referrer_role,
     organization: data.organization || null,
     person_name: data.person_name,
-    person_phone: data.person_phone || null,
-    person_email: data.person_email || null,
     county: data.county,
+    living_situation: data.living_situation || null,
+    dda_eligibility: data.dda_eligibility || null,
+    priority_category: data.priority_category || null,
+    pcp: data.pcp || null,
     services: data.services,
+    timeline: data.timeline || null,
   };
+  const roleLabel = REFERRER_ROLES[data.referrer_role];
 
   const [id] = await db('contact_messages').insert({
     type: 'referral',
@@ -71,7 +83,7 @@ async function submitReferral(data, { ip, roleLabel, serviceNames }) {
     name: data.referrer_name,
     email: data.referrer_email,
     phone: data.referrer_phone || null,
-    message: data.notes || '(No notes)',
+    message: data.notes || '(No additional information)',
     details: JSON.stringify(details),
     ip,
   });
@@ -86,20 +98,23 @@ async function submitReferral(data, { ip, roleLabel, serviceNames }) {
       'REFERRED BY',
       `Name: ${data.referrer_name}`,
       `Role: ${roleLabel}`,
-      `Organization: ${data.organization || 'Not given'}`,
+      `Agency or organization: ${data.organization || 'Not given'}`,
+      `Phone: ${data.referrer_phone}`,
       `Email: ${data.referrer_email}`,
-      `Phone: ${data.referrer_phone || 'Not given'}`,
       '',
       'PERSON BEING REFERRED',
-      `Name: ${data.person_name}`,
+      `First name or initials: ${data.person_name}`,
       `County: ${data.county}`,
-      `Phone: ${data.person_phone || 'Not given'}`,
-      `Email: ${data.person_email || 'Not given'}`,
-      `Services of interest: ${serviceNames.length ? serviceNames.join(', ') : 'Not sure yet'}`,
+      `Current living situation: ${label(OPTIONS.livingSituation, data.living_situation)}`,
+      `DDA eligibility: ${label(OPTIONS.ddaEligibility, data.dda_eligibility)}`,
+      `DDA funding priority: ${label(OPTIONS.priority, data.priority_category)}`,
+      `Person-Centered Plan: ${label(OPTIONS.pcp, data.pcp)}`,
+      `Services needed: ${serviceNames(data.services)}`,
+      `How soon: ${label(OPTIONS.timeline, data.timeline)}`,
       '',
-      `Notes: ${data.notes || 'None'}`,
+      `Additional information: ${data.notes || 'None'}`,
       '',
-      'The referrer confirmed the person knows about this referral.',
+      'The referrer confirmed they are authorized to share this information.',
     ].join('\n'),
   });
 
@@ -111,6 +126,91 @@ async function submitReferral(data, { ip, roleLabel, serviceNames }) {
     link: `/portal/messages/${id}`,
   });
   return { id, emailed: result.ok };
+}
+
+/**
+ * Save a "Request services" form (individuals and families) into the intake
+ * inbox (type "request"), email the intake team and acknowledge the visitor.
+ */
+async function submitRequest(data, { ip }) {
+  const name = `${data.first_name} ${data.last_name}`;
+  const details = {
+    first_name: data.first_name,
+    last_name: data.last_name,
+    preferred_contact: data.preferred_contact,
+    best_time: data.best_time,
+    relationship: data.relationship,
+    individual_first_name: data.individual_first_name || null,
+    county: data.county || null,
+    dda_eligibility: data.dda_eligibility || null,
+    pcp: data.pcp || null,
+    priority_category: data.priority_category || null,
+    services: data.services,
+  };
+
+  const [id] = await db('contact_messages').insert({
+    type: 'request',
+    recipient: 'intake',
+    name,
+    email: data.email,
+    phone: data.phone,
+    message: data.message || '(No message)',
+    details: JSON.stringify(details),
+    ip,
+  });
+
+  const business = await content.getBusiness();
+  const [toTeam, toVisitor] = await Promise.all([
+    notify({
+      to: await content.getRecipientEmail('intake'),
+      replyTo: data.email,
+      subject: `New service request #${id} from ${name}`,
+      text: [
+        `New request for services from the HLO website (reference #${id}).`,
+        '',
+        'CONTACT',
+        `Name: ${name}`,
+        `Phone: ${data.phone}`,
+        `Email: ${data.email}`,
+        `Prefers: ${data.preferred_contact === 'email' ? 'Email' : 'Phone'}`,
+        `Best time to call: ${label(OPTIONS.bestTime, data.best_time)}`,
+        '',
+        'THE PERSON WHO NEEDS SUPPORT',
+        `Relationship: ${label(OPTIONS.relationship, data.relationship)}`,
+        `First name: ${data.individual_first_name || 'Not given'}`,
+        `County: ${data.county || 'Not given'}`,
+        `DDA eligibility: ${label(OPTIONS.ddaEligibility, data.dda_eligibility)}`,
+        `Person-Centered Plan: ${label(OPTIONS.pcp, data.pcp)}`,
+        `DDA funding priority: ${label(OPTIONS.priority, data.priority_category)}`,
+        `Services of interest: ${serviceNames(data.services)}`,
+        '',
+        `Anything else: ${data.message || 'None'}`,
+      ].join('\n'),
+    }),
+    notify({
+      to: data.email,
+      subject: 'We received your request for services',
+      text: [
+        `Hello ${data.first_name},`,
+        '',
+        `Thank you for contacting ${business.legalName}. We received your request for services (reference #${id}).`,
+        `A member of our team will ${data.preferred_contact === 'email' ? 'email' : 'call'} you to talk through the options.`,
+        '',
+        `If you need to reach us sooner, call ${business.phone} (${business.hours}).`,
+        '',
+        business.legalName,
+      ].join('\n'),
+    }),
+  ]);
+
+  await db('contact_messages').where({ id }).update({ email_status: toTeam.ok ? 'sent' : 'failed' });
+  await notifications.notifyPermission(['messages.view', 'messages.view_intake'], {
+    type: 'request',
+    title: `New service request from ${name}`,
+    body: `${label(OPTIONS.relationship, data.relationship)}${data.county ? ` · ${data.county}` : ''}`,
+    link: `/portal/messages/${id}`,
+  });
+  return { id, emailed: toTeam.ok, acknowledged: toVisitor.ok };
 }
 
 /** Save a website appointment request (status Requested) and acknowledge it by email. */
@@ -188,4 +288,4 @@ function formatDate(isoDate) {
   });
 }
 
-module.exports = { submitContact, submitReferral, submitAppointmentRequest, WINDOW_LABELS };
+module.exports = { submitContact, submitReferral, submitRequest, submitAppointmentRequest, WINDOW_LABELS };

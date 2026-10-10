@@ -8,8 +8,6 @@ const notifications = require('../../services/notifications');
 const { audit } = require('../../services/audit');
 const { requirePermission } = require('../../middleware/auth');
 const { setFlash } = require('../../lib/forms');
-const { REFERRER_ROLES } = require('../../validation/public');
-const services = require('../../content/services');
 
 const router = express.Router();
 const crumbs = [{ label: 'Dashboard', href: '/portal' }];
@@ -18,7 +16,6 @@ const can = requirePermission;
 
 const noteSchema = z.string().trim().min(1, 'Write a note first.').max(2000, 'Keep notes under 2,000 characters.');
 const replySchema = z.string().trim().min(5, 'Write your reply first.').max(5000, 'Keep the reply under 5,000 characters.');
-const SERVICE_NAMES = Object.fromEntries(services.map((s) => [s.slug, s.name]));
 
 // --- List -------------------------------------------------------------------------------
 
@@ -33,7 +30,7 @@ router.get('/', async (req, res) => {
   const intakeOnly = !req.user.permissions.has('messages.view');
   res.render('pages/portal/messages/index.njk', {
     title: 'Messages',
-    subheading: intakeOnly ? 'Intake messages and referrals from the website.' : 'Contact form messages and referrals from the website.',
+    subheading: intakeOnly ? 'Intake messages, referrals and service requests from the website.' : 'Contact form messages, referrals and service requests from the website.',
     crumbs,
     tab,
     filters,
@@ -86,13 +83,12 @@ async function renderShow(req, res, { values = {}, errors = {}, status = 200 } =
     subheading: `${msgs.TYPE_LABELS[m.type]} to ${msgs.RECIPIENT_LABELS[m.recipient] || m.recipient}`,
     crumbs: inboxCrumbs,
     m,
+    answers: msgs.detailRows(m),
     events: await msgs.events(m.id),
     staff: req.user.permissions.has('messages.edit') ? await msgs.assignableStaff(m) : [],
     statusLabels: msgs.STATUS_LABELS,
     typeLabels: msgs.TYPE_LABELS,
     recipientLabels: msgs.RECIPIENT_LABELS,
-    referrerRoles: REFERRER_ROLES,
-    serviceNames: SERVICE_NAMES,
     values,
     errors,
   });

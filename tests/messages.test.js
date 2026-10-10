@@ -52,7 +52,7 @@ describe('inbox: who sees what', () => {
     const show = await admin.get(`/portal/messages/${refId}`);
     expect(show.text).toContain('Jordan Person');
     expect(show.text).toContain('Baltimore County');
-    expect(show.text).toContain('Personal Supports');
+    expect(show.text).toContain('Personal Support');
     expect(await db('audit_log').where({ action: 'message.view' }).count({ n: '*' }).first()).toEqual({ n: 1 });
     await admin.get(`/portal/messages/${refId}`);
     expect(await db('audit_log').where({ action: 'message.view' }).count({ n: '*' }).first()).toEqual({ n: 1 }); // once per 30 minutes

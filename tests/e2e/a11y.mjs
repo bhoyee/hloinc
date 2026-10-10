@@ -4,7 +4,7 @@ import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const base = process.env.BASE_URL || 'http://127.0.0.1:4310';
-const paths = ['/', '/about', '/services', '/services/personal-supports', '/service-areas', '/getting-started',
+const paths = ['/', '/about', '/services', '/services/personal-supports', '/services/employment-services', '/request-services', '/service-areas', '/getting-started',
   '/resources', '/careers', '/careers/direct-support-professional', '/contact', '/referrals', '/appointments/request', '/privacy', '/terms', '/data-protection', '/cookies', '/nope'];
 
 const browser = await chromium.launch();

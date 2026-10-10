@@ -10,12 +10,12 @@ const defaults = {
   phone: '410-874-8551',
   email: 'info@hloinc.com',
   address: {
-    street: '4 East Rolling Crossroads, Suites 301–303',
+    street: '4 E Rolling Crossroads, Suites 301–303',
     city: 'Catonsville',
     state: 'MD',
-    zip: '', // CONFIRM — client question 3
+    zip: '21228', // confirmed by HLO (October 2026)
   },
-  hours: 'Monday to Friday, 9 a.m. to 5 p.m.',
+  hours: 'Monday – Friday, 9am – 5pm',
   // Machine-readable hours for the "Open now" badge (Maryland time; 0 = Sunday).
   schedule: { days: [1, 2, 3, 4, 5], open: 9, close: 17 },
   walkIn: 'Walk-ins are welcome during office hours. Calling ahead helps us make sure the right person is available.',
@@ -25,6 +25,7 @@ const nav = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
   { label: 'Services', href: '/services' },
+  { label: 'Resources', href: '/resources' },
   { label: 'Careers', href: '/careers' },
   { label: 'Contact', href: '/contact' },
 ];

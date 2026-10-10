@@ -36,33 +36,14 @@ module.exports = [
     ],
   },
   {
-    group: 'National organizations',
+    // HLO's list (October 2026).
+    group: 'Free materials',
     items: [
-      {
-        name: 'Administration for Community Living (ACL)',
-        url: 'https://acl.gov',
-        description: 'Federal agency supporting community living for older adults and people with disabilities.',
-      },
-      {
-        name: 'The Arc of the United States',
-        url: 'https://thearc.org',
-        description: 'National organization advocating for people with intellectual and developmental disabilities.',
-      },
-      {
-        name: 'Autism Society of America',
-        url: 'https://autismsociety.org',
-        description: 'Information, referral and support for autistic people and their families.',
-      },
-      {
-        name: 'National Institute of Mental Health (NIMH)',
-        url: 'https://www.nimh.nih.gov',
-        description: 'Research-based information about mental health conditions.',
-      },
-      {
-        name: 'SAMHSA',
-        url: 'https://www.samhsa.gov',
-        description: 'Substance Abuse and Mental Health Services Administration, including the 988 crisis line.',
-      },
+      { name: 'National Institute of Mental Health', url: 'https://www.nimh.nih.gov', description: 'Research-based information about mental health conditions and treatments.' },
+      { name: 'Administration for Children and Families', url: 'https://www.acf.hhs.gov', description: 'Federal programs and information that support children, families and communities.' },
+      { name: 'MentalHealth.gov', url: 'https://www.mentalhealth.gov', description: 'Plain-language information about mental health and how to get help.' },
+      { name: 'Substance Abuse and Mental Health Services Administration (SAMHSA)', url: 'https://www.samhsa.gov', description: 'Treatment information and support, including the 988 Suicide & Crisis Lifeline.' },
+      { name: 'American Psychological Association (APA)', url: 'https://www.apa.org', description: 'Psychology topics, guides and information for the public.' },
     ],
   },
 ];

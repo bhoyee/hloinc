@@ -60,6 +60,14 @@ async function tiles(user, today) {
       note: 'Waiting for the intake team',
       href: '/portal/messages?tab=new&type=referral',
     });
+    list.push({
+      key: 'service_requests',
+      label: 'New service requests',
+      icon: 'heart',
+      value: await count(scope(db('contact_messages').where({ status: 'new', type: 'request' }).whereNull('archived_at'))),
+      note: 'From individuals and families',
+      href: '/portal/messages?tab=new&type=request',
+    });
   }
   if (can(user, 'appointments.view')) {
     list.push({
@@ -158,7 +166,7 @@ async function enquiriesByWeek(user, today) {
   const scope = inboxScope(user);
   if (scope) {
     const rows = await scope(db('contact_messages').where('created_at', '>=', from)).select('type', 'created_at');
-    for (const [key, name, color] of [['message', 'Contact messages', COLORS.green], ['referral', 'Referrals', COLORS.blue]]) {
+    for (const [key, name, color] of [['message', 'Contact messages', COLORS.green], ['referral', 'Referrals', COLORS.blue], ['request', 'Service requests', COLORS.pink]]) {
       const values = starts.map(() => 0);
       for (const r of rows) if (r.type === key && index(r.created_at) >= 0) values[index(r.created_at)] += 1;
       series.push({ key, name, color, values });

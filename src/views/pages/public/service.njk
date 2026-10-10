@@ -6,7 +6,7 @@
   {% for sec in cms.sections(k, { hero: 'Top banner', details: 'Details', cta: 'Call to action' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-    {{ ui.pageHero(cms.text(k + '.hero.eyebrow', 'Services'), cms.text(k + '.name', service.name), cms.text(k + '.summary', service.summary), [{ label: 'Services', href: '/services' }, { label: service.name }], cms.image(k + '.image', service.slug, service.imageAlt)) }}
+    {{ ui.pageHero(cms.text(k + '.hero.eyebrow', 'Services'), cms.text(k + '.name', service.name), cms.text(k + '.summary', service.summary), [{ label: 'Services', href: '/services' }, { label: service.name }], cms.image(k + '.image', service.photo, service.imageAlt)) }}
 
   {% elif sec.key == 'details' %}
     {% set startLink = cms.link(k + '.cta.start', 'Start intake', '/getting-started') %}

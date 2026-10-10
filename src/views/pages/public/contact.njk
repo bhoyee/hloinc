@@ -5,7 +5,7 @@
   {% for sec in cms.sections('contact', { hero: 'Top banner', ways: 'Ways to reach us', form: 'Message form', visit: 'Visit us' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-  {% call ui.pageHero(cms.text('contact.hero.eyebrow', 'Contact'), cms.text('contact.hero.title', 'We’re here to help'), cms.text('contact.hero.intro', 'Call, email, visit our office or send a message, and we will get back to you as soon as we can.'), [{ label: 'Contact' }], cms.image('contact.hero.image', 'contact', 'Three colleagues having a friendly conversation')) %}
+  {% call ui.pageHero(cms.text('contact.hero.eyebrow', 'Get in touch'), cms.text('contact.hero.title', 'Contact us'), cms.text('contact.hero.intro', 'You can use any of the means below to contact us. Call, email, visit our office or send a message, and we will get back to you as soon as we can.'), [{ label: 'Contact' }], cms.image('contact.hero.image', 'contact', 'Three colleagues having a friendly conversation')) %}
     <p class="mt-6 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-sm font-semibold ring-1 {{ 'bg-brand-50 text-brand-800 ring-brand-200' if office.open else 'bg-white text-ink ring-line' }}">
       <span class="relative flex size-2.5" aria-hidden="true">
         {% if office.open %}<span class="absolute inline-flex size-full animate-ping rounded-full bg-brand-500 opacity-60 motion-reduce:animate-none"></span>{% endif %}
@@ -84,6 +84,16 @@
       </div>
 
       <aside class="space-y-5 lg:sticky lg:top-28 lg:self-start">
+        {% set lookReq = cms.link('contact.looking.request', 'Request services', '/request-services') %}
+        {% set lookRef = cms.link('contact.looking.referral', 'Make a referral', '/referrals') %}
+        <div class="rounded-3xl bg-accent-700 p-6 text-white shadow-lift sm:p-7">
+          <h2 class="text-lg font-bold text-white">{{ cms.text('contact.looking.title', 'Looking for services?') }}</h2>
+          <p class="mt-1 text-[15px] text-accent-50">{{ cms.text('contact.looking.text', 'Use our dedicated forms so your message reaches the right person.') }}</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a href="{{ lookReq.href }}" {{ lookReq.attrs }} class="btn-light !px-4 !py-2 !text-accent-800">{{ lookReq.label }}</a>
+            <a href="{{ lookRef.href }}" {{ lookRef.attrs }} class="btn-ghost-light !px-4 !py-2">{{ lookRef.label }}</a>
+          </div>
+        </div>
         <div class="card !p-6 sm:!p-7">
           <h2 class="text-lg font-bold">{{ cms.text('contact.who.title', 'Who should I contact?') }}</h2>
           <p class="mt-1 text-[15px] text-muted">{{ cms.text('contact.who.intro', 'Choose the best fit and we’ll route your message.') }}</p>
@@ -133,6 +143,7 @@
             <dt class="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted uppercase">{{ icon('clock', 'size-5 text-accent-600') }} {{ cms.text('contact.visit.hoursLabel', 'Office hours') }}</dt>
             <dd class="mt-1.5 pl-7.5 text-lg text-ink">
               {{ site.hours }}
+              <span class="mt-1 block text-[15px] text-ink">{{ cms.text('site.footer.weekend', 'Sat – Sun closed') }}</span>
               <span class="mt-1 block text-sm text-muted">{{ office.label }} {{ cms.text('contact.visit.holidayNote', '(hours may differ on public holidays)') }}</span>
             </dd>
           </div>
@@ -147,6 +158,10 @@
           </a>
           <a href="{{ site.phone | telHref }}" class="btn-secondary">{{ icon('phone', 'size-4') }} {{ cms.text('contact.visit.callAhead', 'Call ahead') }}</a>
         </div>
+        <p class="mt-6 flex items-center gap-3 rounded-2xl border border-accent-200 bg-accent-50 p-4 text-[15px] font-medium text-accent-800">
+          <span class="rounded-lg bg-accent-600 px-2 py-0.5 font-display font-extrabold text-white">911</span>
+          <span>{{ cms.text('site.emergency', 'For a life-threatening emergency, call 911.') }}</span>
+        </p>
       </div>
 
       <div class="reveal relative min-h-[26rem] overflow-hidden rounded-3xl bg-brand-50 shadow-lift ring-1 ring-line lg:min-h-[28rem]" data-map>

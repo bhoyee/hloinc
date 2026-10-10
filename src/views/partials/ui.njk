@@ -114,6 +114,24 @@
   </div>
 {% endmacro %}
 
+{# A dropdown. options: { value: 'Label' } or a list of strings (value = label). #}
+{% macro select(name, label, values, errors, options, required=false, placeholder='Select…', hint='') %}
+  <div>
+    <label for="f-{{ name }}" class="form-label">{{ label }}{% if not required %} <span class="font-normal text-muted">(optional)</span>{% endif %}</label>
+    <select id="f-{{ name }}" name="{{ name }}" class="form-control" {% if required %}required aria-required="true"{% endif %}
+      {% if errors[name] %}aria-invalid="true"{% endif %} {{ describedBy(name, errors, hint) }}>
+      <option value="">{{ placeholder }}</option>
+      {% if options.length is defined %}
+        {% for o in options %}<option value="{{ o }}" {% if values[name] == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
+      {% else %}
+        {% for key, text in options %}<option value="{{ key }}" {% if values[name] == key %}selected{% endif %}>{{ text }}</option>{% endfor %}
+      {% endif %}
+    </select>
+    {% if hint %}<p id="f-{{ name }}-hint" class="form-hint">{{ hint }}</p>{% endif %}
+    {{ fieldError(name, errors) }}
+  </div>
+{% endmacro %}
+
 {# Hidden fields bots fill in; people never see them (names must match lib/spam.js). #}
 {% macro honeypot() %}
   <div class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
@@ -140,18 +158,27 @@
   {% endif %}
 {% endmacro %}
 
-{% macro ctaBand(site) %}
-  {% set ctaPrimary = cms.link('site.cta.primary', 'Start intake', '/getting-started') %}
+{# emergency: also show the 911 notice just above the band. #}
+{% macro ctaBand(site, emergency=false) %}
+  {% set ctaPrimary = cms.link('site.cta.primary', 'Request services', '/request-services') %}
+  {% set ctaSecondary = cms.link('site.cta.secondary', 'Make a referral', '/referrals') %}
   <section class="container-page section">
+    {% if emergency %}
+      <p class="mb-4 flex items-center gap-3 rounded-2xl border border-accent-200 bg-accent-50 px-5 py-3.5 text-[15px] font-medium text-accent-800">
+        <span class="rounded-lg bg-accent-600 px-2 py-0.5 font-display font-extrabold text-white">911</span>
+        <span>{{ cms.text('site.emergency', 'For a life-threatening emergency, call 911.') }}</span>
+      </p>
+    {% endif %}
     <div class="relative overflow-hidden rounded-[2rem] bg-accent-700 px-6 py-14 text-white sm:px-14 sm:py-16">
       <svg class="pointer-events-none absolute -right-10 -bottom-16 size-80 text-white/10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-9-4.78-9-12a4.5 4.5 0 0 1 9-1.27A4.5 4.5 0 0 1 21 9c0 7.22-9 12-9 12z"/></svg>
       <div class="relative grid items-center gap-8 lg:grid-cols-[1fr_auto]">
         <div>
-          <h2 class="text-3xl font-extrabold text-white sm:text-4xl">{{ cms.text('site.cta.title', 'Ready to talk about support?') }}</h2>
-          <p class="mt-3 max-w-xl text-lg text-accent-50">{{ cms.text('site.cta.before', 'Our team is available') }} {{ site.hours | replace(r/\.$/, "") }}. {{ cms.text('site.cta.after', 'Reach out and we will walk you through your options.') }}</p>
+          <h2 class="text-3xl font-extrabold text-white sm:text-4xl">{{ cms.text('site.cta.title', 'Not sure where to begin?') }}</h2>
+          <p class="mt-3 max-w-xl text-lg text-accent-50">{{ cms.text('site.cta.text', 'Call us or send a short message. We will talk through your situation and the right next step.') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
           <a href="{{ ctaPrimary.href }}" {{ ctaPrimary.attrs }} class="btn-light !text-accent-800">{{ ctaPrimary.label }} {{ icon('arrow-right', 'size-4') }}</a>
+          <a href="{{ ctaSecondary.href }}" {{ ctaSecondary.attrs }} class="btn-ghost-light">{{ ctaSecondary.label }}</a>
           <a href="{{ site.phone | telHref }}" class="btn-ghost-light">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
         </div>
       </div>

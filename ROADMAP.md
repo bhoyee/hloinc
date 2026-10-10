@@ -118,6 +118,8 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - Tests: 47 new (248 total); axe clean on all Phase 4 screens, desktop and phone
 
 ## Phase 5 — Testing & launch
+- [x] HLO content (from their site plan, Oct 2026): six services incl. Employment Services, apartment homes, how support is planned (PCP/ISP/HCBS/CR-CP), glossary, mission/vision, conditions list, roles we hire for, address + ZIP 21228, weekend hours, their chosen photos; header/footer to their structure (Request Services + Make a Referral)
+- [x] New **Request services** form (individuals and families) into the portal inbox as "Service request"; referral form updated to HLO's questions (DDA eligibility, PCP, CR/CP, living situation, timeline); Privacy Policy updated
 - [x] Preview site live at https://preview.hloinc.com (cPanel, Node 24, MySQL, AutoSSL, hidden from search engines)
 - [x] CI: tests run on GitHub for every push; the server installs each passing commit on `main` within ~5 minutes (database backup first, automatic rollback on failure). `/healthz` shows the running version
 - [x] Website email sent as noreply@notify.hloinc.com (SPF + DKIM), so HLO's Microsoft 365 setup is untouched

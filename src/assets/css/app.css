@@ -31,6 +31,23 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 
+  /* Gentle motion (switched off for people who ask for reduced motion; see the base layer). */
+  --animate-hero-zoom: hero-zoom 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  @keyframes hero-zoom {
+    from { transform: scale(1.08); opacity: 0.4; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes fade-up {
+    from { transform: translateY(18px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
   --color-brand-50: #edf8f3;
   --color-brand-100: #d3efe2;
   --color-brand-200: #a8dec6;
@@ -238,7 +255,7 @@
 .cms-editing [data-cms-hidden] > * { opacity: 0.35; filter: grayscale(0.7); }
 .cms-editing [data-cms-list] { position: relative; }
 .cms-editing [data-cms-list]:hover { box-shadow: 0 0 0 2px rgb(227 36 44 / 0.35); }
-.cms-editing .reveal { opacity: 1 !important; transform: none !important; }
+.cms-editing .reveal, .cms-editing .line-grow { opacity: 1 !important; transform: none !important; }
 .cms-editing #cookie-notice { display: none !important; }
 
 .cms-tool { position: absolute; z-index: 60; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 0.75rem; background: var(--color-ink); color: #fff; font: 600 12px/1 var(--font-sans); box-shadow: var(--shadow-lift); }
@@ -259,3 +276,30 @@
 
 .cms-toast { position: fixed; left: 50%; bottom: 1.25rem; z-index: 80; transform: translateX(-50%); padding: 0.6rem 1rem; border-radius: 9999px; background: var(--color-ink); color: #fff; font: 600 14px/1.2 var(--font-sans); box-shadow: var(--shadow-lift); }
 .cms-toast[data-kind='error'] { background: var(--color-accent-700); }
+
+/* Decorative dot grid, in the current text colour. */
+@utility bg-dots {
+  background-image: radial-gradient(currentColor 1.6px, transparent 1.7px);
+  background-size: 18px 18px;
+}
+
+/* Soft light that follows the pointer across the home page photo (site.js sets --mx / --my). */
+@utility hero-glare {
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgb(255 255 255 / 0.28), transparent 45%);
+}
+
+/* A connecting line that draws itself when it scrolls into view (site.js adds .is-visible):
+   downwards on phones, left to right from md up. */
+@utility line-grow {
+  @media (prefers-reduced-motion: no-preference) {
+    transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s;
+    :where(html.js) &:not(.is-visible) {
+      transform: scaleY(0);
+    }
+    @media (width >= 48rem) {
+      :where(html.js) &:not(.is-visible) {
+        transform: scaleX(0);
+      }
+    }
+  }
+}

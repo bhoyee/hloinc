@@ -118,7 +118,7 @@ const providers = [
         title: m.name,
         subtitle: `${msgs.TYPE_LABELS[m.type]} to ${msgs.RECIPIENT_LABELS[m.recipient] || m.recipient} · ${msgs.STATUS_LABELS[m.status]}`,
         href: `/portal/messages/${m.id}`,
-        icon: m.type === 'referral' ? 'document' : 'mail',
+        icon: m.type === 'referral' ? 'document' : m.type === 'request' ? 'heart' : 'mail',
       }));
     },
   },

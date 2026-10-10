@@ -53,7 +53,7 @@ describe('page editor: access', () => {
     const e = await editor('admin');
     const index = await e.agent.get('/portal/content');
     expect(index.status).toBe(200);
-    for (const p of ['Home', 'About', 'Privacy Policy', 'Personal Supports', 'Send a referral']) expect(index.text).toContain(p);
+    for (const p of ['Home', 'About', 'Privacy Policy', 'Personal Support', 'Employment Services', 'Request services', 'Send a referral']) expect(index.text).toContain(p);
     const shell = await e.agent.get('/portal/content/pages/home');
     expect(shell.status).toBe(200);
     expect(shell.text).toContain('/?cms=edit&amp;cms_page=home');
@@ -154,22 +154,22 @@ describe('page editor: lists, sections, images, links', () => {
   it('edits, reorders and removes repeated items', async () => {
     const e = await editor('admin');
     const items = [
-      { title: 'We plan together', text: 'Second becomes first.' },
-      { title: 'We listen', text: 'First becomes second.' },
+      { title: 'We talk it through', text: 'Second becomes first.' },
+      { title: 'Reach out', text: 'First becomes second.' },
     ];
-    expect((await draft(e, 'home', { lists: [{ key: 'home.approach.steps', items }] })).status).toBe(200);
+    expect((await draft(e, 'home', { lists: [{ key: 'home.steps.items', items }] })).status).toBe(200);
     const preview = (await e.agent.get('/?cms=preview')).text;
-    expect(preview.indexOf('We plan together')).toBeLessThan(preview.indexOf('We listen'));
-    expect(preview).not.toContain('We support and grow');
-    expect((await draft(e, 'home', { lists: [{ key: 'home.approach.steps', items: [] }] })).status).toBe(422); // at least one item
+    expect(preview.indexOf('We talk it through')).toBeLessThan(preview.indexOf('Reach out'));
+    expect(preview).not.toContain('We coordinate next steps');
+    expect((await draft(e, 'home', { lists: [{ key: 'home.steps.items', items: [] }] })).status).toBe(422); // at least one item
   });
 
   it('hides and reorders sections', async () => {
     const e = await editor('admin');
-    await draft(e, 'home', { sections: [{ doc: 'home', order: ['facts', 'hero'], hidden: ['paths'] }] });
+    await draft(e, 'home', { sections: [{ doc: 'home', order: ['steps', 'hero'], hidden: ['paths'] }] });
     const preview = (await e.agent.get('/?cms=preview')).text;
-    expect(preview).not.toContain('How can we help today?');
-    expect(preview.indexOf('HLO at a glance')).toBeLessThan(preview.indexOf(pages.home.title));
+    expect(preview).not.toContain('I am looking for services');
+    expect(preview.indexOf('Three simple steps')).toBeLessThan(preview.indexOf(pages.home.title));
     // In the editor, hidden sections still show (faded) so they can be shown again.
     expect((await e.agent.get('/?cms=edit')).text).toContain('data-cms-hidden="1"');
   });

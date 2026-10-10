@@ -1,0 +1,79 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/sections.njk" as shared %}
+
+{% block content %}
+  {{ ui.pageHero(cms.text('request-services.hero.eyebrow', 'For individuals and families'), cms.text('request-services.hero.title', 'Request services'), cms.text('request-services.hero.intro', 'We would love to help as much as we can. Reach out and set a day for a consultation with one of our representatives. We can address your questions and concerns before you decide on our services.'), [{ label: 'Request services' }], cms.image('request-services.hero.image', 'personal-support-smile', 'Woman smiling up at her support person')) }}
+
+  <section class="section">
+    <div class="container-page grid gap-12 lg:grid-cols-[1.5fr_1fr]">
+      <div class="min-w-0">
+        {{ ui.flash(flash) }}
+        <form method="post" action="/request-services" class="relative space-y-8" novalidate data-once>
+          {{ ui.errorSummary(errors) }}
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          {{ ui.honeypot() }}
+
+          <fieldset class="card space-y-6">
+            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
+              <span class="grid size-9 place-items-center rounded-full bg-accent-600 font-display text-base text-white">1</span> {{ cms.text('request-services.step1', 'About you') }}
+            </legend>
+            <div class="clear-both grid gap-6 sm:grid-cols-2">
+              {{ ui.input('first_name', 'First name', values, errors, autocomplete='given-name') }}
+              {{ ui.input('last_name', 'Last name', values, errors, autocomplete='family-name') }}
+              {{ ui.input('phone', 'Phone', values, errors, type='tel', autocomplete='tel') }}
+              {{ ui.input('email', 'Email', values, errors, type='email', autocomplete='email') }}
+            </div>
+            <div class="grid gap-6 sm:grid-cols-2">
+              <fieldset>
+                <legend class="form-label">How do you prefer to be contacted?</legend>
+                <div class="mt-2 flex flex-wrap gap-3">
+                  {% for key, text in { phone: 'Phone', email: 'Email' } %}
+                    <label class="flex cursor-pointer items-center gap-2.5 rounded-2xl border border-line px-4 py-3 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                      <input type="radio" name="preferred_contact" value="{{ key }}" class="size-4 accent-brand-700" {% if values.preferred_contact == key %}checked{% endif %}> <span class="font-medium">{{ text }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+              {{ ui.select('best_time', 'Best time to call', values, errors, options.bestTime, required=true) }}
+            </div>
+          </fieldset>
+
+          <fieldset class="card space-y-6">
+            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
+              <span class="grid size-9 place-items-center rounded-full bg-brand-700 font-display text-base text-white">2</span> {{ cms.text('request-services.step2', 'About the person who needs support') }}
+            </legend>
+            <div class="clear-both grid gap-6 sm:grid-cols-2">
+              {{ ui.select('relationship', 'Your relationship to the person', values, errors, options.relationship, required=true) }}
+              {{ ui.input('individual_first_name', 'Their first name', values, errors, required=false, autocomplete='off') }}
+              {{ ui.select('county', 'County where support is needed', values, errors, counties) }}
+              {{ ui.select('dda_eligibility', 'DDA eligibility', values, errors, options.ddaEligibility) }}
+              {{ ui.select('pcp', 'Person-Centered Plan (PCP)', values, errors, options.pcp) }}
+              {{ ui.select('priority_category', 'DDA funding priority category, if known', values, errors, options.priority) }}
+            </div>
+            {{ shared.serviceChoices('services', 'Services of interest', services, values, errors) }}
+            {{ ui.textarea('message', 'Anything else we should know?', values, errors, required=false, rows=4, maxlength=1500, hint='Optional. A sentence or two is plenty.') }}
+          </fieldset>
+
+          <div>
+            <label class="flex gap-3 text-[15px] text-ink" for="f-consent">
+              <input id="f-consent" type="checkbox" name="consent" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" required
+                {% if values.consent == 'yes' %}checked{% endif %}
+                {% if errors.consent %}aria-invalid="true" aria-describedby="f-consent-error"{% endif %}>
+              <span>{{ cms.text('request-services.consent', 'I confirm the information above is correct and I agree to be contacted about services.') }} See our <a href="/privacy" class="link">Privacy Policy</a>.</span>
+            </label>
+            {{ ui.fieldError('consent', errors) }}
+          </div>
+
+          {{ ui.captcha(turnstileSiteKey, errors) }}
+          <div class="flex flex-wrap items-center gap-4">
+            <button type="submit" class="btn-primary">{{ cms.text('request-services.submit', 'Send request') }} {{ icon('arrow-right', 'size-4') }}</button>
+            <p class="text-sm text-muted">Fields marked (optional) can be left blank.</p>
+          </div>
+        </form>
+      </div>
+
+      {{ shared.formSidebar(site) }}
+    </div>
+  </section>
+{% endblock %}

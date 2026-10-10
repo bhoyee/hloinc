@@ -13,8 +13,53 @@ const content = require('./content');
  */
 
 const STATUS_LABELS = { new: 'New', in_progress: 'In progress', resolved: 'Resolved' };
-const TYPE_LABELS = { message: 'Message', referral: 'Referral' };
+const TYPE_LABELS = { message: 'Message', referral: 'Referral', request: 'Service request' };
 const RECIPIENT_LABELS = Object.fromEntries(recipients.map((r) => [r.key, r.label]));
+const KIND = { message: 'message', referral: 'referral', request: 'request for services' };
+
+/**
+ * The extra answers from the referral and request-services forms, as labelled
+ * rows for the inbox. Older referrals (before HLO's October 2026 form) keep
+ * their original fields.
+ */
+function detailRows(m) {
+  const { OPTIONS, REFERRER_ROLES } = require('../validation/public');
+  const services = require('../content/services');
+  const d = m.details || {};
+  const pick = (list, key) => (key ? list[key] || key : null);
+  const svc = (slugs) => (slugs && slugs.length ? slugs.map((s) => (services.find((x) => x.slug === s) || { name: s }).name) : null);
+  const rows =
+    m.type === 'referral'
+      ? [
+          ['Role', pick(REFERRER_ROLES, d.referrer_role)],
+          ['Agency or organization', d.organization],
+          ['Person (first name or initials)', d.person_name],
+          ['County', d.county],
+          ['Current living situation', pick(OPTIONS.livingSituation, d.living_situation)],
+          ['DDA eligibility', pick(OPTIONS.ddaEligibility, d.dda_eligibility)],
+          ['DDA funding priority', pick(OPTIONS.priority, d.priority_category)],
+          ['Person-Centered Plan', pick(OPTIONS.pcp, d.pcp)],
+          ['How soon', pick(OPTIONS.timeline, d.timeline)],
+          ['Their phone', d.person_phone],
+          ['Their email', d.person_email],
+        ]
+      : m.type === 'request'
+        ? [
+            ['Prefers', d.preferred_contact === 'email' ? 'Email' : 'Phone'],
+            ['Best time to call', pick(OPTIONS.bestTime, d.best_time)],
+            ['Relationship to the person', pick(OPTIONS.relationship, d.relationship)],
+            ['Their first name', d.individual_first_name],
+            ['County', d.county],
+            ['DDA eligibility', pick(OPTIONS.ddaEligibility, d.dda_eligibility)],
+            ['Person-Centered Plan', pick(OPTIONS.pcp, d.pcp)],
+            ['DDA funding priority', pick(OPTIONS.priority, d.priority_category)],
+          ]
+        : [];
+  return {
+    rows: rows.filter(([, v]) => v).map(([label, value]) => ({ label, value })),
+    services: m.type === 'message' ? null : svc(d.services) || ['Not sure yet'],
+  };
+}
 
 const TABS = {
   new: { label: 'New', where: (q) => q.whereNull('m.archived_at').where('m.status', 'new') },
@@ -136,7 +181,7 @@ async function reply(m, user, text) {
   const result = await notify({
     to: m.email,
     replyTo: from,
-    subject: m.type === 'referral' ? `Re: your referral to ${business.legalName} (ref #${m.id})` : `Re: your message to ${business.legalName} (ref #${m.id})`,
+    subject: `Re: your ${KIND[m.type] || 'message'} to ${business.legalName} (ref #${m.id})`,
     text: [
       `Hello ${m.name},`,
       '',
@@ -147,7 +192,7 @@ async function reply(m, user, text) {
       `${business.phone} · ${business.hours}`,
       '',
       '---',
-      `Your ${m.type === 'referral' ? 'referral' : 'message'} (sent ${new Date(m.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}):`,
+      `Your ${KIND[m.type] || 'message'} (sent ${new Date(m.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}):`,
       ...String(m.message).split('\n').map((line) => `> ${line}`),
     ].join('\n'),
   });
@@ -181,7 +226,7 @@ async function resendToTeam(m) {
   const result = await notify({
     to,
     replyTo: m.email,
-    subject: `${m.type === 'referral' ? 'Referral' : 'Website message'} #${m.id} from ${m.name}`,
+    subject: `${m.type === 'referral' ? 'Referral' : m.type === 'request' ? 'Service request' : 'Website message'} #${m.id} from ${m.name}`,
     text: lines.join('\n'),
   });
   await db('contact_messages').where({ id: m.id }).update({ email_status: result.ok ? 'sent' : 'failed' });
@@ -197,6 +242,7 @@ function remove(m) {
 }
 
 module.exports = {
+  detailRows,
   STATUS_LABELS,
   TYPE_LABELS,
   RECIPIENT_LABELS,

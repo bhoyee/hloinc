@@ -47,6 +47,7 @@ const PAGES = [
   { key: 'resources', label: 'Resources', path: '/resources', group: 'Main pages' },
   { key: 'careers', label: 'Careers', path: '/careers', group: 'Main pages', limited: true },
   { key: 'contact', label: 'Contact', path: '/contact', group: 'Main pages' },
+  { key: 'request-services', label: 'Request services', path: '/request-services', group: 'Forms' },
   { key: 'referrals', label: 'Send a referral', path: '/referrals', group: 'Forms' },
   { key: 'appointment-request', label: 'Request an appointment', path: '/appointments/request', group: 'Forms' },
   { key: 'privacy', label: 'Privacy Policy', path: '/privacy', group: 'Legal' },

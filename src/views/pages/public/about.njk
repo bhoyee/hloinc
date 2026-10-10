@@ -2,30 +2,117 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% for sec in cms.sections('about', { hero: 'Top banner', mission: 'Mission & vision', values: 'Our values', support: 'Who we support', cta: 'Call to action' }) %}
+  {% for sec in cms.sections('about', { hero: 'Top banner', who: 'Who we are', apply: 'How to apply', area: 'Where we serve', values: 'Our values', cta: 'Call to action' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-    {{ ui.pageHero(cms.text('about.hero.eyebrow', 'About HLO'), cms.text('about.hero.title', 'People first, in everything we do'), cms.text('about.hero.intro', page.intro), [{ label: 'About' }], cms.image('about.hero.image', 'about-team', 'Three team members talking and laughing together')) }}
-
-  {% elif sec.key == 'mission' %}
-    <section class="section">
-      <div class="container-page grid gap-6 md:grid-cols-2">
-        {% for item in cms.list('about.mission.cards', [
-          { title: 'Our mission', text: page.mission, icon: 'heart' },
-          { title: 'Our vision', text: page.vision, icon: 'sun' }
-        ]) %}
-          {% set red = loop.index is even %}
-          {% set bar = 'bg-accent-600' if red else 'bg-brand-600' %}
-          <article class="reveal group relative overflow-hidden rounded-3xl border border-line bg-white p-7 shadow-soft transition duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-lift sm:p-10" {{ item.attrs }}>
-            <span class="absolute inset-x-0 top-0 h-1.5 origin-left scale-x-0 {{ bar }} transition-transform duration-500 group-hover:scale-x-100" aria-hidden="true"></span>
-            <span class="pointer-events-none absolute -right-6 -bottom-8 opacity-[0.06] transition duration-500 group-hover:scale-110 group-hover:opacity-[0.1] {{ 'text-accent-600' if red else 'text-brand-700' }}" aria-hidden="true">{{ icon(item.icon or 'heart', 'size-44') }}</span>
-            <span class="grid size-14 place-items-center rounded-2xl ring-1 transition duration-300 {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover:bg-brand-700' }} group-hover:text-white group-hover:ring-transparent">
-              {{ icon(item.icon or 'heart', 'size-7') }}
-            </span>
-            <h2 class="relative mt-6 text-2xl font-bold sm:text-3xl">{{ item.text('title') }}</h2>
-            <p class="relative mt-4 text-lg leading-relaxed text-muted">{{ item.text('text') }}</p>
-          </article>
+    {% call ui.pageHero(cms.text('about.hero.eyebrow', 'Our profile'), cms.text('about.hero.title', page.title), cms.text('about.hero.intro', page.intro), [{ label: 'About' }], cms.image('about.hero.image', 'about-team', 'Three team members talking and laughing together')) %}
+      <nav aria-label="On this page" class="mt-8 flex flex-wrap gap-2">
+        {% for l in [{ href: '#who', label: cms.text('about.nav.who', 'Who we are') }, { href: '#apply', label: cms.text('about.nav.apply', 'How to apply') }, { href: '#service-area', label: cms.text('about.nav.area', 'Service area') }] %}
+          <a href="{{ l.href }}" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-800 ring-1 ring-line hover:bg-brand-50">{{ l.label }}</a>
         {% endfor %}
+      </nav>
+    {% endcall %}
+
+  {% elif sec.key == 'who' %}
+    {% set teamImg = cms.image('about.who.image', 'team-colleagues', 'Three colleagues smiling together at work') %}
+    <section id="who" class="section scroll-mt-24">
+      <div class="container-page grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
+        <div>
+          <p class="eyebrow">{{ cms.text('about.who.eyebrow', 'Who we are') }}</p>
+          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('about.who.title', page.whoTitle) }}</h2>
+          <div class="prose-hlo mt-5 text-lg">{{ cms.rich('about.who.text', page.who | join('\n\n')) }}</div>
+
+          <div class="mt-10 grid gap-5 md:grid-cols-2">
+            {% for item in cms.list('about.mission.cards', [
+              { title: 'Mission statement', text: page.mission, icon: 'heart' },
+              { title: 'Vision statement', text: page.vision, icon: 'sun' }
+            ]) %}
+              {% set red = loop.index is even %}
+              <article class="reveal group relative overflow-hidden rounded-3xl border border-line bg-white p-7 shadow-soft transition duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-lift" {{ item.attrs }}>
+                <span class="absolute inset-x-0 top-0 h-1.5 origin-left scale-x-0 {{ 'bg-accent-600' if red else 'bg-brand-600' }} transition-transform duration-500 group-hover:scale-x-100" aria-hidden="true"></span>
+                <span class="grid size-12 place-items-center rounded-2xl ring-1 transition duration-300 {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover:bg-brand-700' }} group-hover:text-white group-hover:ring-transparent">{{ icon(item.icon or 'heart', 'size-6') }}</span>
+                <h3 class="relative mt-5 text-xl font-bold">{{ item.text('title') }}</h3>
+                <p class="relative mt-3 text-[15px] leading-relaxed text-muted">{{ item.text('text') }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+
+        <aside class="space-y-6 lg:sticky lg:top-28 lg:self-start">
+          <img src="{{ teamImg.srcSm }}" srcset="{{ teamImg.srcset }}" sizes="(min-width: 1024px) 30vw, 100vw" alt="{{ teamImg.alt }}" width="560" height="840" loading="lazy"
+               class="photo aspect-[4/3] shadow-lift lg:aspect-[4/4.2]" {{ teamImg.attrs }}>
+          <div class="rounded-3xl bg-brand-900 p-6 text-white sm:p-7">
+            <h3 class="text-lg font-bold text-white">{{ cms.text('about.glance.title', 'HLO at a glance') }}</h3>
+            <dl class="mt-4 divide-y divide-white/10 text-[15px]">
+              {% for g in cms.list('about.glance.items', page.glance) %}
+                <div class="flex justify-between gap-4 py-2.5" {{ g.attrs }}>
+                  <dt class="text-brand-200">{{ g.text('label') }}</dt>
+                  <dd class="text-right font-semibold text-white">{{ g.text('value') }}</dd>
+                </div>
+              {% endfor %}
+              <div class="flex justify-between gap-4 py-2.5">
+                <dt class="text-brand-200">{{ cms.text('about.glance.phone', 'Phone') }}</dt>
+                <dd><a href="{{ site.phone | telHref }}" class="font-semibold text-white underline decoration-white/40 underline-offset-4">{{ site.phone }}</a></dd>
+              </div>
+            </dl>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+  {% elif sec.key == 'apply' %}
+    {% set applyCta1 = cms.link('about.apply.cta1', 'Request services', '/request-services') %}
+    {% set applyCta2 = cms.link('about.apply.cta2', 'Make a referral', '/referrals') %}
+    <section id="apply" class="section scroll-mt-24 bg-cream">
+      <div class="container-page">
+        {{ ui.sectionHeading(cms.text('about.apply.eyebrow', 'Applying for services'), cms.text('about.apply.title', 'Steps individuals take to apply'), cms.text('about.apply.intro', 'The simplest way to begin is to contact us and we will guide you.'), true) }}
+        <ol class="mt-12 grid gap-5 md:grid-cols-3">
+          {% for step in cms.list('about.apply.steps', page.applySteps) %}
+            <li class="reveal card relative !p-6 sm:!p-7" {{ step.attrs }}>
+              <span class="grid size-11 place-items-center rounded-full font-display text-lg font-bold text-white {{ 'bg-accent-600' if loop.index is odd else 'bg-brand-700' }}">{{ loop.index }}</span>
+              <h3 class="mt-5 text-lg font-bold">{{ step.text('title') }}</h3>
+              <p class="mt-1.5 text-[15px] text-muted">{{ step.text('text') }}</p>
+            </li>
+          {% endfor %}
+        </ol>
+        <div class="mt-10 flex flex-wrap justify-center gap-3">
+          <a href="{{ applyCta1.href }}" {{ applyCta1.attrs }} class="btn-primary">{{ applyCta1.label }} {{ icon('arrow-right', 'size-4') }}</a>
+          <a href="{{ applyCta2.href }}" {{ applyCta2.attrs }} class="btn-green">{{ icon('document', 'size-4') }} {{ applyCta2.label }}</a>
+        </div>
+      </div>
+    </section>
+
+  {% elif sec.key == 'area' %}
+    {% set areaContact = cms.link('about.area.cta', 'Contact us', '/contact') %}
+    <section id="service-area" class="section scroll-mt-24">
+      <div class="container-page grid gap-10 lg:grid-cols-[1fr_1.3fr] lg:gap-14">
+        <div>
+          <p class="eyebrow">{{ cms.text('about.area.eyebrow', 'Service areas') }}</p>
+          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('about.area.title', 'Where we serve') }}</h2>
+          <dl class="mt-6 space-y-1">
+            <dt class="text-sm font-semibold tracking-wide text-muted uppercase">{{ cms.text('about.area.regionLabel', 'Home region of DDA') }}</dt>
+            <dd class="font-display text-xl font-bold text-ink">{{ cms.text('about.area.region', 'Central Maryland and Southern Region') }}</dd>
+          </dl>
+          <div class="mt-8 rounded-3xl bg-surface p-6 ring-1 ring-line">
+            <h3 class="text-lg font-bold">{{ cms.text('about.area.questionsTitle', 'Questions about our services?') }}</h3>
+            <p class="mt-2 text-[15px] text-muted">{{ cms.text('about.area.questionsText', 'For more information about our services and how we can help your loved ones, do not hesitate to contact us.') }}</p>
+            <a href="{{ areaContact.href }}" {{ areaContact.attrs }} class="btn-secondary mt-5">{{ areaContact.label }}</a>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold tracking-wide text-muted uppercase">{{ cms.text('about.area.countiesLabel', 'Counties served') }}</h3>
+          {# The county list matches the forms, so it changes with the code, not here. #}
+          <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+            {% for area in areas %}
+              {% for c in area.counties %}
+                <li class="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 text-ink shadow-soft">
+                  <span class="grid size-8 shrink-0 place-items-center rounded-full {{ 'bg-accent-50 text-accent-600' if loop.index is odd else 'bg-brand-50 text-brand-700' }}">{{ icon('map-pin', 'size-4') }}</span>
+                  <span class="font-medium">{{ c }}</span>
+                </li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -37,8 +124,6 @@
           {% for v in cms.list('about.values.items', page.values) %}
             {% set red = loop.index is odd %}
             <li class="reveal group relative overflow-hidden rounded-3xl border border-line bg-white p-6 shadow-soft transition duration-300 hover:-translate-y-1.5 hover:shadow-lift sm:p-7 {{ 'hover:border-accent-600 hover:bg-accent-600' if red else 'hover:border-brand-700 hover:bg-brand-700' }}" {{ v.attrs }}>
-              {# Decorative watermark drawn by CSS, so it isn't text for screen readers or contrast checks. #}
-              <span data-n="0{{ loop.index }}" class="absolute -top-4 -right-2 font-display text-8xl font-extrabold opacity-[0.07] transition duration-300 before:content-[attr(data-n)] group-hover:text-white group-hover:opacity-15 {{ 'text-accent-600' if red else 'text-brand-700' }}" aria-hidden="true"></span>
               <span class="font-display text-3xl font-extrabold transition-colors duration-300 group-hover:text-white {{ 'text-accent-600' if red else 'text-brand-600' }}" aria-hidden="true">0{{ loop.index }}</span>
               <span class="mt-3 block h-1 w-10 rounded-full transition-all duration-300 group-hover:w-16 group-hover:bg-white/70 {{ 'bg-accent-500' if red else 'bg-brand-500' }}" aria-hidden="true"></span>
               <h3 class="mt-4 text-xl font-bold transition-colors duration-300 group-hover:text-white">{{ v.text('name') }}</h3>
@@ -46,48 +131,6 @@
             </li>
           {% endfor %}
         </ul>
-      </div>
-    </section>
-
-  {% elif sec.key == 'support' %}
-    {% set friendsImg = cms.image('about.support.image', { src: '/img/photos/about-friends.webp', srcSm: '/img/photos/about-friends-sm.webp', w: 960, h: 1313, alt: 'Two friends sitting together and smiling outdoors' }) %}
-    <section id="who-we-support" class="section">
-      <div class="container-page">
-        <div class="grid gap-4 lg:grid-cols-[1fr_1.3fr] lg:items-end lg:gap-12">
-          <div>
-            <p class="eyebrow">{{ cms.text('about.support.eyebrow', 'Who we support') }}</p>
-            <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">{{ cms.text('about.support.title', 'Adults with intellectual and developmental disabilities') }}</h2>
-          </div>
-          <p class="text-lg text-muted lg:pb-1">{{ cms.text('about.support.intro', 'We support adults with a wide range of support needs. Every person’s support is shaped around their own goals, choices and plan, including people with:') }}</p>
-        </div>
-
-        <div class="mt-10 grid gap-8 lg:mt-12 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
-          <div class="reveal relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[28rem]">
-            <img src="{{ friendsImg.srcSm }}" srcset="{{ friendsImg.srcset }}" sizes="(min-width: 1024px) 40vw, 100vw" width="560" height="766" loading="lazy"
-                 alt="{{ friendsImg.alt }}" class="absolute inset-0 h-full w-full rounded-3xl object-cover object-[center_30%] shadow-lift" {{ friendsImg.attrs }}>
-            <div class="absolute right-4 bottom-4 left-4 rounded-2xl bg-white/95 p-4 shadow-lift backdrop-blur sm:right-auto sm:max-w-xs">
-              <p class="flex items-center gap-2 font-display font-bold text-ink">{{ icon('heart', 'size-5 text-accent-600') }} {{ cms.text('about.support.badgeTitle', 'Every person, their own plan') }}</p>
-              <p class="mt-1 text-sm text-muted">{{ cms.text('about.support.badgeText', 'Support that follows each person’s goals and choices.') }}</p>
-            </div>
-          </div>
-
-          <div class="flex flex-col">
-            <ul class="grid flex-1 content-start gap-3 sm:grid-cols-2">
-              {% for need in cms.list('about.support.needs', cms.objects(page.supportNeeds)) %}
-                {% set red = loop.index is odd %}
-                <li class="group flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-ink transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-soft {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}" {{ need.attrs }}>
-                  <span class="grid size-8 shrink-0 place-items-center rounded-full transition duration-200 {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }} group-hover:text-white">
-                    {{ icon('check', 'size-4') }}
-                  </span>
-                  <span class="font-medium">{{ need.text('label') }}</span>
-                </li>
-              {% endfor %}
-            </ul>
-            <p class="mt-6 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-[15px] text-brand-900">
-              {{ icon('info', 'mt-0.5 size-5 shrink-0') }} <span>{{ cms.text('about.support.note', page.eligibilityNote) }}</span>
-            </p>
-          </div>
-        </div>
       </div>
     </section>
 

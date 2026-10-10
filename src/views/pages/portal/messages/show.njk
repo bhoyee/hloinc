@@ -6,7 +6,7 @@
 
 {% block actions %}
   <div class="flex flex-wrap items-center gap-2">
-    {% if m.type == 'referral' %}<span class="rounded-full bg-accent-50 px-3 py-1 text-sm font-semibold text-accent-700 ring-1 ring-accent-200">Referral</span>{% endif %}
+    {% if m.type != 'message' %}<span class="rounded-full {{ 'bg-accent-50 text-accent-700 ring-accent-200' if m.type == 'referral' else 'bg-brand-50 text-brand-800 ring-brand-200' }} px-3 py-1 text-sm font-semibold ring-1">{{ typeLabels[m.type] }}</span>{% endif %}
     {{ badges.status(m.status, statusLabels[m.status]) }}
     {% if m.archived_at %}<span class="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-muted ring-1 ring-line">Archived</span>{% endif %}
   </div>
@@ -22,12 +22,11 @@
           <div class="flex min-w-0 items-start gap-4">
             <span class="grid size-12 shrink-0 place-items-center rounded-full bg-brand-700 font-display text-lg font-bold text-white" aria-hidden="true">{{ m.name | first | upper }}</span>
             <div class="min-w-0">
-              <h2 id="msg-h" class="text-lg font-bold">{{ m.name }}{% if m.type == 'referral' %} <span class="font-normal text-muted">· {{ referrerRoles[m.details.referrer_role] if m.details else 'Referrer' }}</span>{% endif %}</h2>
+              <h2 id="msg-h" class="text-lg font-bold">{{ m.name }}{% if m.type == 'referral' %} <span class="font-normal text-muted">· Referrer</span>{% elif m.type == 'request' %} <span class="font-normal text-muted">· Requested services</span>{% endif %}</h2>
               <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
                 <a href="mailto:{{ m.email }}" class="link">{{ m.email }}</a>
                 {% if m.phone %}<a href="{{ m.phone | telHref }}" class="link">{{ m.phone }}</a>{% endif %}
               </p>
-              {% if m.type == 'referral' and m.details and m.details.organization %}<p class="mt-1 text-sm text-muted">{{ m.details.organization }}</p>{% endif %}
             </div>
           </div>
           <dl class="shrink-0 text-sm text-muted sm:text-right">
@@ -37,18 +36,17 @@
           </dl>
         </header>
 
-        {% if m.type == 'referral' and m.details %}
-          <section class="border-b border-line bg-accent-50/40 p-6 sm:p-8" aria-labelledby="ref-h">
-            <h3 id="ref-h" class="flex items-center gap-2 font-display font-bold text-ink">{{ icon('heart', 'size-5 text-accent-600') }} Person being referred</h3>
+        {% if m.type != 'message' %}
+          <section class="border-b border-line {{ 'bg-accent-50/40' if m.type == 'referral' else 'bg-brand-50/50' }} p-6 sm:p-8" aria-labelledby="ref-h">
+            <h3 id="ref-h" class="flex items-center gap-2 font-display font-bold text-ink">{{ icon('heart', 'size-5 text-accent-600') }} {{ 'Referral details' if m.type == 'referral' else 'About the person who needs support' }}</h3>
             <dl class="mt-4 grid gap-x-6 gap-y-4 text-[15px] sm:grid-cols-2">
-              <div><dt class="text-sm text-muted">Name</dt><dd class="font-semibold text-ink">{{ m.details.person_name }}</dd></div>
-              <div><dt class="text-sm text-muted">County</dt><dd class="font-semibold text-ink">{{ m.details.county }}</dd></div>
-              <div><dt class="text-sm text-muted">Phone</dt><dd class="text-ink">{% if m.details.person_phone %}<a href="{{ m.details.person_phone | telHref }}" class="link">{{ m.details.person_phone }}</a>{% else %}Not given{% endif %}</dd></div>
-              <div><dt class="text-sm text-muted">Email</dt><dd class="text-ink">{% if m.details.person_email %}<a href="mailto:{{ m.details.person_email }}" class="link">{{ m.details.person_email }}</a>{% else %}Not given{% endif %}</dd></div>
+              {% for r in answers.rows %}
+                <div><dt class="text-sm text-muted">{{ r.label }}</dt><dd class="font-semibold text-ink">{{ r.value }}</dd></div>
+              {% endfor %}
               <div class="sm:col-span-2">
-                <dt class="text-sm text-muted">Services of interest</dt>
+                <dt class="text-sm text-muted">Services {{ 'needed' if m.type == 'referral' else 'of interest' }}</dt>
                 <dd class="mt-1 flex flex-wrap gap-2">
-                  {% for s in m.details.services or [] %}<span class="rounded-full bg-white px-3 py-1 text-sm font-medium text-ink ring-1 ring-line">{{ serviceNames[s] or s }}</span>{% else %}<span class="text-ink">Not sure yet</span>{% endfor %}
+                  {% for s in answers.services %}<span class="rounded-full bg-white px-3 py-1 text-sm font-medium text-ink ring-1 ring-line">{{ s }}</span>{% endfor %}
                 </dd>
               </div>
             </dl>
@@ -56,7 +54,7 @@
         {% endif %}
 
         <div class="p-6 sm:p-8">
-          <h3 class="text-sm font-semibold text-muted">{{ 'Notes from the referrer' if m.type == 'referral' else 'Message' }}</h3>
+          <h3 class="text-sm font-semibold text-muted">{{ 'Additional information' if m.type == 'referral' else ('Anything else' if m.type == 'request' else 'Message') }}</h3>
           <p class="mt-2 text-[17px] leading-relaxed whitespace-pre-line text-ink">{{ m.message }}</p>
         </div>
       </article>

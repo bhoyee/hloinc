@@ -11,7 +11,7 @@
  * contact details shown at the end of every page.
  */
 
-const LAST_UPDATED = '2026-10-06';
+const LAST_UPDATED = '2026-10-10';
 
 const privacy = {
   slug: 'privacy',
@@ -34,7 +34,8 @@ const privacy = {
       list: [
         'Contact form: your name, email address, phone number (optional), the person or team you chose to contact, and your message.',
         'Appointment requests: your name, email address, phone number (optional), how you prefer to be contacted, the type of appointment, your preferred date and time of day, and any notes you choose to add.',
-        'Referrals: the referrer’s name, email address, phone number (optional), role and organization (optional); and the referred person’s name, county, phone number and email address (optional), the services they are interested in, and any notes. We ask referrers to confirm the person knows about and agrees to the referral.',
+        'Requests for services: your name, phone number, email address, how and when you prefer to be contacted, your relationship to the person who needs support, and, if you choose to share them, their first name, county, DDA eligibility status, Person-Centered Plan status, DDA funding priority category, the services of interest and any message.',
+        'Referrals: the referrer’s name, phone number, email address, role and agency (optional); and the referred person’s first name or initials, county and, if known, their living situation, DDA eligibility status, Person-Centered Plan status, DDA funding priority category, the services needed and how soon. We ask referrers to confirm they are authorized to share this information.',
         'Technical information: your IP address is stored with form submissions to help us prevent spam and abuse. Our hosting provider also keeps standard server logs (such as IP address, browser type and pages requested) for security and reliability.',
         'Cookies: we use one essential cookie. See our Cookie Policy for details.',
       ],

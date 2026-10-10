@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Reveal elements as they scroll into view.
-  const revealables = document.querySelectorAll('.reveal');
+  const revealables = document.querySelectorAll('.reveal, .line-grow');
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
@@ -490,4 +490,30 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+
+  // Photos marked data-tilt lean gently towards the mouse. Mouse only, never while editing, and off for reduced motion.
+  const canTilt = matchMedia('(hover: hover) and (pointer: fine)').matches
+    && !matchMedia('(prefers-reduced-motion: reduce)').matches
+    && !new URLSearchParams(location.search).has('cms');
+  if (canTilt) {
+    document.querySelectorAll('[data-tilt]').forEach((card) => {
+      let frame = 0;
+      card.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1)';
+      card.addEventListener('pointermove', (e) => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => {
+          const r = card.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width;
+          const y = (e.clientY - r.top) / r.height;
+          card.style.transform = `perspective(1100px) rotateX(${((0.5 - y) * 6).toFixed(2)}deg) rotateY(${((x - 0.5) * 8).toFixed(2)}deg)`;
+          card.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
+          card.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
+        });
+      });
+      card.addEventListener('pointerleave', () => {
+        cancelAnimationFrame(frame);
+        card.style.transform = '';
+      });
+    });
+  }
 });

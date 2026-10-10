@@ -1,89 +1,76 @@
 {% extends "layouts/public.njk" %}
 {% import "partials/ui.njk" as ui %}
+{% import "partials/sections.njk" as shared %}
 
 {% block content %}
-  {% for sec in cms.sections('services', { hero: 'Top banner', pledge: 'Our pledge', cards: 'Service cards', help: 'Help choosing' }) %}
+  {% for sec in cms.sections('services', { hero: 'Top banner', approach: 'Our approach', homes: 'Apartment homes', planning: 'How support is planned', approved: 'Approved services', support: 'Who we support', help: 'Help choosing', cta: 'Call to action' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-    {% set heroCta1 = cms.link('services.hero.cta1', 'Help me choose', '#help-choosing') %}
-    {% set heroCta2 = cms.link('services.hero.cta2', 'Areas we serve', '/service-areas') %}
-    {% call ui.pageHero(cms.text('services.hero.eyebrow', 'Services'), cms.text('services.hero.title', 'Support for every part of life'), cms.text('services.hero.intro', 'HLO provides Maryland DDA-approved, community-based supports. Every service follows the person’s own plan and goals.'), [{ label: 'Services' }]) %}
-      <div class="mt-8 flex flex-wrap gap-3">
-        <a href="{{ heroCta1.href }}" {{ heroCta1.attrs }} class="btn-primary">{{ heroCta1.label }} {{ icon('arrow-right', 'size-4') }}</a>
-        <a href="{{ heroCta2.href }}" {{ heroCta2.attrs }} class="btn-secondary">{{ icon('map-pin', 'size-4') }} {{ heroCta2.label }}</a>
-      </div>
+    {% call ui.pageHero(cms.text('services.hero.eyebrow', 'What we do'), cms.text('services.hero.title', 'Our services'), cms.text('services.hero.intro', page.pledge), [{ label: 'Services' }]) %}
+      <nav aria-label="On this page" class="mt-8 flex flex-wrap gap-2">
+        {% for l in [
+          { href: '#approach', label: cms.text('services.nav.approach', 'Our approach') },
+          { href: '#homes', label: cms.text('services.nav.homes', 'Apartment homes') },
+          { href: '#planning', label: cms.text('services.nav.planning', 'How support is planned') },
+          { href: '#approved', label: cms.text('services.nav.approved', 'Approved services') },
+          { href: '#who-we-support', label: cms.text('services.nav.support', 'Who we support') }
+        ] %}
+          <a href="{{ l.href }}" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-800 ring-1 ring-line hover:bg-brand-50">{{ l.label }}</a>
+        {% endfor %}
+      </nav>
     {% endcall %}
 
-  {% elif sec.key == 'pledge' %}
-    {% set pledgeLink = cms.link('services.pledge.cta', 'See who we support', '/about#who-we-support') %}
-    <section class="border-b border-line bg-white">
-      <div class="container-page grid gap-8 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
-        <figure class="reveal relative pl-8 sm:pl-10">
-          <span class="absolute top-0 bottom-0 left-0 w-1.5 rounded-full bg-gradient-to-b from-accent-600 to-brand-600" aria-hidden="true"></span>
-          <p class="eyebrow">{{ cms.text('services.pledge.eyebrow', 'Our pledge') }}</p>
-          <blockquote class="mt-4 font-display text-2xl leading-snug font-bold text-ink sm:text-3xl">“{{ cms.text('services.pledge.quote', page.pledge) }}”</blockquote>
-        </figure>
-        <div class="reveal">
-          <p class="text-lg text-muted">{{ cms.text('services.pledge.text', page.approach) }}</p>
-          <a href="{{ pledgeLink.href }}" {{ pledgeLink.attrs }} class="group mt-6 inline-flex items-center gap-2 font-semibold text-brand-700 hover:text-brand-800">
-            {{ pledgeLink.label }} {{ icon('arrow-right', 'size-4 transition group-hover:translate-x-1') }}
-          </a>
+  {% elif sec.key == 'approach' %}
+    {% set startCta1 = cms.link('services.approach.cta1', 'Request services', '/request-services') %}
+    {% set startCta2 = cms.link('services.approach.cta2', 'Make a referral', '/referrals') %}
+    <section id="approach" class="section scroll-mt-24">
+      <div class="container-page grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-16">
+        <div>
+          <h2 class="text-3xl font-extrabold sm:text-4xl">{{ cms.text('services.approach.title', page.approachTitle) }}</h2>
+          <div class="prose-hlo mt-5 text-lg">{{ cms.rich('services.approach.text', page.approach) }}</div>
+        </div>
+        <div class="rounded-3xl bg-accent-700 p-7 text-white shadow-lift sm:p-8">
+          <h3 class="text-2xl font-bold text-white">{{ cms.text('services.approach.readyTitle', 'Ready to start?') }}</h3>
+          <p class="mt-2 text-accent-50">{{ cms.text('services.approach.readyText', 'Request services for yourself or a loved one, or send a referral if you are a coordinator or agency.') }}</p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a href="{{ startCta1.href }}" {{ startCta1.attrs }} class="btn-light !text-accent-800">{{ startCta1.label }}</a>
+            <a href="{{ startCta2.href }}" {{ startCta2.attrs }} class="btn-ghost-light">{{ startCta2.label }}</a>
+          </div>
         </div>
       </div>
     </section>
 
-  {% elif sec.key == 'cards' %}
-    {# Service cards — the whole card is clickable via the title link's stretched ::after. #}
-    <section class="section">
-      <div class="container-page">
-        <ul class="grid gap-6 md:grid-cols-2">
-          {% for s in services %}
-            {% set red = loop.index is odd %}
-            {% set k = 'service-' + s.slug %}
-            {% set photo = cms.image(k + '.image', s.slug, s.imageAlt) %}
-            <li class="reveal">
-              <article class="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition duration-300 hover:-translate-y-1.5 hover:shadow-lift focus-within:-translate-y-1.5 focus-within:shadow-lift {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}">
-                <div class="relative aspect-[2/1] overflow-hidden">
-                  <img src="{{ photo.srcSm }}" srcset="{{ photo.srcset }}" sizes="(min-width: 768px) 50vw, 100vw" alt="" loading="lazy" width="560" height="373"
-                       class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110 group-focus-within:scale-110" {{ photo.attrs }}>
-                  <div class="absolute inset-0 bg-gradient-to-t from-ink/50 via-transparent to-transparent opacity-60 transition duration-300 group-hover:opacity-90" aria-hidden="true"></div>
-                  <p class="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-ink shadow-soft">
-                    {{ icon('map-pin', 'size-4 ' + ('text-accent-600' if red else 'text-brand-700')) }} {{ cms.text(k + '.setting', s.setting) }}
-                  </p>
-                </div>
-                <span class="absolute inset-x-0 top-0 z-10 h-1.5 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100 group-focus-within:scale-x-100 {{ 'bg-accent-600' if red else 'bg-brand-600' }}" aria-hidden="true"></span>
+  {% elif sec.key == 'homes' %}
+    {{ shared.homes(true) }}
 
-                <div class="flex flex-1 flex-col p-6 sm:p-8">
-                  <div class="flex items-center gap-4">
-                    <span class="grid size-12 shrink-0 place-items-center rounded-2xl ring-1 transition duration-300 {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover:bg-brand-700' }} group-hover:text-white group-hover:ring-transparent">
-                      {{ icon(s.icon, 'size-6') }}
-                    </span>
-                    <h2 class="text-2xl font-bold">
-                      <a href="/services/{{ s.slug }}" class="after:absolute after:inset-0 after:z-20 after:rounded-3xl after:content-[''] focus-visible:outline-none">{{ cms.text(k + '.name', s.name) }}</a>
-                    </h2>
-                  </div>
-                  <p class="mt-5 text-muted">{{ cms.text(k + '.summary', s.summary) }}</p>
-                  <ul class="mt-5 flex-1 space-y-2">
-                    {% for item in cms.list(k + '.includes', cms.objects(s.includes)) %}
-                      {% if loop.index <= 3 %}
-                        <li class="flex gap-2.5 text-[15px] text-ink">{{ icon('check', 'mt-1 size-4 shrink-0 ' + ('text-accent-600' if red else 'text-brand-600')) }} {{ item.label }}</li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-                  <p class="mt-7 flex items-center justify-between border-t border-line pt-5 font-semibold" aria-hidden="true">
-                    <span class="{{ 'text-accent-600' if red else 'text-brand-700' }}">{{ cms.text('services.cards.more', 'Learn more') }}</span>
-                    <span class="grid size-10 place-items-center rounded-full transition duration-300 {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }} group-hover:translate-x-1 group-hover:text-white">
-                      {{ icon('arrow-right', 'size-5') }}
-                    </span>
-                  </p>
-                </div>
-                {# Visible focus ring for keyboard users on the stretched link. #}
-                <span class="pointer-events-none absolute inset-0 z-30 rounded-3xl ring-accent-500 ring-offset-2 group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
-              </article>
+  {% elif sec.key == 'planning' %}
+    {{ shared.planning(true) }}
+
+  {% elif sec.key == 'approved' %}
+    {{ shared.services(services, conditions, false) }}
+
+  {% elif sec.key == 'support' %}
+    {% set supportContact = cms.link('services.support.cta', 'contact us', '/contact') %}
+    <section id="who-we-support" class="section scroll-mt-24 bg-cream">
+      <div class="container-page">
+        <div class="max-w-2xl">
+          <p class="eyebrow">{{ cms.text('services.support.eyebrow', 'Who we support') }}</p>
+          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('services.support.title', 'Adults with any of the following conditions') }}</h2>
+          <p class="mt-4 text-lg text-muted">{{ cms.text('services.support.intro', 'We also accept under our care adults with any of the following conditions.') }}</p>
+        </div>
+        <ul class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {% for need in cms.list('services.support.needs', cms.objects(supportNeeds)) %}
+            {% set red = loop.index is odd %}
+            <li class="group flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 text-ink transition duration-200 hover:-translate-y-0.5 hover:shadow-soft {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}" {{ need.attrs }}>
+              <span class="grid size-8 shrink-0 place-items-center rounded-full transition duration-200 {{ 'bg-accent-50 text-accent-600 group-hover:bg-accent-600' if red else 'bg-brand-50 text-brand-700 group-hover:bg-brand-700' }} group-hover:text-white">{{ icon('check', 'size-4') }}</span>
+              <span class="font-medium">{{ need.text('label') }}</span>
             </li>
           {% endfor %}
         </ul>
-        {% if cms.isEditing() %}<p class="mt-6 text-center text-sm text-muted">Each service’s full description is edited on its own page (choose it in the page list).</p>{% endif %}
+        <p class="mt-8 text-[15px] text-muted">{{ cms.text('services.support.outro', 'For more information about our services and how we can help your loved ones, do not hesitate to') }} <a href="{{ supportContact.href }}" {{ supportContact.attrs }} class="link">{{ supportContact.label }}</a>.</p>
+        <p class="mt-4 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-[15px] text-brand-900">
+          {{ icon('info', 'mt-0.5 size-5 shrink-0') }} <span>{{ cms.text('services.support.note', eligibilityNote) }}</span>
+        </p>
       </div>
     </section>
 
@@ -104,7 +91,8 @@
                 { need: 'I’d like a home of my own, with support', slug: 'supported-living' },
                 { need: 'I’d like to live in a shared home with staff on hand', slug: 'community-residential-services' },
                 { need: 'Our family caregiver needs a break', slug: 'respite-care' },
-                { need: 'I want to get out, try new things and make friends', slug: 'community-development-services' }
+                { need: 'I want to get out, try new things and make friends', slug: 'community-development-services' },
+                { need: 'I want help finding or keeping a job', slug: 'employment-services' }
               ]) %}
                 {% set svc = serviceBySlug[g.slug] or services[0] %}
                 <li {{ g.attrs }}>
@@ -147,6 +135,9 @@
         </div>
       </div>
     </section>
+
+  {% elif sec.key == 'cta' %}
+    {{ ui.ctaBand(site) }}
   {% endif %}
   </div>
   {% endfor %}

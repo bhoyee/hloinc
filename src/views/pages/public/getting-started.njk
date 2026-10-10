@@ -19,10 +19,10 @@
   {# Steps — a timeline: horizontal on large screens, vertical on phones. #}
   <section class="section">
     <div class="container-page">
-      {{ ui.sectionHeading(cms.text('getting-started.steps.eyebrow', 'How it works'), cms.text('getting-started.steps.title', 'Four steps to starting services'), cms.text('getting-started.steps.intro', 'Most people follow these steps. We’re happy to guide you through each one.'), true) }}
-      <ol class="relative mt-14 grid gap-6 lg:grid-cols-4">
+      {{ ui.sectionHeading(cms.text('getting-started.steps.eyebrow', 'How it works'), cms.text('getting-started.steps.title', 'Three simple steps'), cms.text('getting-started.steps.intro', 'We keep the first conversation easy. You do not need to have every answer ready.'), true) }}
+      <ol class="relative mt-14 grid gap-6 lg:grid-cols-3">
         <span class="absolute top-7 bottom-7 left-7 w-0.5 -translate-x-1/2 bg-gradient-to-b from-accent-200 via-brand-200 to-brand-300 lg:hidden" aria-hidden="true"></span>
-        <span class="absolute top-7 right-[12.5%] left-[12.5%] hidden border-t-2 border-dashed border-brand-200 lg:block" aria-hidden="true"></span>
+        <span class="absolute top-7 right-[16.67%] left-[16.67%] hidden border-t-2 border-dashed border-brand-200 lg:block" aria-hidden="true"></span>
 
         {% for step in cms.list('getting-started.steps.items', page.steps) %}
           {% set red = loop.index is odd %}
@@ -82,7 +82,7 @@
                 <th scope="row" class="relative px-6 py-5">
                   <span class="absolute inset-y-0 left-0 w-1 origin-top scale-y-0 transition-transform duration-300 group-hover/row:scale-y-100 {{ 'bg-accent-600' if red else 'bg-brand-600' }}" aria-hidden="true"></span>
                   <span class="flex items-center gap-4">
-                    <img src="{{ cms.image('service-' + s.slug + '.image', s.slug).srcSm }}" alt="" width="64" height="64" loading="lazy" class="size-16 shrink-0 rounded-2xl object-cover transition duration-300 group-hover/row:scale-105">
+                    <img src="{{ cms.image('service-' + s.slug + '.image', s.photo).srcSm }}" alt="" width="64" height="64" loading="lazy" class="size-16 shrink-0 rounded-2xl object-cover transition duration-300 group-hover/row:scale-105">
                     <a href="/services/{{ s.slug }}" class="font-display text-lg font-bold text-ink hover:text-brand-700">{{ cms.text('service-' + s.slug + '.name', s.name) }}</a>
                   </span>
                 </th>
@@ -113,7 +113,7 @@
           <li data-where="{{ s.where | join(' ') }}" class="reveal">
             <a href="/services/{{ s.slug }}" class="block overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition active:scale-[0.99]">
               <span class="flex items-center gap-4 p-5">
-                <img src="{{ cms.image('service-' + s.slug + '.image', s.slug).srcSm }}" alt="" width="64" height="64" loading="lazy" class="size-16 shrink-0 rounded-2xl object-cover">
+                <img src="{{ cms.image('service-' + s.slug + '.image', s.photo).srcSm }}" alt="" width="64" height="64" loading="lazy" class="size-16 shrink-0 rounded-2xl object-cover">
                 <span class="min-w-0 flex-1">
                   <span class="block font-display text-lg leading-snug font-bold text-ink">{{ s.name }}</span>
                   <span class="mt-1.5 flex flex-wrap gap-1.5">

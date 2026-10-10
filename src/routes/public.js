@@ -16,6 +16,8 @@ const {
   contactSchema,
   appointmentSchema,
   referralSchema,
+  requestSchema,
+  OPTIONS,
   REFERRER_ROLES,
   COUNTIES,
   todayInMaryland,
@@ -41,9 +43,10 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   const [page, news] = await Promise.all([content.getPage('home'), announcements.activePublic()]);
   res.render('pages/public/home.njk', {
-    ...meta('home', 'Community supports in Maryland', page.intro),
+    ...meta('home', 'Supporting People with Developmental Disabilities in Maryland', 'Maryland DDA provider offering residential, supported living, personal support, community development, respite and employment services for adults with developmental disabilities. Request services or make a referral.'),
     page,
     services,
+    conditions: services.CONDITIONS,
     areas,
     announcements: news,
   });
@@ -51,14 +54,18 @@ router.get('/', async (req, res) => {
 
 router.get('/about', async (req, res) => {
   const page = await content.getPage('about');
-  res.render('pages/public/about.njk', { ...meta('about', page.title, page.intro), page });
+  res.render('pages/public/about.njk', { ...meta('about', 'About us', 'Healthy Living Option Inc. is a Maryland DDA provider supporting adults with developmental disabilities to live independent lives, with community inclusion as a choice.'), page, areas });
 });
 
 router.get('/services', async (req, res) => {
+  const about = await content.getPage('about');
   res.render('pages/public/services.njk', {
     page: await content.getPage('services'),
+    supportNeeds: about.supportNeeds,
+    eligibilityNote: about.eligibilityNote,
     ...meta('services', 'Services', 'Community-based supports for adults with intellectual and developmental disabilities in Maryland.'),
     services,
+    conditions: services.CONDITIONS,
     serviceBySlug: Object.fromEntries(services.map((s) => [s.slug, s])),
   });
 });
@@ -237,6 +244,7 @@ function renderReferral(req, res, { values = {}, errors = {} } = {}) {
   res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/referral.njk', {
     ...meta('referrals', 'Send a referral', 'Refer someone to Healthy Living Option Inc. for community-based supports in Maryland.'),
     roles: REFERRER_ROLES,
+    options: OPTIONS,
     counties: COUNTIES,
     services,
     values: { ...values, services: selected },
@@ -259,11 +267,7 @@ router.post('/referrals', limiters.forms, async (req, res) => {
   if (blocked === 'duplicate') return dropQuietly(req, res, '/referrals', sent);
   if (blocked) return renderReferral(req, res, { values: req.body, errors: blocked });
 
-  const result = await inquiries.submitReferral(parsed.data, {
-    ip: req.ip,
-    roleLabel: REFERRER_ROLES[parsed.data.referrer_role],
-    serviceNames: services.filter((s) => parsed.data.services.includes(s.slug)).map((s) => s.name),
-  });
+  const result = await inquiries.submitReferral(parsed.data, { ip: req.ip });
   setFlash(
     req,
     'success',
@@ -272,6 +276,46 @@ router.post('/referrals', limiters.forms, async (req, res) => {
       : 'Thank you. Your referral was saved and our intake team will see it, but our email notification did not go through. If it is urgent, please call us.'
   );
   res.redirect(303, '/referrals');
+});
+
+// --- Request services (individuals and families; HLO's form) ------------------
+
+function renderRequest(req, res, { values = {}, errors = {} } = {}) {
+  spam.issueForm(req, 'request');
+  res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/request-services.njk', {
+    ...meta('request-services', 'Request services', 'Request services from Healthy Living Option Inc. for yourself or a loved one. Our team will reach out to talk through the options.'),
+    options: OPTIONS,
+    counties: COUNTIES,
+    services,
+    values: { preferred_contact: 'phone', ...values, services: [].concat(values.services || []) },
+    errors,
+  });
+}
+
+router.get('/request-services', (req, res) => renderRequest(req, res));
+
+router.post('/request-services', limiters.forms, async (req, res) => {
+  const sent = 'Thank you. Your request has been sent.';
+  if (spam.botCheck(req, 'request', ['first_name', 'last_name', 'individual_first_name', 'message'])) {
+    return dropQuietly(req, res, '/request-services', sent);
+  }
+
+  const parsed = requestSchema.safeParse(req.body);
+  if (!parsed.success) return renderRequest(req, res, { values: req.body, errors: fieldErrors(parsed.error) });
+
+  const blocked = await humanCheck(req, 'request', parsed.data.email, parsed.data);
+  if (blocked === 'duplicate') return dropQuietly(req, res, '/request-services', sent);
+  if (blocked) return renderRequest(req, res, { values: req.body, errors: blocked });
+
+  const result = await inquiries.submitRequest(parsed.data, { ip: req.ip });
+  setFlash(
+    req,
+    'success',
+    result.emailed
+      ? `Thank you, ${parsed.data.first_name}. We received your request and a member of our team will be in touch${result.acknowledged ? '. We have emailed you a copy' : ''}.`
+      : 'Thank you. Your request was saved and our team will see it, but our email notification did not go through. If it is urgent, please call us.'
+  );
+  res.redirect(303, '/request-services');
 });
 
 // --- Appointment requests ------------------------------------------------------
@@ -353,6 +397,7 @@ router.get('/sitemap.xml', async (req, res) => {
     '/service-areas',
     '/getting-started',
     '/resources',
+    '/request-services',
     '/careers',
     ...(await jobs.listPublished()).map((j) => `/careers/${j.slug}`),
     '/contact',

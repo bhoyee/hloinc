@@ -1,0 +1,225 @@
+{# Sections shared by several pages. Their text is stored once, under "site.",
+   so editing it in the page editor changes it everywhere it appears.
+   Import with: {% import "partials/sections.njk" as sections %} #}
+
+{# ── Our apartment homes ───────────────────────────────────────────────────── #}
+{% macro homes(fourth=false) %}
+  <section id="homes" class="section scroll-mt-24 bg-cream">
+    <div class="container-page">
+      <div class="grid gap-6 lg:grid-cols-[1fr_1.2fr] lg:items-end">
+        <div>
+          <p class="eyebrow">{{ cms.text('site.homes.eyebrow', 'Our apartment homes') }}</p>
+          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('site.homes.title', 'A place that feels like home') }}</h2>
+        </div>
+        <p class="text-lg text-muted">{{ cms.text('site.homes.intro', 'People we support live in furnished apartment homes that are comfortable, welcoming and set up for everyday life, with the right level of support close by.') }}</p>
+      </div>
+
+      <ul class="mt-10 grid gap-4 sm:grid-cols-2 {{ 'lg:grid-cols-4' if fourth else 'lg:grid-cols-3' }}">
+        {% set photos = cms.list('site.homes.photos', [
+          { caption: 'Living area', image: { src: '/img/photos/apartment-living.webp', srcSm: '/img/photos/apartment-living-sm.webp', w: 960, h: 640, alt: 'Bright furnished living room with a sectional sofa and large windows' } },
+          { caption: 'Kitchen and dining', image: { src: '/img/photos/apartment-kitchen.webp', srcSm: '/img/photos/apartment-kitchen-sm.webp', w: 960, h: 640, alt: 'Furnished apartment kitchen and dining area with natural light' } },
+          { caption: 'Bedroom', image: { src: '/img/photos/apartment-bedroom.webp', srcSm: '/img/photos/apartment-bedroom-sm.webp', w: 960, h: 641, alt: 'Furnished bedroom with a made bed and bedside lamps' } },
+          { caption: 'Restful bedroom', image: { src: '/img/photos/apartment-bedroom-2.webp', srcSm: '/img/photos/apartment-bedroom-2-sm.webp', w: 720, h: 960, alt: 'Furnished bedroom with a comfortable bed and a large window' } }
+        ]) %}
+        {% for p in photos %}
+          {% if fourth or loop.index <= 3 %}
+            {% set img = p.image('image') %}
+            <li class="reveal group relative overflow-hidden rounded-3xl shadow-soft" {{ p.attrs }}>
+              <img src="{{ img.srcSm }}" srcset="{{ img.srcset }}" sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" alt="{{ img.alt }}" loading="lazy" width="560" height="373"
+                   class="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-105" {{ img.attrs }}>
+              <span class="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-ink shadow-soft">{{ p.text('caption') }}</span>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+
+      <ul class="mt-10 grid gap-5 md:grid-cols-3">
+        {% for f in cms.list('site.homes.features', [
+          { icon: 'home', title: 'Fully furnished apartment homes', text: 'Comfortable, home-like spaces where people live as adults.' },
+          { icon: 'document', title: 'Supports shaped by the person', text: 'Daily support follows each person’s Individual Support Plan (ISP).' },
+          { icon: 'users', title: 'Part of the community', text: 'Delivered as Home and Community-Based Services (HCBS), so home life and community life go together.' }
+        ]) %}
+          {% set red = loop.index is even %}
+          {# White cards that lift on hover; a coloured bar grows along the top and the icon fills with colour. #}
+          <li class="reveal group/feat relative flex items-start gap-4 overflow-hidden rounded-3xl bg-white p-5 shadow-soft ring-1 ring-line transition duration-300 hover:shadow-lift motion-safe:hover:-translate-y-1.5 sm:p-6 {{ 'hover:ring-accent-200' if red else 'hover:ring-brand-200' }}" {{ f.attrs }}>
+            <span class="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 transition-transform duration-500 ease-out group-hover/feat:scale-x-100 {{ 'bg-accent-600' if red else 'bg-brand-600' }}" aria-hidden="true"></span>
+            <span class="grid size-12 shrink-0 place-items-center rounded-2xl ring-1 transition duration-300 motion-safe:group-hover/feat:scale-110 motion-safe:group-hover/feat:-rotate-6 {{ 'bg-accent-50 text-accent-600 ring-accent-100 group-hover/feat:bg-accent-600 group-hover/feat:text-white group-hover/feat:ring-accent-600' if red else 'bg-brand-50 text-brand-700 ring-brand-100 group-hover/feat:bg-brand-700 group-hover/feat:text-white group-hover/feat:ring-brand-700' }}">{{ icon(f.icon or 'home', 'size-6') }}</span>
+            <span>
+              <span class="block font-display text-lg leading-snug font-bold text-ink">{{ f.text('title') }}</span>
+              <span class="mt-1.5 block text-[15px] leading-relaxed text-muted">{{ f.text('text') }}</span>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="mt-6 text-sm text-muted">{{ cms.text('site.homes.note', 'Photos are for illustration.') }}</p>
+    </div>
+  </section>
+{% endmacro %}
+
+{# ── How support is planned ────────────────────────────────────────────────── #}
+{% macro planning(extras=false) %}
+  <section id="planning" class="section scroll-mt-24">
+    <div class="container-page">
+      <div class="mx-auto max-w-2xl text-center">
+        <p class="eyebrow">{{ cms.text('site.planning.eyebrow', 'How support is planned') }}</p>
+        <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('site.planning.title', 'From first call to a plan that fits') }}</h2>
+        <p class="mt-4 text-lg text-muted">{{ cms.text('site.planning.intro', 'Every person we support has a plan that is theirs. It starts with who they are and what they want, and it guides the services we provide.') }}</p>
+      </div>
+      <ol class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        {% for step in cms.list('site.planning.steps', [
+          { title: 'Referral and DDA eligibility', text: 'Referrals come from the person, family or their Coordinator of Community Services (CCS). DDA determines eligibility and funding.' },
+          { title: 'Person-Centered Plan (PCP)', text: 'The plan is built around what matters to the person: goals, preferences, strengths and who they want involved.' },
+          { title: 'Individual Support Plan (ISP)', text: 'We turn the PCP’s goals into a detailed ISP: the specific supports, who provides them and how progress is tracked.' },
+          { title: 'Review and adjust', text: 'We review the plan regularly with the person, family and coordinator, and update it as life and goals change.' }
+        ]) %}
+          {% set red = loop.index is even %}
+          <li class="reveal group relative overflow-hidden rounded-3xl border border-line bg-white p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift" {{ step.attrs }}>
+            <span class="absolute inset-x-0 top-0 h-1.5 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100 {{ 'bg-accent-600' if red else 'bg-brand-600' }}" aria-hidden="true"></span>
+            <span class="grid size-11 place-items-center rounded-full font-display text-lg font-bold text-white {{ 'bg-accent-600' if red else 'bg-brand-700' }}">{{ loop.index }}</span>
+            <h3 class="mt-5 text-lg leading-snug font-bold">{{ step.text('title') }}</h3>
+            <p class="mt-2 text-[15px] text-muted">{{ step.text('text') }}</p>
+          </li>
+        {% endfor %}
+      </ol>
+
+      {% if extras %}
+        <div class="mt-8 grid gap-5 md:grid-cols-2">
+          {% for x in cms.list('site.planning.extras', [
+            { tag: 'HCBS', title: 'Home and Community-Based Services', text: 'Medicaid-funded supports delivered in a person’s home and community rather than an institution. Our services follow HCBS principles: choice, privacy, dignity, independence and full access to community life.' },
+            { tag: 'CR / CP', title: 'Crisis Resolution and Crisis Prevention', text: 'Crisis Resolution (CR) and Crisis Prevention (CP) are DDA funding priority categories for people who are in, or at risk of, a crisis. If you believe one applies, tell us in your request or referral and talk with your coordinator. DDA makes the final decision.' }
+          ]) %}
+            <div class="rounded-3xl bg-surface p-6 ring-1 ring-line sm:p-7" {{ x.attrs }}>
+              <p class="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold tracking-wide text-brand-800 uppercase ring-1 ring-line">{{ x.text('tag') }}</p>
+              <h3 class="mt-3 text-lg font-bold">{{ x.text('title') }}</h3>
+              <p class="mt-2 text-[15px] text-muted">{{ x.text('text') }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <p class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm text-muted">
+        {{ cms.text('site.planning.termsLabel', 'Learn the terms:') }}
+        {% for t in ['ISP', 'PCP', 'HCBS', 'CR / CP', 'CCS'] %}
+          <a href="/resources#glossary" class="rounded-full bg-surface px-3 py-1 font-semibold text-brand-800 ring-1 ring-line hover:bg-brand-50">{{ t }}</a>
+        {% endfor %}
+      </p>
+    </div>
+  </section>
+{% endmacro %}
+
+{# ── Approved services + conditions ────────────────────────────────────────── #}
+{% macro services(list, conditions, withHeading=true, allLink=true) %}
+  <section id="approved" class="section scroll-mt-24">
+    <div class="container-page">
+      {% if withHeading %}
+        <div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div class="max-w-2xl">
+            <p class="eyebrow">{{ cms.text('site.services.eyebrow', 'Our services at a glance') }}</p>
+            <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('site.services.title', 'How can we help you?') }}</h2>
+            <p class="mt-4 text-lg text-muted">{{ cms.text('site.services.intro', 'Our approved services are listed below. We also support adults living with a wide range of conditions; see the full list on our services page.') }}</p>
+          </div>
+          {% if allLink %}
+            {% set allServices = cms.link('site.services.all', 'View all services', '/services') %}
+            <a href="{{ allServices.href }}" {{ allServices.attrs }} class="btn-secondary shrink-0">{{ allServices.label }}</a>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="max-w-2xl">
+          <p class="eyebrow">{{ cms.text('site.services.approvedEyebrow', 'Approved services') }}</p>
+          <h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">{{ cms.text('site.services.approvedTitle', 'What we provide') }}</h2>
+        </div>
+      {% endif %}
+
+      <ul class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for s in list %}
+          {% set k = 'service-' + s.slug %}
+          {% set photo = cms.image(k + '.image', s.photo, s.imageAlt) %}
+          {% set red = loop.index is even %}
+          <li class="reveal">
+            <a href="/services/{{ s.slug }}" class="group flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}">
+              <div class="relative aspect-[16/10] overflow-hidden">
+                <img src="{{ photo.srcSm }}" srcset="{{ photo.srcset }}" sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" alt="{{ photo.alt }}" loading="lazy" width="560" height="373"
+                     class="h-full w-full object-cover transition duration-700 group-hover:scale-105" {{ photo.attrs }}>
+                <span class="absolute top-4 left-4 grid size-11 place-items-center rounded-full bg-white/95 font-display font-extrabold text-ink shadow-soft">{{ '0' + loop.index if loop.index < 10 else loop.index }}</span>
+              </div>
+              <div class="flex flex-1 flex-col p-6 sm:p-7">
+                <h3 class="text-xl font-bold group-hover:text-brand-700">{{ cms.text(k + '.name', s.name) }}</h3>
+                <p class="mt-2 flex-1 text-muted">{{ cms.text(k + '.summary', s.summary) }}</p>
+                <span class="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold {{ 'text-accent-600' if red else 'text-brand-700' }}">
+                  {{ cms.text('site.services.more', 'Learn more') }} <span class="sr-only">about {{ s.name }}</span> {{ icon('arrow-right', 'size-4 transition group-hover:translate-x-1') }}
+                </span>
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+
+      <ul class="mt-6 grid gap-5 md:grid-cols-3">
+        {% for c in cms.list('site.services.conditions', conditions) %}
+          <li class="reveal rounded-3xl bg-brand-900 p-6 text-white sm:p-7" {{ c.attrs }}>
+            <span class="grid size-11 place-items-center rounded-2xl {{ 'bg-accent-600' if loop.index is odd else 'bg-brand-500' }}">{{ icon('heart', 'size-5') }}</span>
+            <h3 class="mt-4 text-lg font-bold text-white">{{ c.text('title') }}</h3>
+            <p class="mt-1.5 text-[15px] text-brand-100">{{ c.text('text') }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+{% endmacro %}
+
+{# ── Side panel for the request and referral forms ─────────────────────────── #}
+{% macro formSidebar(site) %}
+  <aside class="space-y-5 lg:sticky lg:top-28 lg:self-start">
+    <div class="card !p-6">
+      <h2 class="text-lg font-bold">{{ cms.text('site.forms.readyTitle', 'Helpful to have ready') }}</h2>
+      <ul class="mt-4 space-y-2.5 text-[15px] text-ink">
+        {% for item in cms.list('site.forms.ready', cms.objects(['DDA eligibility status', 'Funding priority category (CR or CP), if known', 'Whether a Person-Centered Plan (PCP) exists', 'Your Coordinator of Community Services (CCS) contact'])) %}
+          <li class="flex gap-2.5" {{ item.attrs }}>{{ icon('check', 'mt-1 size-4 shrink-0 text-brand-600') }} <span>{{ item.text('label') }}</span></li>
+        {% endfor %}
+      </ul>
+      <p class="mt-4 text-sm text-muted">{{ cms.text('site.forms.readyNote', 'Not sure about any of these? That is fine. We will help you sort it out.') }}</p>
+    </div>
+    {% set formImg = cms.image('site.forms.image', 'apartment-living', 'Bright furnished living room with a sectional sofa and large windows') %}
+    <figure class="relative overflow-hidden rounded-3xl shadow-soft">
+      <img src="{{ formImg.srcSm }}" srcset="{{ formImg.srcset }}" sizes="(min-width: 1024px) 25vw, 100vw" alt="{{ formImg.alt }}" width="560" height="373" loading="lazy" class="aspect-[16/10] w-full object-cover" {{ formImg.attrs }}>
+      <figcaption class="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-ink shadow-soft">{{ cms.text('site.forms.imageCaption', 'Furnished apartment homes') }}</figcaption>
+    </figure>
+    <div class="card !p-6">
+      <h2 class="text-lg font-bold">{{ cms.text('site.forms.nextTitle', 'What happens next') }}</h2>
+      <ol class="mt-4 space-y-4">
+        {% for step in cms.list('site.forms.next', cms.objects(['A member of our team reviews your message.', 'We call or email you using the details you give.', 'We talk through the person’s needs and how we can help.'])) %}
+          <li class="flex gap-3 text-[15px] text-ink" {{ step.attrs }}>
+            <span class="grid size-7 shrink-0 place-items-center rounded-full {{ 'bg-accent-50 text-accent-700' if loop.index is odd else 'bg-brand-100 text-brand-800' }} text-sm font-bold">{{ loop.index }}</span>
+            <span>{{ step.text('label') }}</span>
+          </li>
+        {% endfor %}
+      </ol>
+    </div>
+    <div class="rounded-3xl bg-surface p-6 ring-1 ring-line">
+      <h2 class="text-lg font-bold">{{ cms.text('site.forms.talkTitle', 'Prefer to talk?') }}</h2>
+      <a href="{{ site.phone | telHref }}" class="btn-secondary mt-4 w-full">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
+      <p class="mt-2 text-center text-sm text-muted">{{ cms.text('site.forms.talkHours', 'Mon–Fri 9am–5pm') }}</p>
+    </div>
+    <div class="rounded-3xl border border-brand-200 bg-brand-50 p-6">
+      <h2 class="flex items-center gap-2 text-lg font-bold">{{ icon('shield', 'size-5 text-brand-700') }} {{ cms.text('site.forms.privacyTitle', 'Your privacy') }}</h2>
+      <p class="mt-2 text-[15px] text-brand-900">{{ cms.text('site.forms.privacyText', 'Please do not include Social Security numbers, medical records, or other sensitive documents in this form. We will arrange a secure way to collect anything we need.') }}</p>
+    </div>
+  </aside>
+{% endmacro %}
+
+{# A row of choices for a checkbox group of services. #}
+{% macro serviceChoices(name, legend, services, values, errors, notSure=true) %}
+  <fieldset id="f-{{ name }}" tabindex="-1" {% if errors[name] %}aria-describedby="f-{{ name }}-error"{% endif %}>
+    <legend class="form-label">{{ legend }} <span class="font-normal text-muted">(optional, choose any)</span></legend>
+    <div class="mt-2 grid gap-3 sm:grid-cols-2">
+      {% for s in services %}
+        <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-line p-3.5 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+          <input type="checkbox" name="{{ name }}" value="{{ s.slug }}" class="size-5 shrink-0 accent-brand-700" {% if s.slug in values[name] %}checked{% endif %}>
+          <span class="font-medium text-ink">{{ s.name }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    {% if notSure %}<p class="mt-2 text-sm text-muted">Not sure yet? Leave these blank and we will talk it through.</p>{% endif %}
+    {% if errors[name] %}<p id="f-{{ name }}-error" class="form-error">{{ errors[name] }}</p>{% endif %}
+  </fieldset>
+{% endmacro %}

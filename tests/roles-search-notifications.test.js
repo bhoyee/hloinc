@@ -202,7 +202,7 @@ describe('notifications', () => {
 
     const { agent, csrf } = await formAgent(app, '/referrals');
     await agent.post('/referrals').type('form').send({
-      referrer_name: 'Casey', referrer_email: 'casey@agency.example', referrer_role: 'ccs',
+      referrer_name: 'Casey', referrer_email: 'casey@agency.example', referrer_phone: '410-555-0123', referrer_role: 'ccs',
       person_name: 'Jordan', county: 'Howard County', consent: 'yes', _csrf: csrf,
     });
     const notified = await db('notifications').where({ type: 'referral' }).pluck('user_id');

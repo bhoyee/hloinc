@@ -1,6 +1,6 @@
 <div class="hidden bg-brand-950 text-sm text-brand-100 md:block">
   <div class="container-page flex h-10 items-center justify-between">
-    <p class="flex items-center gap-2">{{ icon('clock', 'size-4') }} {{ cms.text('site.topbar.hours', 'Office hours:') }} {{ site.hours }}</p>
+    <p class="flex items-center gap-2">{{ icon('map-pin', 'size-4') }} {{ cms.text('site.topbar.area', 'Serving Central & Southern Maryland') }} <span class="text-brand-400" aria-hidden="true">·</span> {{ icon('clock', 'size-4') }} {{ cms.text('site.topbar.hours', 'Mon–Fri 9–5') }}</p>
     <div class="flex items-center gap-6">
       <a href="{{ site.phone | telHref }}" class="flex items-center gap-2 hover:text-white">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
       <a href="mailto:{{ site.email }}" class="flex items-center gap-2 hover:text-white">{{ icon('mail', 'size-4') }} {{ site.email }}</a>
@@ -9,7 +9,8 @@
 </div>
 
 {% set navItems = cms.list('site.nav', nav) %}
-{% set headerCta = cms.link('site.header.cta', 'Start intake', '/getting-started') %}
+{% set headerCta = cms.link('site.header.cta', 'Request Services', '/request-services') %}
+{% set headerCta2 = cms.link('site.header.cta2', 'Make a Referral', '/referrals') %}
 <header class="sticky top-0 z-40 border-b border-line/80 bg-white">
   <div class="container-page flex h-20 items-center justify-between gap-6">
     <a href="/" class="shrink-0" aria-label="{{ site.legalName }} home">
@@ -31,7 +32,7 @@
     </nav>
 
     <div class="flex items-center gap-2">
-      <a href="{{ headerCta.href }}" {{ headerCta.attrs }} class="btn-primary hidden sm:inline-flex">{{ headerCta.label }} {{ icon('arrow-right', 'size-4') }}</a>
+      <a href="{{ headerCta.href }}" {{ headerCta.attrs }} class="btn-primary hidden !px-5 sm:inline-flex">{{ headerCta.label }} {{ icon('arrow-right', 'size-4') }}</a>
       <button type="button" class="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-surface lg:hidden"
               aria-controls="mobile-nav" aria-expanded="false" data-menu-toggle>
         <span class="sr-only" data-menu-label>Open menu</span>
@@ -49,6 +50,7 @@
                {% if active %}aria-current="page"{% endif %}>{{ item.label }}</a></li>
       {% endfor %}
       <li class="pt-3"><a href="{{ headerCta.href }}" class="btn-primary w-full">{{ headerCta.label }}</a></li>
+      <li><a href="{{ headerCta2.href }}" class="btn-green mt-2 w-full">{{ headerCta2.label }}</a></li>
       <li><a href="{{ site.phone | telHref }}" class="btn-secondary mt-2 w-full">{{ icon('phone', 'size-4') }} Call {{ site.phone }}</a></li>
     </ul>
   </nav>

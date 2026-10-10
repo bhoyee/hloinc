@@ -8,12 +8,14 @@ afterAll(() => db.destroy());
 
 describe('public pages', () => {
   it.each([
-    ['/', 'Support for living well'],
-    ['/about', 'Our mission'],
-    ['/services', 'Personal Supports'],
+    ['/', 'Supporting people with developmental disabilities'],
+    ['/about', 'Mission statement'],
+    ['/services', 'Personal Support'],
+    ['/services/employment-services', 'Employment Services'],
+    ['/request-services', 'Request services'],
     ['/services/respite-care', 'What support can include'],
     ['/service-areas', 'St. Mary’s County'],
-    ['/getting-started', 'Talk to us about intake'],
+    ['/getting-started', 'I am making a referral'],
     ['/resources', 'independent of HLO'],
     ['/careers', 'Open positions'],
     ['/contact', 'Send us a message'],
@@ -24,11 +26,18 @@ describe('public pages', () => {
     expect(res.text).toContain(text);
   });
 
-  it('lists exactly the five non-nursing services', async () => {
+  it('lists HLO’s six approved services, and no nursing or transportation', async () => {
     const res = await request(app).get('/services');
-    const names = [...res.text.matchAll(/<a href="\/services\/([a-z-]+)" class="after:absolute/g)].map((m) => m[1]);
-    expect(names).toHaveLength(5);
+    const slugs = new Set([...res.text.matchAll(/<a href="\/services\/([a-z-]+)" class="group flex h-full/g)].map((m) => m[1]));
+    expect([...slugs].sort()).toEqual(['community-development-services', 'community-residential-services', 'employment-services', 'personal-supports', 'respite-care', 'supported-living']);
     expect(res.text).not.toMatch(/nursing|transportation/i);
+  });
+
+  it('shows HLO’s confirmed address and hours', async () => {
+    const res = await request(app).get('/contact');
+    expect(res.text).toContain('4 E Rolling Crossroads, Suites 301–303');
+    expect(res.text).toContain('MD 21228');
+    expect(res.text).toContain('Sat – Sun closed');
   });
 
   it('shows the ten counties', async () => {
@@ -317,7 +326,7 @@ describe('legal pages', () => {
 describe('dates', () => {
   it('shows calendar dates without a time-zone shift', async () => {
     const res = await request(app).get('/privacy');
-    expect(res.text).toContain('October 6, 2026');
+    expect(res.text).toContain('October 10, 2026');
   });
 });
 
@@ -328,7 +337,7 @@ describe('services help', () => {
     expect(res.text).toContain('href="/getting-started#compare"');
     expect(res.text).toContain('href="/contact?to=intake"');
     // Every quick-guide entry resolves to a real service.
-    expect(res.text.match(/May suit: [A-Z]/g)).toHaveLength(5);
+    expect(res.text.match(/May suit: [A-Z]/g)).toHaveLength(6);
   });
 });
 
@@ -336,7 +345,7 @@ describe('getting started comparison', () => {
   it('tags every service so the "where" filter can find it', async () => {
     const res = await request(app).get('/getting-started');
     const rows = [...res.text.matchAll(/<tr data-where="([a-z -]+)"/g)].map((m) => m[1]);
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(6);
     for (const key of ['home', 'shared-home', 'community']) {
       expect(res.text).toContain(`data-filter="${key}"`);
       expect(rows.some((w) => w.split(' ').includes(key))).toBe(true);
@@ -354,24 +363,30 @@ describe('referrals', () => {
 
   const valid = {
     referrer_name: 'Casey Coordinator',
-    referrer_email: 'casey@agency.example',
-    referrer_phone: '',
-    referrer_role: 'ccs',
     organization: 'Example Coordination Agency',
-    person_name: 'Jordan Example',
-    person_phone: '410-555-0199',
-    person_email: '',
+    referrer_role: 'ccs',
+    referrer_phone: '410-555-0123',
+    referrer_email: 'casey@agency.example',
+    person_name: 'J.E.',
     county: 'Howard County',
+    living_situation: 'family_home',
+    dda_eligibility: 'eligible',
+    priority_category: 'cp',
+    pcp: 'in_progress',
     services: ['personal-supports', 'respite-care'],
+    timeline: '30_days',
     notes: 'Best reached in the afternoon.',
     consent: 'yes',
   };
 
-  it('renders the referral form', async () => {
+  it('renders the referral form with HLO’s questions', async () => {
     const res = await request(app).get('/referrals');
     expect(res.status).toBe(200);
     expect(res.text).toContain('Send a referral');
-    expect(res.text).toContain('Please don’t include health information');
+    for (const q of ['DDA eligibility', 'DDA funding priority (CR / CP)', 'Person-Centered Plan (PCP)', 'How soon is support needed?', 'Current living situation']) {
+      expect(res.text).toContain(q);
+    }
+    expect(res.text).toContain('Please do not include Social Security numbers');
   });
 
   it('saves a referral to the intake inbox with its details', async () => {
@@ -382,8 +397,12 @@ describe('referrals', () => {
     const [row] = await db('contact_messages');
     expect(row).toMatchObject({ type: 'referral', recipient: 'intake', email: 'casey@agency.example', email_status: 'sent' });
     expect(JSON.parse(row.details)).toMatchObject({
-      person_name: 'Jordan Example',
+      person_name: 'J.E.',
       county: 'Howard County',
+      dda_eligibility: 'eligible',
+      priority_category: 'cp',
+      pcp: 'in_progress',
+      timeline: '30_days',
       services: ['personal-supports', 'respite-care'],
     });
   });
@@ -402,8 +421,8 @@ describe('referrals', () => {
       .type('form')
       .send({ ...valid, consent: '', person_name: '', county: '', _csrf: csrf });
     expect(res.status).toBe(422);
-    expect(res.text).toContain('Please confirm the person knows about this referral');
-    expect(res.text).toContain('Enter the name of the person being referred');
+    expect(res.text).toContain('Please confirm you are authorized to share this information');
+    expect(res.text).toContain('Enter the person’s first name or initials');
     expect(res.text).toContain('Choose the county where the person lives');
     // What was typed is kept, including ticked services.
     expect(res.text).toMatch(/value="respite-care" class="[^"]*" checked/);
@@ -418,10 +437,10 @@ describe('referrals', () => {
 });
 
 describe('content from the current site', () => {
-  it('lists every condition from the current Services page on About', async () => {
-    const res = await request(app).get('/about');
-    for (const c of ['Muscular dystrophy', 'Multiple sclerosis', 'Cystic fibrosis', 'Spinal cord injuries',
-      'Orthopedic and physical disabilities', 'Behavioral support needs', 'Disabilities not yet diagnosed']) {
+  it('lists every condition HLO supports on the Services page', async () => {
+    const res = await request(app).get('/services');
+    for (const c of ['Cerebral Palsy', 'Muscular Dystrophy', 'Multiple Sclerosis', 'Cystic Fibrosis', 'Spinal Cord Injury',
+      'Orthopedic Impairment', 'Behavioral Problems', 'Other undetermined disabilities', 'Intellectual disabilities', 'Autism']) {
       expect(res.text).toContain(c);
     }
   });
@@ -628,7 +647,7 @@ describe('contact page', () => {
   it('does not load Google Maps until the visitor asks', async () => {
     const res = await request(app).get('/contact');
     expect(res.text).not.toMatch(/<iframe/);
-    expect(res.text).toContain('data-map-src="https://www.google.com/maps?q=4%20East%20Rolling%20Crossroads%2C%20Catonsville%2C%20MD&amp;output=embed"');
+    expect(res.text).toContain('data-map-src="https://www.google.com/maps?q=4%20E%20Rolling%20Crossroads%2C%20Catonsville%2C%20MD%2C%2021228&amp;output=embed"');
     expect(res.headers['content-security-policy']).toContain('frame-src \'self\' https://www.google.com');
   });
 
@@ -660,5 +679,54 @@ describe('main menu', () => {
   it('marks only the current page, in both desktop and mobile menus', async () => {
     expect(current((await request(app).get('/')).text)).toEqual(['/', '/']);
     expect(current((await request(app).get('/services/respite-care')).text)).toEqual(['/services', '/services']);
+  });
+});
+
+describe('request services', () => {
+  beforeEach(() => db('contact_messages').del());
+
+  const valid = {
+    first_name: 'Robin',
+    last_name: 'Example',
+    phone: '410-555-0144',
+    email: 'robin@example.com',
+    preferred_contact: 'email',
+    best_time: 'morning',
+    relationship: 'family',
+    individual_first_name: 'Sam',
+    county: 'Baltimore County',
+    dda_eligibility: 'in_progress',
+    pcp: 'not_sure',
+    priority_category: '',
+    services: ['community-residential-services', 'employment-services'],
+    message: 'Looking at options for next year.',
+    consent: 'yes',
+  };
+
+  it('saves a request to the intake inbox and acknowledges it', async () => {
+    const { agent, csrf } = await formAgent(app, '/request-services');
+    const res = await agent.post('/request-services').type('form').send({ ...valid, _csrf: csrf });
+    expect(res.status).toBe(303);
+    const [row] = await db('contact_messages');
+    expect(row).toMatchObject({ type: 'request', recipient: 'intake', name: 'Robin Example', email: 'robin@example.com', phone: '410-555-0144', email_status: 'sent' });
+    expect(JSON.parse(row.details)).toMatchObject({ relationship: 'family', individual_first_name: 'Sam', county: 'Baltimore County', services: ['community-residential-services', 'employment-services'] });
+    const page = await agent.get('/request-services');
+    expect(page.text).toContain('Thank you, Robin');
+  });
+
+  it('requires the essentials and keeps what was typed', async () => {
+    const { agent, csrf } = await formAgent(app, '/request-services');
+    const res = await agent.post('/request-services').type('form').send({ ...valid, last_name: '', relationship: '', consent: '', _csrf: csrf });
+    expect(res.status).toBe(422);
+    expect(res.text).toContain('Choose your relationship to the person');
+    expect(res.text).toContain('Please confirm the information is correct');
+    expect(res.text).toContain('value="Robin"');
+    expect(await db('contact_messages')).toHaveLength(0);
+  });
+
+  it('is linked from the header and the home page', async () => {
+    const home = await request(app).get('/');
+    expect(home.text).toContain('href="/request-services"');
+    expect(home.text).toContain('href="/referrals"');
   });
 });

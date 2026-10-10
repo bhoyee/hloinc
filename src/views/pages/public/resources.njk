@@ -2,15 +2,50 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% for sec in cms.sections('resources', { hero: 'Top banner', list: 'Organizations', cta: 'Call to action' }) %}
+  {% for sec in cms.sections('resources', { hero: 'Top banner', glossary: 'Terms explained', list: 'Helpful links', cta: 'Call to action' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-    {{ ui.pageHero(cms.text('resources.hero.eyebrow', 'Resources'), cms.text('resources.hero.title', 'Helpful organizations and planning resources'), cms.text('resources.hero.intro', 'Information from independent organizations for people with disabilities, families and caregivers.'), [{ label: 'Resources' }]) }}
+    {% call ui.pageHero(cms.text('resources.hero.eyebrow', 'Helpful guides and links'), cms.text('resources.hero.title', 'Resources'), cms.text('resources.hero.intro', 'Plain-language explanations of common terms, plus free materials to help out.'), [{ label: 'Resources' }]) %}
+      <nav aria-label="On this page" class="mt-8 flex flex-wrap gap-2">
+        <a href="#glossary" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-800 ring-1 ring-line hover:bg-brand-50">{{ cms.text('resources.nav.glossary', 'Terms explained') }}</a>
+        <a href="#links" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-800 ring-1 ring-line hover:bg-brand-50">{{ cms.text('resources.nav.links', 'Helpful links') }}</a>
+      </nav>
+    {% endcall %}
+
+  {% elif sec.key == 'glossary' %}
+    <section id="glossary" class="section scroll-mt-24">
+      <div class="container-page">
+        {{ ui.sectionHeading(cms.text('resources.glossary.eyebrow', 'Terms explained'), cms.text('resources.glossary.title', 'Words you may hear along the way'), cms.text('resources.glossary.intro', 'Disability services come with a lot of acronyms. Here is what the common ones mean, in plain language.')) }}
+        <dl class="mt-10 grid gap-5 md:grid-cols-2">
+          {% for t in cms.list('site.glossary', [
+            { term: 'DDA', name: 'Developmental Disabilities Administration', text: 'The Maryland Department of Health agency that determines eligibility for, funds and oversees services for people with developmental disabilities.' },
+            { term: 'HCBS', name: 'Home and Community-Based Services', text: 'Medicaid-funded supports delivered in a person’s home and community so they can live as independently as possible, with choice, dignity and community access.' },
+            { term: 'PCP', name: 'Person-Centered Plan', text: 'A plan developed with the person, and the people they choose, that describes their goals, preferences, strengths and the supports they want.' },
+            { term: 'ISP', name: 'Individual Support Plan', text: 'The detailed plan that turns the person-centered plan’s goals into specific supports: who provides what, when, and how progress is measured.' },
+            { term: 'CCS', name: 'Coordinator of Community Services', text: 'The person who helps an individual and family plan, find and coordinate DDA services, and who often sends referrals.' },
+            { term: 'CR', name: 'Crisis Resolution', text: 'A DDA funding priority category for people in a crisis situation who urgently need services. DDA determines whether a person qualifies.' },
+            { term: 'CP', name: 'Crisis Prevention', text: 'A DDA funding priority category for people at high risk of a crisis if supports are not put in place. DDA determines whether a person qualifies.' },
+            { term: 'CDS', name: 'Community Development Services', text: 'Community-based activities and supports that help people build skills, relationships and connection to their community.' }
+          ]) %}
+            <div class="reveal flex gap-5 rounded-3xl border border-line bg-white p-6 shadow-soft" {{ t.attrs }}>
+              <dt class="shrink-0">
+                <span class="grid h-12 min-w-14 place-items-center rounded-2xl px-2 font-display text-lg font-extrabold {{ 'bg-accent-50 text-accent-700 ring-1 ring-accent-100' if loop.index is odd else 'bg-brand-50 text-brand-800 ring-1 ring-brand-100' }}">{{ t.text('term') }}</span>
+              </dt>
+              <dd>
+                <span class="block font-display text-lg font-bold text-ink">{{ t.text('name') }}</span>
+                <span class="mt-1 block text-[15px] text-muted">{{ t.text('text') }}</span>
+              </dd>
+            </div>
+          {% endfor %}
+        </dl>
+      </div>
+    </section>
 
   {% elif sec.key == 'list' %}
-    <section class="section">
+    <section id="links" class="section scroll-mt-24 bg-cream">
       <div class="container-page">
-        <p class="mb-12 flex gap-3 rounded-2xl border border-line bg-surface p-5 text-[15px] text-muted">
+        {{ ui.sectionHeading(cms.text('resources.links.eyebrow', 'Helpful links'), cms.text('resources.links.title', 'Free materials and planning resources'), null) }}
+        <p class="mt-8 mb-12 flex gap-3 rounded-2xl border border-line bg-white p-5 text-[15px] text-muted">
           {{ icon('info', 'mt-0.5 size-5 shrink-0 text-brand-700') }}
           <span>{{ cms.text('resources.disclaimer', 'These organizations are independent of HLO. They are listed for information only and are not HLO services. Links open the organization’s own website.') }}</span>
         </p>
