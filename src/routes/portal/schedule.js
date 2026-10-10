@@ -61,7 +61,17 @@ router.get('/', async (req, res) => {
     }
   }
 
-  const people = view === 'team' ? await schedule.staff(req.user) : [{ id: req.user.id, name: req.user.name }];
+  // Team view search: staff name or role (e.g. "intake").
+  const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
+  let people = view === 'team' ? await schedule.staff(req.user) : [{ id: req.user.id, name: req.user.name }];
+  if (view === 'team') {
+    const roleLabels = await require('../../services/roles').labels();
+    people = people.map((p) => ({ ...p, roleLabel: roleLabels[p.role] || '' }));
+    if (q) {
+      const needle = q.toLowerCase();
+      people = people.filter((p) => p.name.toLowerCase().includes(needle) || p.roleLabel.toLowerCase().includes(needle));
+    }
+  }
   const fmtWeek = (d, o) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...o });
   res.render('pages/portal/schedule/index.njk', {
     title: view === 'team' ? 'Staff schedule' : 'My schedule',
@@ -78,6 +88,9 @@ router.get('/', async (req, res) => {
     cell,
     kindLabels: schedule.KIND_LABELS,
     totalEntries: entries.length,
+    q,
+    keep: q ? `&q=${encodeURIComponent(q)}` : '',
+    timeOffWaiting: (await require('../../services/timeOff').pendingFor(req.user)) || 0,
   });
 });
 

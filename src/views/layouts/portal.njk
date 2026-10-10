@@ -83,7 +83,7 @@
         <button type="button" class="relative grid size-10 shrink-0 place-items-center rounded-lg text-ink hover:bg-surface lg:hidden" aria-controls="portal-nav" aria-expanded="false" data-portal-nav-open>
           {{ icon('menu', 'size-6') }}<span class="sr-only">Open menu</span>
           {# Phones: a red dot when something in the menu needs attention. #}
-          <span class="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-accent-600 ring-2 ring-white {{ '' if (navBadges.messages or navBadges.appointments) else 'hidden' }}" data-nav-badge-any aria-hidden="true"></span>
+          <span class="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-accent-600 ring-2 ring-white {{ '' if (navBadges.messages or navBadges.appointments or navBadges.timeOff) else 'hidden' }}" data-nav-badge-any aria-hidden="true"></span>
         </button>
         <a href="/portal" class="flex items-center gap-2 lg:hidden" aria-label="Staff portal home">
           <img src="/apple-touch-icon.png" alt="" width="32" height="32" class="size-8 rounded-lg">

@@ -1,0 +1,68 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/schedule-nav.njk" as sn with context %}
+
+{% block actions %}{{ sn.status(r.status, statusLabels) }}{% endblock %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="req-h">
+      <div class="flex items-start gap-4">
+        <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 ring-1 ring-amber-100" aria-hidden="true">{{ icon('sun', 'size-6') }}</span>
+        <div class="min-w-0">
+          <h2 id="req-h" class="text-lg font-bold">{{ 'You' if mine else r.user_name }} · {{ reasons[r.reason] }}</h2>
+          <p class="mt-1 font-display text-xl font-bold text-ink">{{ r.when }}</p>
+        </div>
+      </div>
+      <dl class="mt-6 grid gap-x-6 gap-y-4 text-[15px] sm:grid-cols-2">
+        <div><dt class="text-sm font-semibold text-muted">Asked</dt><dd class="mt-0.5 text-ink">{{ r.created_at | dateTime }}</dd></div>
+        <div><dt class="text-sm font-semibold text-muted">Status</dt><dd class="mt-0.5">{{ sn.status(r.status, statusLabels) }}</dd></div>
+        {% if r.notes %}<div class="sm:col-span-2"><dt class="text-sm font-semibold text-muted">Note</dt><dd class="mt-0.5 whitespace-pre-line text-ink">{{ r.notes }}</dd></div>{% endif %}
+        {% if r.decided_at %}
+          <div><dt class="text-sm font-semibold text-muted">{{ statusLabels[r.status] }} by</dt><dd class="mt-0.5 text-ink">{{ r.decided_by_name or 'a manager' }}, {{ r.decided_at | dateTime }}</dd></div>
+          {% if r.decision_note %}<div class="sm:col-span-2"><dt class="text-sm font-semibold text-muted">{{ 'Reason given' if r.status == 'declined' else 'Manager’s note' }}</dt><dd class="mt-0.5 text-ink">“{{ r.decision_note }}”</dd></div>{% endif %}
+        {% endif %}
+      </dl>
+      {% if r.status == 'approved' %}
+        <p class="mt-6 flex items-center gap-3 rounded-2xl bg-brand-50/70 p-4 text-[15px] text-ink ring-1 ring-brand-100">{{ icon('check', 'size-5 shrink-0 text-brand-700') }} It’s on the schedule. <a href="/portal/schedule?view={{ 'mine' if mine else 'team' }}&week={{ startDay }}" class="link">Open the schedule</a></p>
+      {% endif %}
+    </section>
+
+    <aside class="space-y-4" aria-label="Actions">
+      {% if mayDecide %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="decide-h">
+          <h2 id="decide-h" class="text-base font-bold">Approve or decline</h2>
+          {% if clashes.length %}
+            <div class="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
+              <p class="font-semibold">{{ r.user_name }} has {{ clashes.length }} {{ 'shift' if clashes.length == 1 else 'shifts' }} during this time:</p>
+              <ul class="mt-1 list-inside list-disc">{% for s in clashes %}<li>{{ s.when }}{% if s.label %} · {{ s.label }}{% endif %}</li>{% endfor %}</ul>
+              <p class="mt-1">Approving doesn’t remove them; reassign or remove them on the schedule.</p>
+            </div>
+          {% endif %}
+          <form method="post" class="mt-4 space-y-3" novalidate data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            {{ ui.textarea('note', 'Note to ' ~ (r.user_name.split(' ')[0]), values, errors, required=false, rows=2, maxlength=500, hint='Optional. Included in their notification and email.') }}
+            <div class="grid grid-cols-2 gap-2">
+              <button type="submit" formaction="/portal/schedule/time-off/{{ r.id }}/approve" class="btn-green">{{ icon('check', 'size-4') }} Approve</button>
+              <button type="submit" formaction="/portal/schedule/time-off/{{ r.id }}/decline" class="btn-secondary !text-accent-700">{{ icon('close', 'size-4') }} Decline</button>
+            </div>
+          </form>
+        </section>
+      {% elif r.status == 'pending' and not mine %}
+        <p class="rounded-3xl border border-line bg-white p-6 text-sm text-muted shadow-soft">Waiting for someone who approves time off for {{ r.user_name }}.</p>
+      {% endif %}
+
+      {% if mine and r.status == 'pending' %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+          <p class="text-sm text-muted">Waiting for your manager. You’ll get a notification and an email when they decide.</p>
+          <form method="post" action="/portal/schedule/time-off/{{ r.id }}/cancel" class="mt-4" data-confirm-title="Cancel this request?" data-confirm="Your manager will no longer see it as waiting." data-confirm-button="Cancel request">
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <button type="submit" class="btn-secondary w-full">Cancel request</button>
+          </form>
+        </section>
+      {% endif %}
+
+      <a href="/portal/schedule/time-off{{ '?tab=mine' if mine }}" class="btn-secondary w-full">&larr; All {{ 'my ' if mine }}requests</a>
+    </aside>
+  </div>
+{% endblock %}

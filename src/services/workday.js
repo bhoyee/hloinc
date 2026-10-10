@@ -60,6 +60,8 @@ async function attention(user, now = new Date()) {
     const stale = await count(db('appointments').where({ status: 'requested' }).where('created_at', '<', businessDaysBefore(now, WAIT.appointmentRequest)));
     if (stale) items.push({ key: 'old-appointments', tone: 'red', icon: 'calendar', title: `${plural(stale, 'appointment request', 'appointment requests')} not confirmed after ${WAIT.appointmentRequest} business day`, detail: 'Waiting for a time', href: '/portal/appointments?tab=requests' });
   }
+  const waitingTimeOff = await require('./timeOff').pendingFor(user);
+  if (waitingTimeOff) items.push({ key: 'time-off', tone: 'amber', icon: 'sun', title: `${plural(waitingTimeOff, 'time-off request', 'time-off requests')} waiting for a decision`, detail: 'Approve or decline', href: '/portal/schedule/time-off?tab=pending' });
   const order = { red: 0, amber: 1 };
   return items.sort((a, b) => order[a.tone] - order[b.tone]);
 }

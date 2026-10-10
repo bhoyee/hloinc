@@ -43,6 +43,7 @@ router.use('/account', require('./account'));
 router.use('/search', require('./search'));
 router.use('/notifications', require('./notifications'));
 router.use('/appointments', requirePermission(['appointments.view', 'appointments.log']), require('./appointments'));
+router.use('/schedule/time-off', require('./timeOff')); // everyone can ask for time off
 router.use('/schedule', require('./schedule')); // everyone sees their own shifts
 router.use('/jobs', requirePermission('jobs.view'), require('./jobs'));
 router.use('/announcements', requirePermission('announcements.view'), require('./announcements'));

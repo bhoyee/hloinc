@@ -1,5 +1,6 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
+{% import "partials/schedule-nav.njk" as sn with context %}
 
 {% macro entry(s, editable) %}
   {% set off = s.kind == 'time_off' %}
@@ -10,25 +11,38 @@
   {% if editable %}</a>{% else %}</div>{% endif %}
 {% endmacro %}
 
-{% block actions %}
-  <div class="flex flex-wrap gap-2">
-    {% if teamAllowed %}
-      <div class="flex rounded-xl bg-white p-1 ring-1 ring-line" role="group" aria-label="Whose schedule">
-        <a href="?view=team&week={{ week }}" {% if view == 'team' %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold {{ 'bg-brand-700 text-white' if view == 'team' else 'text-muted hover:text-ink' }}">Team</a>
-        <a href="?view=mine&week={{ week }}" {% if view == 'mine' %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold {{ 'bg-brand-700 text-white' if view == 'mine' else 'text-muted hover:text-ink' }}">Mine</a>
-      </div>
-    {% endif %}
-    {% if can('schedule.edit') %}<a href="/portal/schedule/new" class="btn-primary">{{ icon('plus', 'size-4') }} Add shift or time off</a>{% endif %}
-  </div>
-{% endblock %}
+{% block actions %}{{ sn.actions(view, week, teamAllowed) }}{% endblock %}
 
 {% block content %}
   {% set editable = can('schedule.edit') %}
+  {{ sn.sections('schedule', timeOffWaiting) }}
+
+  {% if view == 'team' %}
+    <form method="get" action="/portal/schedule" role="search" aria-label="Find staff on the schedule" data-live-filter="#sched-results"
+          class="mb-4 flex gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft">
+      <input type="hidden" name="view" value="team">
+      <input type="hidden" name="week" value="{{ week }}">
+      <div class="relative flex-1">
+        <label for="s-q" class="sr-only">Find a staff member by name or role</label>
+        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+        <input id="s-q" type="search" name="q" value="{{ q }}" placeholder="Staff member or role, e.g. “intake”" class="form-control !pl-12" maxlength="100">
+      </div>
+      <button type="submit" class="btn-green" data-live-hide>Search</button>
+    </form>
+  {% endif %}
+
+  <div id="sched-results" data-live-results>
+  {% if view == 'team' and q %}
+    <p class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-brand-50/70 px-4 py-2.5 text-sm text-ink ring-1 ring-brand-100" role="status">
+      <span><span class="font-semibold">{{ people.length }} {{ 'person' if people.length == 1 else 'people' }}</span> matching “{{ q }}”</span>
+      <a href="?view=team&week={{ week }}" data-page-link data-clear-filters class="font-semibold text-muted hover:text-ink">Clear</a>
+    </p>
+  {% endif %}
   <section class="rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="week-h">
     <div class="flex flex-wrap items-center gap-2 border-b border-line p-4 sm:p-5">
-      <a href="?view={{ view }}&week={{ prevWeek }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5 rotate-180') }}<span class="sr-only">Previous week</span></a>
-      <a href="?view={{ view }}&week={{ thisWeek }}" class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-line hover:bg-surface">This week</a>
-      <a href="?view={{ view }}&week={{ nextWeek }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5') }}<span class="sr-only">Next week</span></a>
+      <a href="?view={{ view }}&week={{ prevWeek }}{{ keep }}" data-page-link class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5 rotate-180') }}<span class="sr-only">Previous week</span></a>
+      <a href="?view={{ view }}&week={{ thisWeek }}{{ keep }}" data-page-link class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-line hover:bg-surface">This week</a>
+      <a href="?view={{ view }}&week={{ nextWeek }}{{ keep }}" data-page-link class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5') }}<span class="sr-only">Next week</span></a>
       <h2 id="week-h" class="ml-2 font-display text-lg font-bold">{{ weekLabel }}</h2>
       <span class="ml-auto flex items-center gap-4 text-sm text-muted">
         <span class="flex items-center gap-1.5"><span class="h-4 w-1.5 rounded bg-brand-600"></span> Shift</span>
@@ -38,12 +52,12 @@
 
     {% if view == 'team' %}
       {# Wide screens: staff × days grid. #}
-      <div class="hidden overflow-x-auto lg:block" tabindex="0" role="region" aria-label="Team schedule">
+      <div class="scroll-panel hidden max-h-[70vh] overflow-auto lg:block" tabindex="0" role="region" aria-label="Team schedule (scrolls)">
         <table class="w-full min-w-[960px] table-fixed text-left">
           <caption class="sr-only">Staff schedule for {{ weekLabel }}</caption>
-          <thead class="border-b border-line bg-surface text-xs text-muted">
+          <thead class="sticky top-0 z-20 border-b border-line bg-surface text-xs text-muted shadow-[0_1px_0_#dfe8e3]">
             <tr>
-              <th scope="col" class="w-48 px-4 py-3 font-semibold uppercase">Staff</th>
+              <th scope="col" class="sticky left-0 z-30 w-48 bg-surface px-4 py-3 font-semibold uppercase">Staff</th>
               {% for d in days %}
                 <th scope="col" class="px-2 py-3 text-center font-semibold {{ 'text-accent-700' if d.isToday }}">
                   <span class="block uppercase">{{ d.dow }}</span><span class="block text-sm text-ink">{{ d.label }}</span>
@@ -52,9 +66,10 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-line">
+            {% if not people.length %}<tr><td colspan="8" class="px-4 py-10 text-center text-muted">Nobody matches “{{ q }}”.</td></tr>{% endif %}
             {% for p in people %}
               <tr class="align-top">
-                <th scope="row" class="px-4 py-3 text-sm font-semibold text-ink">{{ p.name }}</th>
+                <th scope="row" class="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-semibold text-ink shadow-[1px_0_0_#dfe8e3]">{{ p.name }}{% if p.roleLabel %}<span class="block text-xs font-normal text-muted">{{ p.roleLabel }}</span>{% endif %}</th>
                 {% for d in days %}
                   {% set items = cell[p.id + '|' + d.date] %}
                   <td class="group px-1.5 py-2 {{ 'bg-brand-50/30' if d.isToday }}">
@@ -72,7 +87,7 @@
         </table>
       </div>
       {# Phones and tablets: day by day, people under each day. #}
-      <ol class="divide-y divide-line lg:hidden">
+      <ol class="scroll-panel max-h-[70vh] divide-y divide-line overflow-y-auto lg:hidden" tabindex="0" aria-label="Team schedule by day (scrolls)">
         {% for d in days %}
           <li class="p-4 {{ 'bg-brand-50/40' if d.isToday }}">
             <p class="font-semibold text-ink">{{ d.dow }}, {{ d.label }}{% if d.isToday %} <span class="text-sm text-accent-700">· today</span>{% endif %}</p>
@@ -101,6 +116,8 @@
       </ol>
     {% endif %}
   </section>
+
+  </div>
 
   {% if view == 'mine' and not totalEntries %}
     <p class="mt-4 text-[15px] text-muted">Nothing on your schedule this week. Your manager adds shifts here; you’ll get a notification when they do.</p>

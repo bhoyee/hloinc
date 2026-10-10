@@ -32,6 +32,8 @@ const MODULES = [
     label: 'Staff schedule',
     description: 'Shifts and availability.',
     actions: ['view', 'edit'],
+    // Only Admin by default; the Admin can give it to other roles (e.g. Program Director).
+    extras: { approve_time_off: 'Receive & approve time-off requests (for the staff this role can see)' },
   },
   {
     key: 'messages',
@@ -123,7 +125,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && has('view_intake') && !has('view'))) {
       set.add(`${m.key}.view`);
     }

@@ -1,0 +1,39 @@
+{# Shared by the Schedule and Time off pages. #}
+
+{# Header buttons: Team / Mine (small), Request time off, Add shift or time off (main action). #}
+{% macro actions(view='', week='', teamAllowed=false) %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% if teamAllowed and view %}
+      <div class="flex rounded-xl bg-white p-1 ring-1 ring-line" role="group" aria-label="Whose schedule">
+        <a href="/portal/schedule?view=team&week={{ week }}" {% if view == 'team' %}aria-current="page"{% endif %}
+           class="rounded-lg px-3 py-1 text-sm font-semibold {{ 'bg-brand-700 text-white' if view == 'team' else 'text-brand-800 hover:bg-brand-50' }}">{{ icon('users', 'inline size-4 -mt-0.5') }} Team</a>
+        <a href="/portal/schedule?view=mine&week={{ week }}" {% if view == 'mine' %}aria-current="page"{% endif %}
+           class="rounded-lg px-3 py-1 text-sm font-semibold {{ 'bg-[#1e293b] text-white' if view == 'mine' else 'text-[#1e293b] hover:bg-[#eef1f5]' }}">{{ icon('calendar', 'inline size-4 -mt-0.5') }} Mine</a>
+      </div>
+    {% endif %}
+    <a href="/portal/schedule/time-off/new" class="btn-blue !gap-1.5 !px-3.5 !py-2 !text-sm">{{ icon('sun', 'size-4') }} Request time off</a>
+    {% if can('schedule.edit') %}<a href="/portal/schedule/new" class="btn-primary">{{ icon('plus', 'size-4') }} Add shift or time off</a>{% endif %}
+  </div>
+{% endmacro %}
+
+{# Schedule | Time off, with the number of requests waiting. #}
+{% macro sections(current, waiting=0) %}
+  <nav aria-label="Schedule sections" class="mb-5 inline-flex gap-1 rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+    <a href="/portal/schedule" {% if current == 'schedule' %}aria-current="page"{% endif %}
+       class="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if current == 'schedule' else 'text-muted hover:bg-surface hover:text-ink' }}">{{ icon('calendar', 'size-4') }} Schedule</a>
+    <a href="/portal/schedule/time-off" {% if current == 'time-off' %}aria-current="page"{% endif %}
+       class="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if current == 'time-off' else 'text-muted hover:bg-surface hover:text-ink' }}">
+      {{ icon('sun', 'size-4') }} Time off
+      {% if waiting %}<span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-accent-700' if current == 'time-off' else 'bg-accent-600 text-white' }}">{{ waiting }}<span class="sr-only"> waiting</span></span>{% endif %}
+    </a>
+  </nav>
+{% endmacro %}
+
+{% macro status(key, labels) %}
+  <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ {
+    pending: 'bg-amber-50 text-amber-900 ring-amber-200',
+    approved: 'bg-brand-50 text-brand-800 ring-brand-200',
+    declined: 'bg-accent-50 text-accent-700 ring-accent-200',
+    cancelled: 'bg-surface text-muted ring-line'
+  }[key] }}">{{ labels[key] }}</span>
+{% endmacro %}

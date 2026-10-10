@@ -1,0 +1,66 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% import "partials/schedule-nav.njk" as sn with context %}
+
+{% block actions %}{{ sn.actions() }}{% endblock %}
+
+{% block content %}
+  {{ sn.sections('time-off', counts.pending if manager else 0) }}
+
+  <nav aria-label="Time-off lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+    {% for t in tabs %}
+      <a href="/portal/schedule/time-off?tab={{ t.key }}" {% if t.key == tab %}aria-current="page"{% endif %}
+         class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
+        {{ t.label }}
+        <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == tab else ('bg-accent-600 text-white' if t.key == 'pending' and counts.pending else 'bg-surface ring-1 ring-line') }}">{{ counts[t.key] }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if tab != 'mine' %}
+    <form method="get" action="/portal/schedule/time-off" role="search" aria-label="Search time-off requests" data-live-filter="#timeoff-results"
+          class="mb-5 flex gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <div class="relative flex-1">
+        <label for="t-q" class="sr-only">Search by staff member or note</label>
+        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+        <input id="t-q" type="search" name="q" value="{{ q }}" placeholder="Staff member or note" class="form-control !pl-12" maxlength="100">
+      </div>
+      <button type="submit" class="btn-green" data-live-hide>Search</button>
+    </form>
+  {% endif %}
+
+  <div id="timeoff-results" data-live-results>
+    {{ ui.listBar(pager, 'requests') }}
+    {% if items.length %}
+      <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+        {% for r in items %}
+          <li class="group relative transition-colors hover:bg-surface focus-within:bg-surface {{ 'bg-amber-50/40' if r.status == 'pending' }}">
+            <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
+              <span class="hidden size-11 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 ring-1 ring-amber-100 sm:grid" aria-hidden="true">{{ icon('sun', 'size-5') }}</span>
+              <div class="min-w-0 flex-1">
+                <p class="flex flex-wrap items-center gap-2">
+                  <a href="/portal/schedule/time-off/{{ r.id }}" class="font-semibold text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ 'You' if tab == 'mine' else r.user_name }}</a>
+                  {{ sn.status(r.status, statusLabels) }}
+                </p>
+                <p class="mt-0.5 text-sm text-muted">{{ reasons[r.reason] }}{% if r.notes %} · “{{ r.notes | truncate(70) }}”{% endif %}</p>
+              </div>
+              <div class="text-sm sm:text-right">
+                <p class="font-semibold text-ink">{{ r.when }}</p>
+                <p class="text-muted">{% if r.decided_at %}{{ statusLabels[r.status] }} by {{ r.decided_by_name or 'a manager' }}{% else %}Asked {{ r.created_at | date({ month: 'short', day: 'numeric' }) }}{% endif %}</p>
+              </div>
+            </div>
+            <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
+          </li>
+        {% endfor %}
+      </ul>
+      {{ ui.pager(pager, 'requests') }}
+    {% else %}
+      <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+        <span class="icon-tile mx-auto">{{ icon('sun', 'size-6') }}</span>
+        <p class="mt-4 text-lg font-semibold text-ink">{% if q %}Nothing matches “{{ q }}”{% elif tab == 'pending' %}No requests waiting{% elif tab == 'mine' %}You haven’t asked for time off yet{% else %}No time-off requests yet{% endif %}</p>
+        <p class="mt-1 text-muted">{% if tab == 'mine' %}<a href="/portal/schedule/time-off/new" class="link">Request time off</a> and your manager is told straight away.{% else %}Requests from your team appear here.{% endif %}</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

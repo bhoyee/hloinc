@@ -1,0 +1,44 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+
+{% block content %}
+  <form method="post" action="/portal/schedule/time-off" class="max-w-2xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" novalidate data-once>
+    <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+    {{ ui.errorSummary(errors) }}
+
+    <fieldset>
+      <legend class="form-label">Reason</legend>
+      <div class="mt-1 grid gap-2 sm:grid-cols-3">
+        {% for key, label in reasons %}
+          <label class="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 ring-1 transition has-[:checked]:bg-brand-50 has-[:checked]:ring-brand-300 ring-line hover:bg-surface">
+            <input type="radio" name="reason" value="{{ key }}" class="size-4 accent-brand-700" {% if values.reason == key %}checked{% endif %}>
+            <span class="text-[15px] font-medium text-ink">{{ label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {{ ui.fieldError('reason', errors) }}
+    </fieldset>
+
+    <label class="flex cursor-pointer items-center gap-3 rounded-xl bg-surface px-4 py-3 ring-1 ring-line">
+      <input type="checkbox" name="all_day" value="yes" class="size-5 accent-brand-700" {% if values.all_day == 'yes' or values.all_day == true %}checked{% endif %}
+             data-toggle-on="#tf-end-date" data-toggle-off="#tf-times">
+      <span><span class="block text-[15px] font-semibold text-ink">Whole days</span><span class="block text-sm text-muted">Untick to ask for a few hours on one day.</span></span>
+    </label>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      {{ ui.input('start_date', 'First day', values, errors, type='date', attrs='min="' ~ today ~ '"') }}
+      <div id="tf-end-date">{{ ui.input('end_date', 'Last day', values, errors, type='date', required=false, hint='Up to ' ~ maxDays ~ ' days. Leave as the first day for one day.', attrs='min="' ~ today ~ '"') }}</div>
+    </div>
+    <div id="tf-times" class="grid gap-4 sm:grid-cols-2">
+      {{ ui.input('start_time', 'From', values, errors, type='time', required=false) }}
+      {{ ui.input('end_time', 'Until', values, errors, type='time', required=false) }}
+    </div>
+
+    {{ ui.textarea('notes', 'Note for your manager', values, errors, required=false, rows=3, maxlength=1000, hint='Optional, e.g. cover you have arranged.') }}
+
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" class="btn-primary">{{ icon('arrow-right', 'size-4') }} Send request</button>
+      <a href="/portal/schedule/time-off?tab=mine" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

@@ -8,7 +8,7 @@
 const NAV = [
   { label: 'Dashboard', href: '/portal', icon: 'dashboard' },
   { label: 'Appointments', href: '/portal/appointments', icon: 'calendar', permission: ['appointments.view', 'appointments.log'], badge: 'appointments', badgeLabel: 'waiting to be confirmed' },
-  { label: 'Schedule', href: '/portal/schedule', icon: 'clock' },
+  { label: 'Schedule', href: '/portal/schedule', icon: 'clock', badge: 'timeOff', badgeLabel: 'time-off requests waiting' },
   { label: 'Messages', href: '/portal/messages', icon: 'inbox', permission: ['messages.view', 'messages.view_intake'], badge: 'messages', badgeLabel: 'unread' },
   { label: 'Leads', href: '/portal/leads', icon: 'heart', permission: 'leads.view' },
   { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view' },

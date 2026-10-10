@@ -8,6 +8,7 @@
  *  - demo visitors' messages, referrals, requests and appointments (@example.com, 555-01xx phones)
  *  - leads that belonged only to them
  *  - the demo staff-board posts
+ *  - the demo staff's time-off requests
  *  - demo job postings (development only)
  * Real accounts, real enquiries and settings are not touched.
  *
@@ -51,6 +52,8 @@ async function main() {
     ]);
     counts.leads = await trx('leads').whereIn('id', leadIds.filter((id) => !stillUsed.has(id))).del();
     counts.signIns = await trx('audit_log').where({ ip: demo.AUDIT_IP }).del();
+    const allDemoStaff = await trx('users').where('email', 'like', `%${demo.STAFF_DOMAIN}`).pluck('id');
+    counts.timeOffRequests = await trx('time_off_requests').whereIn('user_id', allDemoStaff).del();
     // Only the demo staff-board posts; anything people posted themselves stays.
     const posters = await trx('users').where('email', 'like', `%${demo.STAFF_DOMAIN}`).pluck('id');
     counts.announcements = await trx('announcements').whereIn('title', demo.ANNOUNCEMENT_TITLES).where((w) => w.whereIn('created_by', posters).orWhereNull('created_by')).del();

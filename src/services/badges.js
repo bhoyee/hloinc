@@ -8,6 +8,7 @@
  *                 resolves or archives it.
  *   Appointments  website requests waiting to be confirmed (shared by the
  *                 team). Goes down when someone confirms or cancels one.
+ *   Schedule      time-off requests waiting for this person to decide on.
  * Refreshed with each page and every 30 seconds by the notification poll.
  */
 const db = require('../db/knex');
@@ -32,10 +33,10 @@ async function waitingRequests(user) {
   return Number(row.n);
 }
 
-/** { messages, appointments } for this person (null where their role has no access). */
+/** { messages, appointments, timeOff } for this person (null where their role has no access). */
 async function forUser(user) {
-  const [m, a] = await Promise.all([unreadMessages(user), waitingRequests(user)]);
-  return { messages: m, appointments: a };
+  const [m, a, t] = await Promise.all([unreadMessages(user), waitingRequests(user), require('./timeOff').pendingFor(user)]);
+  return { messages: m, appointments: a, timeOff: t };
 }
 
 /** Record that this person has opened a message. */

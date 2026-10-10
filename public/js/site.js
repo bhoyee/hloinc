@@ -587,6 +587,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ask before permanent, can't-undo actions.
   // Confirmations (form[data-confirm]) are handled by hloConfirm at the top of this file.
 
+  // A tick box that shows one part of a form and hides another
+  // (e.g. "Whole days" shows the last day and hides the times).
+  document.querySelectorAll('input[type="checkbox"][data-toggle-on], input[type="checkbox"][data-toggle-off]').forEach((box) => {
+    const apply = () => {
+      document.querySelectorAll(box.dataset.toggleOn || '').forEach((el) => { el.hidden = !box.checked; });
+      document.querySelectorAll(box.dataset.toggleOff || '').forEach((el) => { el.hidden = box.checked; });
+    };
+    box.addEventListener('change', apply);
+    apply();
+  });
+
   document.addEventListener('change', (e) => {
     const perPage = e.target.closest('form[data-per-page]');
     if (perPage && e.target.matches('select') && !perPage.closest('[data-live-results]')) perPage.submit();
