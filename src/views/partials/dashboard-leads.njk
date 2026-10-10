@@ -1,0 +1,42 @@
+{# Latest leads on the dashboard (people with Leads access). Refreshed live. #}
+{% import "partials/lead-ui.njk" as lu %}
+{% if recentLeads %}
+  <section class="flex h-full flex-col rounded-3xl border border-line bg-white shadow-soft lg:h-[30rem]" aria-labelledby="leads-h">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
+      <h2 id="leads-h" class="flex items-center gap-2.5 text-lg font-bold">
+        Recent leads
+        <span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-line">{{ recentLeads.openCount }} open</span>
+      </h2>
+      <a href="/portal/leads" class="text-sm font-semibold text-brand-700 hover:text-brand-800">View all leads &rarr;</a>
+    </div>
+    {% if recentLeads.items.length %}
+      <div class="scroll-panel mt-3 min-h-0 flex-1 overflow-auto" tabindex="0" aria-label="Recent leads table">
+        <table class="w-full text-left text-[15px]">
+          <caption class="sr-only">The six most recently active leads</caption>
+          <thead class="sticky top-0 z-[1] border-y border-line bg-surface text-xs font-semibold tracking-wide text-muted uppercase">
+            <tr>
+              <th scope="col" class="px-5 py-2.5 sm:px-6">Lead</th>
+              <th scope="col" class="py-2.5 pr-5 pl-3 sm:pr-3">Stage</th>
+              <th scope="col" class="hidden px-5 py-2.5 text-right sm:table-cell sm:px-6">Last active</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            {% for l in recentLeads.items %}
+              <tr class="group relative transition-colors hover:bg-surface focus-within:bg-surface">
+                <td class="px-5 py-3 sm:px-6">
+                  <a href="/portal/leads/{{ l.id }}" class="font-semibold text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ l.name }}</a>
+                  <span class="block max-w-[15rem] truncate text-sm text-muted">{{ ('Referred by ' ~ l.referred_by) if l.referred_by else (l.county or l.email or l.phone or '') }}</span>
+                  <span class="mt-1 flex flex-wrap items-center gap-1.5">{{ lu.touches(l.touches) }}{% if l.owner_name %}<span class="text-xs text-muted">· {{ l.owner_name }}</span>{% endif %}</span>
+                </td>
+                <td class="py-3 pr-5 pl-3 sm:pr-3">{{ lu.stage(l.stage, stages) }}</td>
+                <td class="hidden px-5 py-3 text-right text-sm whitespace-nowrap text-muted sm:table-cell sm:px-6">{{ l.last_activity_at | date({ month: 'short', day: 'numeric' }) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="m-5 flex-1 rounded-2xl bg-surface px-4 py-3 text-[15px] text-muted sm:m-6">No leads yet. Requests, referrals, appointments and enquiries from the website appear here automatically.</p>
+    {% endif %}
+  </section>
+{% endif %}

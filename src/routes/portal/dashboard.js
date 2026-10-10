@@ -23,7 +23,9 @@ async function sections(req) {
   const data = {
     panels: await workday.panels(user),
     staffSecurity: await workday.staffSecurity(user),
-    board: await announcements.activeInternal(5),
+    board: await announcements.activeForStaff(20),
+    recentLeads: can(user, 'leads.view') ? await require('../../services/leads').recent(6) : null,
+    stages: require('../../services/leads').STAGES,
     recentActivity: can(user, 'audit.view')
       ? await db('audit_log').select('action', 'user_name', 'summary', 'created_at').orderBy('id', 'desc').limit(6)
       : [],

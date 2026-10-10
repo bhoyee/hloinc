@@ -307,3 +307,15 @@
     }
   }
 }
+
+/* A panel whose content scrolls inside a fixed height (dashboard). Slim, quiet scrollbar. */
+@utility scroll-panel {
+  scrollbar-width: thin;
+  scrollbar-color: #c9d6cf transparent;
+  overscroll-behavior: contain;
+  &:focus-visible {
+    outline: 2px solid #12845a;
+    outline-offset: 2px;
+    border-radius: 0.75rem;
+  }
+}

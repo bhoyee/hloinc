@@ -7,6 +7,7 @@
  *  - demo staff accounts (@hloinc.test) and their shifts, notifications and sign-in records
  *  - demo visitors' messages, referrals, requests and appointments (@example.com, 555-01xx phones)
  *  - leads that belonged only to them
+ *  - the demo staff-board posts
  *  - demo job postings (development only)
  * Real accounts, real enquiries and settings are not touched.
  *
@@ -50,6 +51,9 @@ async function main() {
     ]);
     counts.leads = await trx('leads').whereIn('id', leadIds.filter((id) => !stillUsed.has(id))).del();
     counts.signIns = await trx('audit_log').where({ ip: demo.AUDIT_IP }).del();
+    // Only the demo staff-board posts; anything people posted themselves stays.
+    const posters = await trx('users').where('email', 'like', `%${demo.STAFF_DOMAIN}`).pluck('id');
+    counts.announcements = await trx('announcements').whereIn('title', demo.ANNOUNCEMENT_TITLES).where((w) => w.whereIn('created_by', posters).orWhereNull('created_by')).del();
     // Seeded shifts have no "created by"; with --keep-staff, shifts people added themselves stay.
     const demoStaff = await trx('users').where('email', 'like', `%${demo.STAFF_DOMAIN}`).pluck('id');
     counts.shifts = await trx('shifts').whereIn('user_id', keepStaff ? demoStaff : staffIds).modify((q) => { if (keepStaff) q.whereNull('created_by'); }).del();

@@ -99,11 +99,17 @@ async function today(user, now = new Date()) {
     const people = (kind) => {
       const seen = new Map();
       for (const s of shifts.filter((x) => x.kind === kind)) {
-        if (!seen.has(s.user_id)) seen.set(s.user_id, { name: s.user_name, from: timeOf(s.start_at), until: timeOf(s.end_at), label: s.label, onNow: new Date(s.start_at) <= now && now < new Date(s.end_at) });
+        const onNow = new Date(s.start_at) <= now && now < new Date(s.end_at);
+        const prev = seen.get(s.user_id);
+        // Someone with two shifts today (e.g. the end of last night's): show the one they're on now.
+        if (!prev || (onNow && !prev.onNow)) {
+          seen.set(s.user_id, { id: s.user_id, name: s.user_name, from: timeOf(s.start_at), until: timeOf(s.end_at), label: s.label, onNow, startsAt: new Date(s.start_at).getTime() });
+        }
       }
-      return [...seen.values()];
+      return [...seen.values()].sort((a, b) => Number(b.onNow) - Number(a.onNow) || a.startsAt - b.startsAt);
     };
     out.working = people('shift');
+    out.onNow = out.working.filter((p) => p.onNow).length;
     out.off = people('time_off');
   }
   return out;

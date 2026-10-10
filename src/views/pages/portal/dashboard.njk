@@ -142,7 +142,12 @@
 
   <div class="mt-8" data-live-region="panels">{% include "partials/dashboard-panels.njk" %}</div>
 
-  <div data-live-region="board">{% include "partials/dashboard-board.njk" %}</div>
+  {# Recent leads and the staff board, side by side when both are there. #}
+  {% set showBoard = board.length or can('announcements.edit') %}
+  <div class="mt-8 grid gap-4 lg:gap-5 {{ 'lg:grid-cols-2' if recentLeads and showBoard }}">
+    <div data-live-region="leads" class="{{ 'hidden' if not recentLeads }}">{% include "partials/dashboard-leads.njk" %}</div>
+    <div data-live-region="board" class="{{ 'hidden' if not showBoard }}">{% include "partials/dashboard-board.njk" %}</div>
+  </div>
 
   {% if live.charts.length %}
     <section class="mt-8" aria-labelledby="analytics-h">
@@ -181,7 +186,7 @@
               </ul>
             {% endif %}
 
-            <div class="relative mt-4 mb-3 rounded-xl outline-offset-4 {{ 'h-44' if c.type == 'bars' else 'h-64' }}" data-chart="{{ c.key }}"
+            <div class="relative mt-4 mb-3 rounded-xl outline-offset-4 {{ 'min-h-44 flex-1' if c.type == 'bars' else 'h-64' }}" data-chart="{{ c.key }}"
                  tabindex="0" role="group" aria-label="{{ c.title }} chart. Use the left and right arrow keys to read values, or open the table below.">
               <noscript><p class="pt-8 text-center text-sm text-muted">Open the table below to see these figures.</p></noscript>
             </div>

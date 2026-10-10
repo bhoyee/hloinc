@@ -88,6 +88,18 @@ describe('today at HLO', () => {
     expect(page.text).toContain(admin.name);
   });
 
+  it('links working staff to their profile for people who manage accounts', async () => {
+    const admin = await makeUser('admin');
+    const director = await makeUser('program_director');
+    const today = marylandParts(new Date()).date;
+    await db('shifts').insert({ user_id: director.id, kind: 'shift', start_at: marylandDateTime(today, '00:00'), end_at: marylandDateTime(today, '23:59') });
+    const adminPage = (await (await signIn(app, admin)).get('/portal')).text;
+    expect(adminPage).toContain(`href="/portal/accounts/${director.id}"`);
+    const directorPage = (await (await signIn(app, director)).get('/portal')).text;
+    expect(directorPage).toContain('Working today');
+    expect(directorPage).not.toContain(`href="/portal/accounts/${director.id}"`);
+  });
+
   it('only shows the schedules the person may see', async () => {
     const reception = await staff('reception');
     const director = await makeUser('program_director');

@@ -200,6 +200,14 @@ async function list(user, filters = {}) {
   };
 }
 
+/** The most recently active leads, for the dashboard. */
+async function recent(limit = 6) {
+  const rows = await base().select('l.*', 'o.name as owner_name').orderBy('l.last_activity_at', 'desc').limit(limit);
+  const touches = await touchpoints(rows.map((r) => r.id));
+  const openCount = Number((await db('leads').whereIn('stage', OPEN_STAGES).count({ n: '*' }).first()).n);
+  return { items: rows.map((r) => ({ ...r, touches: touches.get(r.id) })), openCount };
+}
+
 const get = (id) => base().select('l.*', 'o.name as owner_name').where('l.id', id).first();
 
 /** Everything linked to a lead, newest first. Message details respect the viewer's inbox access. */
@@ -310,5 +318,5 @@ function toCsv(rows) {
 module.exports = {
   STAGES, OPEN_STAGES, ORIGIN_LABELS, TABS, LEAD_RECIPIENTS,
   attachMessage, attachRequest, attachReferral, attachAppointment, markContacted,
-  list, get, timeline, setStage, setOwner, updateDetails, addNote, remove, exportRows, toCsv, serviceName, digitsOf,
+  list, recent, get, timeline, setStage, setOwner, updateDetails, addNote, remove, exportRows, toCsv, serviceName, digitsOf,
 };

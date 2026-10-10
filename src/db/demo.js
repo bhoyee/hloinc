@@ -45,4 +45,7 @@ function random(seed = 7) {
 /** A made-up phone number in the fictional 555-01xx range. */
 const phone = (i) => `410-555-01${String(i % 100).padStart(2, '0')}`;
 
-module.exports = { allowed, staffPassword, random, phone, STAFF_DOMAIN, VISITOR_DOMAIN, MARK, AUDIT_IP };
+/** The demo staff-board posts, by title (so the seed and the removal only ever touch these). */
+const ANNOUNCEMENT_TITLES = ['Staff meeting moved to Thursday 10am', 'New intake checklist', 'CPR & First Aid renewal', 'Office closed for Thanksgiving'];
+
+module.exports = { ANNOUNCEMENT_TITLES, allowed, staffPassword, random, phone, STAFF_DOMAIN, VISITOR_DOMAIN, MARK, AUDIT_IP };

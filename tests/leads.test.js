@@ -140,6 +140,15 @@ describe('the leads pages', () => {
 });
 
 describe('who can see leads', () => {
+  it('shows recent leads on the dashboard only to people with Leads access', async () => {
+    await submit('/request-services', request_());
+    const admin = (await (await signIn(app, await makeUser('admin'))).get('/portal')).text;
+    expect(admin).toContain('Recent leads');
+    expect(admin).toMatch(/href="\/portal\/leads\/\d+"[^>]*>Robin Example</);
+    const reception = (await (await signIn(app, await makeUser('reception'))).get('/portal')).text;
+    expect(reception).not.toContain('Recent leads');
+  });
+
   it('follows the role permissions', async () => {
     const reception = await signIn(app, await makeUser('reception'));
     expect((await reception.get('/portal/leads')).status).toBe(403);

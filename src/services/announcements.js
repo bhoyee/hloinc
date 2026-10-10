@@ -51,6 +51,15 @@ function activeInternal(limit = 5) {
     .limit(limit);
 }
 
+/** Every live announcement (website, staff or both), newest first, for the staff board. */
+function activeForStaff(limit = 20) {
+  return live(db('announcements as a'))
+    .leftJoin('users as u', 'u.id', 'a.created_by')
+    .select('a.id', 'a.title', 'a.body', 'a.audience', 'a.link_url', 'a.link_label', 'a.starts_at', 'a.ends_at', 'u.name as author')
+    .orderBy('a.starts_at', 'desc')
+    .limit(limit);
+}
+
 function stateOf(a, now = new Date()) {
   if (a.archived_at) return 'archived';
   if (new Date(a.starts_at) > now) return 'scheduled';
@@ -132,6 +141,7 @@ module.exports = {
   TABS,
   activePublic,
   activeInternal,
+  activeForStaff,
   stateOf,
   tabCounts,
   list,

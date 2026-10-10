@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * DEMO appointments and shifts so the calendar and schedule have something
+ * DEMO appointments so the calendar has something
  * to show. Development, or a server with DEMO_DATA=true (src/db/demo.js).
  * Runs once (rows are marked "Demo data").
  * Visitor names and emails are made up (example.com / .test).
@@ -39,21 +39,5 @@ exports.seed = async function seed(knex) {
   ];
   await knex('appointments').insert(rows.map((r) => ({ ...r, staff_notes: demo.MARK, reference: make('appointment') })));
 
-  // A normal week for the demo staff, plus one overnight shift and some leave.
-  const shifts = [];
-  const add = (who, d, from, to, extra = {}) => {
-    if (!staff[who]) return;
-    const end = to <= from ? addDaysIso(d, 1) : d;
-    shifts.push({ user_id: staff[who], kind: 'shift', start_at: marylandDateTime(d, from), end_at: marylandDateTime(end, to), ...extra });
-  };
-  for (let i = 0; i < 5; i++) {
-    add('reception', day(i), '09:00', '17:00', { label: 'Front desk', location: 'Catonsville office' });
-    add('intake', day(i), i === 4 ? '09:00' : '08:30', i === 4 ? '13:00' : '16:30', { label: 'Intake', location: 'Catonsville office' });
-  }
-  for (const i of [0, 1, 3]) add('coordinator', day(i), '10:00', '18:00', { label: 'Community visits', location: 'Baltimore County' });
-  add('coordinator', day(2), '22:00', '08:00', { label: 'Overnight cover', location: 'Residential home' });
-  if (staff.director) {
-    shifts.push({ user_id: staff.director, kind: 'time_off', start_at: marylandDateTime(day(4), '00:00'), end_at: marylandDateTime(day(5), '00:00'), label: 'Annual leave' });
-  }
-  if (shifts.length) await knex('shifts').insert(shifts);
+  // Demo shifts are kept topped up by 09_demo_team_schedule.js.
 };
