@@ -91,20 +91,35 @@
             {% if a.updated_by_name %}<div class="flex justify-between gap-3"><dt>Last change</dt><dd class="text-right text-ink">{{ a.updated_by_name }}, {{ a.updated_at | date({ month: 'short', day: 'numeric' }) }}</dd></div>{% endif %}
           </dl>
           <div class="mt-5 space-y-2">
-            {% if a.state == 'live' and can('announcements.edit') %}
-              <form method="post" action="/portal/announcements/{{ a.id }}/end">
+            {% if can('announcements.edit') and a.state in ['live', 'scheduled', 'paused'] %}
+              <form method="post" action="/portal/announcements/{{ a.id }}/pause">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
-                <button type="submit" class="btn-secondary w-full">{{ icon('clock', 'size-4') }} End now</button>
+                <input type="hidden" name="action" value="{{ 'resume' if a.paused_at else 'pause' }}">
+                {% if a.paused_at %}<button type="submit" class="btn-green w-full">{{ icon('play', 'size-4') }} Resume</button>
+                {% else %}<button type="submit" class="btn-secondary w-full">{{ icon('pause', 'size-4') }} Pause</button>{% endif %}
               </form>
             {% endif %}
-            {% if can('announcements.archive') %}
+            {% if can('announcements.edit') and a.state in ['live', 'paused'] %}
+              <form method="post" action="/portal/announcements/{{ a.id }}/end">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <button type="submit" class="btn-secondary w-full">{{ icon('stop', 'size-4') }} End now</button>
+              </form>
+            {% endif %}
+            {% if a.state == 'archived' and can('announcements.delete') %}
               <form method="post" action="/portal/announcements/{{ a.id }}/archive">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
-                <input type="hidden" name="action" value="{{ 'restore' if a.state == 'archived' else 'archive' }}">
-                <button type="submit" class="btn-secondary w-full">{{ icon('refresh' if a.state == 'archived' else 'archive', 'size-4') }} {{ 'Restore' if a.state == 'archived' else 'Archive' }}</button>
+                <input type="hidden" name="action" value="restore">
+                <button type="submit" class="btn-green w-full">{{ icon('refresh', 'size-4') }} Restore</button>
+              </form>
+            {% elif a.state != 'archived' and mayDelete %}
+              <form method="post" action="/portal/announcements/{{ a.id }}/archive" data-confirm="Delete this announcement? It will be hidden everywhere.{{ ' An Admin can restore it.' if not can('announcements.delete') }}">
+                <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="btn-secondary w-full !text-accent-700">{{ icon('trash', 'size-4') }} Delete</button>
               </form>
             {% endif %}
           </div>
+          {% if a.paused_at and a.state == 'paused' %}<p class="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">Paused {{ a.paused_at | dateTime }}. It’s hidden on the website and staff board until resumed.</p>{% endif %}
           {% if a.state == 'archived' and can('announcements.delete') %}
             <form method="post" action="/portal/announcements/{{ a.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm="Delete this announcement permanently? This can’t be undone.">
               <input type="hidden" name="_csrf" value="{{ csrfToken() }}">

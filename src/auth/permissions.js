@@ -60,6 +60,7 @@ const MODULES = [
     label: 'Announcements',
     description: 'Public and internal announcements.',
     actions: ['view', 'edit', 'archive', 'delete'],
+    labels: { edit: 'Create, edit, pause & end', archive: 'Delete own (an Admin can restore)', delete: 'Delete anyone’s, restore & delete permanently' },
   },
   {
     key: 'site_content',
@@ -159,7 +160,7 @@ const DEFAULT_ROLES = [
       'messages.view', 'messages.edit',
       'leads.view', 'leads.edit', 'leads.export',
       'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
-      'announcements.view', 'announcements.edit', 'announcements.archive', 'announcements.delete',
+      'announcements.view', 'announcements.edit', 'announcements.archive',
       'site_content.edit_limited',
       'reports.view',
     ],

@@ -105,25 +105,84 @@ describe('announcements: checks', () => {
   });
 });
 
-describe('announcements: end, archive and delete', () => {
-  it('ends, archives, restores and deletes with the right permissions', async () => {
+describe('announcements: pause, end and delete', () => {
+  it('pauses and resumes: hidden everywhere while paused, dates unchanged', async () => {
     const coordinator = await signIn(app, await makeUser('program_coordinator'));
+    await post(coordinator, '/portal/announcements/new', '/portal/announcements', POST({ audience: 'both' }));
+    const before = await db('announcements').first();
+    expect((await request(app).get('/')).text).toContain('Office closed Monday');
+
+    await post(coordinator, `/portal/announcements/${before.id}`, `/portal/announcements/${before.id}/pause`, { action: 'pause' });
+    expect((await request(app).get('/')).text).not.toContain('Office closed Monday');
+    const paused = await db('announcements').first();
+    expect(paused.paused_at).toBeTruthy();
+    expect(paused.starts_at).toEqual(before.starts_at);
+    const page = (await coordinator.get(`/portal/announcements/${before.id}`)).text;
+    expect(page).toContain('Resume');
+    expect(page).not.toMatch(/>\s*(<svg[^>]*>.*?<\/svg>)?\s*Pause<\/button>/s);
+    // Editors still see it on the staff board, marked Paused, so it can be resumed there.
+    expect((await coordinator.get('/portal')).text).toMatch(/Paused[\s\S]*Office closed Monday|Office closed Monday[\s\S]*Paused/);
+
+    await post(coordinator, `/portal/announcements/${before.id}`, `/portal/announcements/${before.id}/pause`, { action: 'resume', back: '/portal#staff-board' });
+    expect((await db('announcements').first()).paused_at).toBeNull();
+    expect((await request(app).get('/')).text).toContain('Office closed Monday');
+  });
+
+  it('hides paused posts from people who cannot edit', async () => {
+    const coordinator = await signIn(app, await makeUser('program_coordinator'));
+    await post(coordinator, '/portal/announcements/new', '/portal/announcements', POST({ audience: 'internal', title: 'Quiet post' }));
+    const { id } = await db('announcements').first();
+    await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/pause`, { action: 'pause' });
+    const reception = await signIn(app, await makeUser('reception'));
+    expect((await reception.get('/portal')).text).not.toContain('Quiet post');
+  });
+
+  it('lets staff delete only their own posts; only an Admin restores or deletes permanently', async () => {
+    const coordinator = await signIn(app, await makeUser('program_coordinator'));
+    const other = await signIn(app, await makeUser('program_coordinator', 'Other Coordinator'));
     await post(coordinator, '/portal/announcements/new', '/portal/announcements', POST());
     const { id } = await db('announcements').first();
 
     await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/end`);
     expect((await request(app).get('/')).text).not.toContain('Office closed Monday');
 
-    await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'archive' });
-    expect((await db('announcements').first()).archived_at).toBeTruthy();
-    await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'restore' });
+    // Someone else's post: not allowed.
+    await post(other, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'delete' });
     expect((await db('announcements').first()).archived_at).toBeNull();
 
-    // Coordinators can't delete permanently; directors can, once archived.
-    await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'archive' });
-    expect((await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/delete`)).status).toBe(403);
+    // Their own: moved to Deleted, and they can't bring it back.
+    await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'delete' });
+    expect((await db('announcements').first()).archived_at).toBeTruthy();
+    await post(coordinator, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'restore' });
+    expect((await db('announcements').first()).archived_at).toBeTruthy();
+
+    // Directors no longer delete permanently; the Admin can restore and delete permanently.
     const director = await signIn(app, await makeUser('program_director'));
-    await post(director, `/portal/announcements/${id}`, `/portal/announcements/${id}/delete`);
+    expect((await post(director, `/portal/announcements/${id}`, `/portal/announcements/${id}/delete`)).status).toBe(403);
+    const admin = await signIn(app, await makeUser('admin'));
+    await post(admin, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'restore' });
+    expect((await db('announcements').first()).archived_at).toBeNull();
+    await post(admin, `/portal/announcements/${id}`, `/portal/announcements/${id}/archive`, { action: 'delete' });
+    await post(admin, `/portal/announcements/${id}`, `/portal/announcements/${id}/delete`);
     expect(await db('announcements').first()).toBeUndefined();
+    expect(await db('audit_log').where({ action: 'announcement.soft_delete' }).count({ n: '*' }).first()).toMatchObject({ n: 2 });
+  });
+
+  it('shows quick actions on the dashboard staff board only where allowed', async () => {
+    const coordinatorUser = await makeUser('program_coordinator');
+    const coordinator = await signIn(app, coordinatorUser);
+    await post(coordinator, '/portal/announcements/new', '/portal/announcements', POST({ audience: 'internal', title: 'Board post' }));
+    const { id } = await db('announcements').first();
+    const mine = (await coordinator.get('/portal')).text;
+    expect(mine).toContain(`action="/portal/announcements/${id}/pause"`);
+    expect(mine).toContain(`action="/portal/announcements/${id}/archive"`);
+
+    const other = (await (await signIn(app, await makeUser('program_coordinator', 'Other'))).get('/portal')).text;
+    expect(other).toContain(`action="/portal/announcements/${id}/pause"`);
+    expect(other).not.toContain(`action="/portal/announcements/${id}/archive"`); // not their post
+
+    const reception = (await (await signIn(app, await makeUser('reception'))).get('/portal')).text;
+    expect(reception).toContain('Board post');
+    expect(reception).not.toContain(`action="/portal/announcements/${id}/pause"`);
   });
 });

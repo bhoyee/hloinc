@@ -16,6 +16,12 @@ const can = requirePermission;
 
 const hhmm = (parts) => parts.time;
 
+/** Back to the portal page the action came from (the dashboard's staff board), or the announcement. */
+function done(req, res, fallback) {
+  const back = typeof req.body.back === 'string' && /^\/portal(?:[/?#]|$)/.test(req.body.back) ? req.body.back : fallback;
+  res.redirect(303, back);
+}
+
 /** Form values from a saved announcement, in Maryland time. */
 function valuesOf(a) {
   const start = marylandParts(new Date(a.starts_at));
@@ -77,6 +83,7 @@ function renderForm(res, { a = null, values, errors = {}, status = 200 }) {
     errors,
     audienceLabels: ann.AUDIENCE_LABELS,
     stateLabels: ann.STATE_LABELS,
+    mayDelete: a ? ann.canDelete(res.locals.user, a) : false,
   });
 }
 
@@ -117,27 +124,48 @@ router.post('/:id', can('announcements.edit'), async (req, res) => {
 });
 
 router.post('/:id/end', can('announcements.edit'), async (req, res) => {
-  if (req.ann.state !== 'live') {
-    setFlash(req, 'error', 'Only a live announcement can be ended.');
+  const here = `/portal/announcements/${req.ann.id}`;
+  if (!['live', 'paused'].includes(req.ann.state)) {
+    setFlash(req, 'error', 'Only a live or paused announcement can be ended.');
   } else {
     await ann.endNow(req.ann.id, req.user);
     await audit(req, { action: 'announcement.end', entityType: 'announcement', entityId: req.ann.id, summary: `${req.user.name} ended the announcement “${req.ann.title}”` });
-    setFlash(req, 'success', 'Ended. It’s no longer shown anywhere.');
+    setFlash(req, 'success', `“${req.ann.title}” ended. It’s no longer shown anywhere.`);
   }
-  res.redirect(303, `/portal/announcements/${req.ann.id}`);
+  done(req, res, here);
 });
 
+// Pause hides it everywhere without touching its dates; resume brings it straight back.
+router.post('/:id/pause', can('announcements.edit'), async (req, res) => {
+  const here = `/portal/announcements/${req.ann.id}`;
+  const pause = req.body.action !== 'resume';
+  if (['archived', 'expired'].includes(req.ann.state) || Boolean(req.ann.paused_at) === pause) {
+    setFlash(req, 'error', pause ? 'This announcement can’t be paused.' : 'This announcement isn’t paused.');
+    return done(req, res, here);
+  }
+  const a = await ann.setPaused(req.ann.id, pause, req.user);
+  await audit(req, { action: pause ? 'announcement.pause' : 'announcement.resume', entityType: 'announcement', entityId: req.ann.id, summary: `${req.user.name} ${pause ? 'paused' : 'resumed'} the announcement “${req.ann.title}”` });
+  setFlash(req, 'success', pause ? `“${a.title}” paused. It’s hidden until you resume it.` : `“${a.title}” resumed. ${a.state === 'live' ? 'It’s live again.' : `It’s ${ann.STATE_LABELS[a.state].toLowerCase()}.`}`);
+  done(req, res, here);
+});
+
+// Delete (soft): staff delete their own; anyone's needs the full delete permission. Restoring needs it too.
 router.post('/:id/archive', can('announcements.archive'), async (req, res) => {
-  const archive = req.body.action !== 'restore';
-  await ann.setArchived(req.ann.id, archive, req.user);
-  await audit(req, { action: archive ? 'announcement.archive' : 'announcement.restore', entityType: 'announcement', entityId: req.ann.id, summary: `${req.user.name} ${archive ? 'archived' : 'restored'} the announcement “${req.ann.title}”` });
-  setFlash(req, 'success', archive ? 'Archived. It’s hidden everywhere; you can restore it at any time.' : 'Restored.');
-  res.redirect(303, `/portal/announcements/${req.ann.id}`);
+  const here = `/portal/announcements/${req.ann.id}`;
+  const restore = req.body.action === 'restore';
+  if (restore ? !req.user.permissions.has('announcements.delete') : !ann.canDelete(req.user, req.ann)) {
+    setFlash(req, 'error', restore ? 'Only an Admin can restore a deleted announcement.' : 'You can only delete announcements you posted.');
+    return done(req, res, here);
+  }
+  await ann.setArchived(req.ann.id, !restore, req.user);
+  await audit(req, { action: restore ? 'announcement.restore' : 'announcement.soft_delete', entityType: 'announcement', entityId: req.ann.id, summary: `${req.user.name} ${restore ? 'restored' : 'deleted'} the announcement “${req.ann.title}”` });
+  setFlash(req, 'success', restore ? `“${req.ann.title}” restored.` : `“${req.ann.title}” deleted. It’s hidden everywhere; an Admin can restore it.`);
+  done(req, res, restore ? here : '/portal/announcements');
 });
 
 router.post('/:id/delete', can('announcements.delete'), async (req, res) => {
   if (req.ann.state !== 'archived') {
-    setFlash(req, 'error', 'Archive the announcement first. Only archived announcements can be deleted permanently.');
+    setFlash(req, 'error', 'Delete the announcement first. Only deleted announcements can be removed permanently.');
     return res.redirect(303, `/portal/announcements/${req.ann.id}`);
   }
   await ann.remove(req.ann.id);

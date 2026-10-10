@@ -5,25 +5,29 @@ const db = require('../db/knex');
 /*
  * Announcements (requirements §5.4): shown on the public website, on the
  * internal staff board (portal dashboard), or both, between their start and
- * end dates. Archived ones are hidden everywhere but can be restored.
+ * end dates. Paused ones are hidden until resumed. Deleted ones (the
+ * archived_at column) are hidden everywhere; an Admin can restore them.
  */
+const { can } = require('../auth/permissions');
 
 const AUDIENCE_LABELS = { public: 'Website', internal: 'Staff only', both: 'Website and staff' };
-const STATE_LABELS = { live: 'Live', scheduled: 'Scheduled', expired: 'Ended', archived: 'Archived' };
+const STATE_LABELS = { live: 'Live', paused: 'Paused', scheduled: 'Scheduled', expired: 'Ended', archived: 'Deleted' };
 
-/** Live right now: started, not ended, not archived. */
+/** Live right now: started, not ended, not paused, not deleted. */
 function live(query, now = new Date()) {
   return query
     .whereNull('archived_at')
+    .whereNull('paused_at')
     .where('starts_at', '<=', now)
     .where((q) => q.whereNull('ends_at').orWhere('ends_at', '>', now));
 }
 
 const TABS = {
   live: { label: 'Live', where: (q, now) => live(q, now) },
-  scheduled: { label: 'Scheduled', where: (q, now) => q.whereNull('archived_at').where('starts_at', '>', now) },
+  paused: { label: 'Paused', where: (q, now) => q.whereNull('archived_at').whereNotNull('paused_at').where((w) => w.whereNull('ends_at').orWhere('ends_at', '>', now)) },
+  scheduled: { label: 'Scheduled', where: (q, now) => q.whereNull('archived_at').whereNull('paused_at').where('starts_at', '>', now) },
   expired: { label: 'Ended', where: (q, now) => q.whereNull('archived_at').whereNotNull('ends_at').where('ends_at', '<=', now) },
-  archived: { label: 'Archived', where: (q) => q.whereNotNull('archived_at') },
+  archived: { label: 'Deleted', where: (q) => q.whereNotNull('archived_at') },
   all: { label: 'All', where: (q) => q },
 };
 
@@ -51,17 +55,34 @@ function activeInternal(limit = 5) {
     .limit(limit);
 }
 
-/** Every live announcement (website, staff or both), newest first, for the staff board. */
-function activeForStaff(limit = 20) {
-  return live(db('announcements as a'))
+/**
+ * Every live announcement (website, staff or both), newest first, for the
+ * staff board. People who can edit also see paused ones, so they can resume them.
+ */
+async function activeForStaff(limit = 20, { includePaused = false } = {}) {
+  const now = new Date();
+  const q = db('announcements as a')
     .leftJoin('users as u', 'u.id', 'a.created_by')
-    .select('a.id', 'a.title', 'a.body', 'a.audience', 'a.link_url', 'a.link_label', 'a.starts_at', 'a.ends_at', 'u.name as author')
+    .select('a.id', 'a.title', 'a.body', 'a.audience', 'a.link_url', 'a.link_label', 'a.starts_at', 'a.ends_at', 'a.paused_at', 'a.created_by', 'u.name as author')
+    .whereNull('a.archived_at')
+    .where('a.starts_at', '<=', now)
+    .where((w) => w.whereNull('a.ends_at').orWhere('a.ends_at', '>', now))
+    .orderByRaw('a.paused_at IS NOT NULL')
     .orderBy('a.starts_at', 'desc')
     .limit(limit);
+  if (!includePaused) q.whereNull('a.paused_at');
+  return q;
+}
+
+/** Can this person delete it? Their own posts, or anyone's with the full delete permission. */
+function canDelete(user, a) {
+  return can(user, 'announcements.delete') || (can(user, 'announcements.archive') && a.created_by === user.id);
 }
 
 function stateOf(a, now = new Date()) {
   if (a.archived_at) return 'archived';
+  if (a.ends_at && new Date(a.ends_at) <= now) return 'expired';
+  if (a.paused_at) return 'paused';
   if (new Date(a.starts_at) > now) return 'scheduled';
   if (a.ends_at && new Date(a.ends_at) <= now) return 'expired';
   return 'live';
@@ -126,6 +147,11 @@ async function endNow(id, user) {
   return get(id);
 }
 
+async function setPaused(id, paused, user) {
+  await db('announcements').where({ id }).update({ paused_at: paused ? new Date() : null, updated_by: user.id, updated_at: new Date() });
+  return get(id);
+}
+
 async function setArchived(id, archived, user) {
   await db('announcements').where({ id }).update({ archived_at: archived ? new Date() : null, updated_by: user.id, updated_at: new Date() });
   return get(id);
@@ -142,6 +168,8 @@ module.exports = {
   activePublic,
   activeInternal,
   activeForStaff,
+  canDelete,
+  setPaused,
   stateOf,
   tabCounts,
   list,
