@@ -94,7 +94,7 @@ function bodyToHtml(text) {
 function render({ subject, text, business, cta, footnote }) {
   const b = business;
   const siteUrl = config.appUrl;
-  const logo = `${siteUrl}/img/logo.jpg`;
+  const logo = `${siteUrl}/img/logo.png`;
   const address = [b.address && b.address.street, b.address && [b.address.city, b.address.state].filter(Boolean).join(', ') + (b.address.zip ? ` ${b.address.zip}` : '')]
     .filter(Boolean)
     .join(', ');
@@ -117,7 +117,7 @@ function render({ subject, text, business, cta, footnote }) {
   <tr><td align="center" style="padding:28px 12px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;font-family:${FONT}">
       <tr><td style="background:#ffffff;border-radius:18px 18px 0 0;padding:22px 32px;border-bottom:4px solid ${COLORS.brand}">
-        <a href="${escape(siteUrl)}" style="text-decoration:none"><img src="${escape(logo)}" width="160" alt="${escape(b.legalName)}" style="display:block;border:0;height:auto;max-width:160px;color:${COLORS.brand};font-size:18px;font-weight:700"></a>
+        <a href="${escape(siteUrl)}" style="text-decoration:none"><img src="${escape(logo)}" width="190" alt="${escape(b.legalName)}" style="display:block;border:0;height:auto;max-width:190px;color:${COLORS.brand};font-size:18px;font-weight:700"></a>
       </td></tr>
       <tr><td style="background:#ffffff;padding:30px 32px 14px">
         <h1 style="margin:0 0 20px;font-size:22px;line-height:1.3;color:${COLORS.ink};font-weight:800">${escape(subject)}</h1>

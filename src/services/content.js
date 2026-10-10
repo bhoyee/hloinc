@@ -3,6 +3,7 @@
 const db = require('../db/knex');
 const site = require('../lib/site');
 const pages = require('../content/pages');
+const { formatPhone } = require('../validation/phone');
 
 const TTL_MS = 60 * 1000;
 let cache = { at: 0, settings: null };
@@ -33,7 +34,7 @@ async function getBusiness() {
   const s = await loadSettings();
   return {
     ...site.defaults,
-    phone: s['business.phone'] ?? site.defaults.phone,
+    phone: formatPhone(s['business.phone'] ?? site.defaults.phone),
     email: s['business.email'] ?? site.defaults.email,
     address: { ...site.defaults.address, ...(s['business.address'] || {}) },
     hours: s['business.hours'] ?? site.defaults.hours,

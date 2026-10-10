@@ -111,7 +111,7 @@ describe('the leads pages', () => {
     await post(agent, page, `${page}/details`, { name: 'Robin Example', email: 'robin@example.com', phone: '4105550199', county: 'Howard County' });
 
     const after = await db('leads').where({ id: lead.id }).first();
-    expect(after).toMatchObject({ stage: 'intake', owner_id: coordinator.id, phone: '410-555-0199', county: 'Howard County' });
+    expect(after).toMatchObject({ stage: 'intake', owner_id: coordinator.id, phone: '(410) 555-0199', county: 'Howard County' });
     const view = (await agent.get(page)).text;
     for (const t of ['Left a voicemail.', 'Stage changed from New to Intake in progress.', 'Assigned to Casey Coordinator.']) expect(view).toContain(t);
     const actions = (await db('audit_log').pluck('action'));

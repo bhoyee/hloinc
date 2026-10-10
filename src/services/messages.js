@@ -3,6 +3,7 @@
 const db = require('../db/knex');
 const { can, inboxPermission } = require('../auth/permissions');
 const { recipients } = require('../lib/site');
+const { orWherePhone } = require('../validation/phone');
 const { notify } = require('./notify');
 const content = require('./content');
 
@@ -115,6 +116,7 @@ async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine
     const code = normalizeSearch(keyword);
     query.where((w) => {
       w.where('m.name', 'like', like).orWhere('m.email', 'like', like).orWhere('m.phone', 'like', like).orWhere('m.message', 'like', like);
+      orWherePhone(w, 'm.phone', keyword);
       if (code) w.orWhere('m.reference', 'like', `%-${code}`);
     });
   }

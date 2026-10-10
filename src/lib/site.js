@@ -7,7 +7,7 @@
 const defaults = {
   name: 'HLO Inc.',
   legalName: 'Healthy Living Option Inc.',
-  phone: '410-874-8551',
+  phone: '(410) 874-8551',
   email: 'info@hloinc.com',
   address: {
     street: '4 E Rolling Crossroads, Suites 301–303',

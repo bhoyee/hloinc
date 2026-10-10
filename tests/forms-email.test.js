@@ -23,10 +23,10 @@ beforeEach(async () => {
 describe('phone numbers', () => {
   const field = phoneField();
   it.each([
-    ['4105550123', '410-555-0123'],
-    ['(410) 555-0123', '410-555-0123'],
-    ['+1 410 555 0123', '410-555-0123'],
-    ['410.555.0123', '410-555-0123'],
+    ['4105550123', '(410) 555-0123'],
+    ['(410) 555-0123', '(410) 555-0123'],
+    ['+1 410 555 0123', '(410) 555-0123'],
+    ['410.555.0123', '(410) 555-0123'],
   ])('accepts %s and saves it as %s', (input, saved) => {
     expect(field.parse(input)).toBe(saved);
   });
@@ -81,7 +81,7 @@ describe('form confirmations', () => {
     expect((await agent.post('/request-services').type('form').send({ ...request_, _csrf: csrf })).status).toBe(303);
 
     const [row] = await db('contact_messages');
-    expect(row.phone).toBe('410-555-0144');
+    expect(row.phone).toBe('(410) 555-0144');
 
     const mail = outbox.find((m) => m.to === 'robin@example.com');
     expect(mail.subject).toBe('We received your request for services');
@@ -89,7 +89,7 @@ describe('form confirmations', () => {
     expect(mail.text).toContain(`Reference: ${row.reference}`);
     expect(mail.text).toContain('WHAT HAPPENS NEXT');
     expect(mail.html).toContain('<!doctype html>');
-    expect(mail.html).toContain('/img/logo.jpg');
+    expect(mail.html).toContain('/img/logo.png');
     expect(mail.text).not.toMatch(/eligib|priority|Person-Centered Plan/i);
     expect((await agent.get('/request-services')).text).toContain(`Your reference is ${row.reference}, and we have emailed you a confirmation`);
   });
@@ -162,5 +162,18 @@ describe('reference numbers', () => {
     } finally {
       reference.make = real;
     }
+  });
+});
+
+describe('phone search', () => {
+  it('finds a stored number however it is typed', async () => {
+    const { orWherePhone } = require('../src/validation/phone');
+    const [id] = await db('contact_messages').insert({ type: 'message', recipient: 'general', name: 'Phone Search', email: 'ps@example.com', phone: '(410) 555-0188', message: 'Hi', email_status: 'sent' });
+    for (const q of ['410-555-0188', '4105550188', '(410) 555-0188', '555-0188', '+1 410 555 0188']) {
+      const row = await db('contact_messages').where((w) => orWherePhone(w.where('id', 0), 'phone', q)).where({ id }).first();
+      expect(row, q).toBeTruthy();
+    }
+    expect(await db('contact_messages').where((w) => orWherePhone(w.where('id', 0), 'phone', 'Phone')).where({ id }).first()).toBeUndefined();
+    await db('contact_messages').where({ id }).del();
   });
 });

@@ -34,6 +34,8 @@ Free to use under the [Pexels licence](https://www.pexels.com/license/) (no attr
 | `personal-support-smile` | pexels.com/photo/8127422 | Woman smiling up at her support person (Personal Support) |
 | `cds-art-class` | pexels.com/photo/5757078 | Instructor helping an adult student in an art class (CDS) |
 | `respite-boardwalk` | pexels.com/photo/8777851 | Friends walking along a boardwalk (Respite) |
+| `about-diverse-team` | pexels.com/photo/3931633 | Four colleagues smiling together around a laptop (About banner, from October 2026) |
+| `cds-friends` | pexels.com/photo/9287491 | Group of friends laughing together outdoors (CDS, from October 2026) |
 | `employment-coffee` | pexels.com/photo/7697916 | Man at his job at a coffee machine (Employment Services) |
 | `team-colleagues` | pexels.com/photo/7162943 | Three colleagues smiling together (About) |
 | `hlo-about` | hloinc.com (HLO's own photo) | Support staff and an individual at HLO — only 378×420, too small for large banners |

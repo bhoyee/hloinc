@@ -1,21 +1,11 @@
-<div class="hidden bg-brand-950 text-sm text-brand-100 md:block">
-  <div class="container-page flex h-10 items-center justify-between">
-    <p class="flex items-center gap-2">{{ icon('map-pin', 'size-4') }} {{ cms.text('site.topbar.area', 'Serving Central & Southern Maryland') }} <span class="text-brand-400" aria-hidden="true">·</span> {{ icon('clock', 'size-4') }} {{ cms.text('site.topbar.hours', 'Mon–Fri 9–5') }}</p>
-    <div class="flex items-center gap-6">
-      <a href="{{ site.phone | telHref }}" class="flex items-center gap-2 hover:text-white">{{ icon('phone', 'size-4') }} {{ site.phone }}</a>
-      <a href="mailto:{{ site.email }}" class="flex items-center gap-2 hover:text-white">{{ icon('mail', 'size-4') }} {{ site.email }}</a>
-    </div>
-  </div>
-</div>
-
 {% set navItems = cms.list('site.nav', nav) %}
 {% set headerCta = cms.link('site.header.cta', 'Request Services', '/request-services') %}
 {% set headerCta2 = cms.link('site.header.cta2', 'Make a Referral', '/referrals') %}
 <header class="sticky top-0 z-40 border-b border-line/80 bg-white">
   <div class="container-page flex h-20 items-center justify-between gap-6">
     <a href="/" class="shrink-0" aria-label="{{ site.legalName }} home">
-      {% set logo = cms.image('site.logo', { src: '/img/logo.jpg', srcSm: '/img/logo.jpg', w: 192, h: 60, alt: site.legalName }) %}
-      <img src="{{ logo.src }}" alt="{{ logo.alt or site.legalName }}" width="{{ logo.w }}" height="{{ logo.h }}" class="h-12 w-auto sm:h-14" {{ logo.attrs }}>
+      {% set logo = cms.image('site.logo', { src: '/img/logo.png', srcSm: '/img/logo.png', w: 647, h: 200, alt: site.legalName }) %}
+      <img src="{{ logo.src }}" alt="{{ logo.alt or site.legalName }}" width="{{ logo.w }}" height="{{ logo.h }}" class="h-12 w-auto sm:h-16" {{ logo.attrs }}>
     </a>
 
     <nav aria-label="Main" class="hidden lg:block">

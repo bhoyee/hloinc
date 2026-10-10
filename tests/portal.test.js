@@ -354,7 +354,7 @@ describe('my account', () => {
     const { agent } = await signIn(user);
     await post(agent, '/portal/account', '/portal/account/profile', { name: 'Renamed Person', phone: '410-555-0100', role: 'admin', email: 'x@example.com' });
     const row = await db('users').where({ id: user.id }).first();
-    expect(row).toMatchObject({ name: 'Renamed Person', phone: '410-555-0100', role: 'reception', email: user.email });
+    expect(row).toMatchObject({ name: 'Renamed Person', phone: '(410) 555-0100', role: 'reception', email: user.email });
   });
 });
 

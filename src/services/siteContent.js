@@ -63,7 +63,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function readContact(body) {
   const data = { phone: str(body.phone), email: str(body.email).toLowerCase(), street: str(body.street), city: str(body.city), state: str(body.state).toUpperCase(), zip: str(body.zip) };
   const errors = {};
-  if (data.phone.length > PHONE_MAX || !isUsPhone(data.phone)) errors.phone = 'Enter a valid US phone number, like 410-555-0123.';
+  if (data.phone.length > PHONE_MAX || !isUsPhone(data.phone)) errors.phone = 'Enter a valid US phone number, like (410) 555-0123.';
   else data.phone = normalizePhone(data.phone);
   if (!EMAIL.test(data.email) || data.email.length > 191) errors.email = 'Enter a valid email address.';
   if (!data.street || data.street.length > 160) errors.street = 'Enter the street address.';

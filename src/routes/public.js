@@ -8,6 +8,9 @@ const jobs = require('../services/jobs');
 const announcements = require('../services/announcements');
 const inquiries = require('../services/inquiries');
 const services = require('../content/services');
+
+// The services shown in the listings on the home and services pages.
+const listed = services.filter((s) => s.listed !== false);
 const areas = require('../content/areas');
 const resources = require('../content/resources');
 const legal = require('../content/legal');
@@ -43,9 +46,9 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   const [page, news] = await Promise.all([content.getPage('home'), announcements.activePublic()]);
   res.render('pages/public/home.njk', {
-    ...meta('home', 'Supporting People with Developmental Disabilities in Maryland', 'Maryland DDA provider offering residential, supported living, personal support, community development, respite and employment services for adults with developmental disabilities. Request services or make a referral.'),
+    ...meta('home', 'Supporting Adults with Developmental Disabilities in Maryland', 'Maryland DDA provider offering residential, supported living, personal support, community development and respite services for adults with developmental disabilities. Request services or make a referral.'),
     page,
-    services,
+    services: listed,
     conditions: services.CONDITIONS,
     areas,
     announcements: news,
@@ -64,7 +67,7 @@ router.get('/services', async (req, res) => {
     supportNeeds: about.supportNeeds,
     eligibilityNote: about.eligibilityNote,
     ...meta('services', 'Services', 'Community-based supports for adults with intellectual and developmental disabilities in Maryland.'),
-    services,
+    services: listed,
     conditions: services.CONDITIONS,
     serviceBySlug: Object.fromEntries(services.map((s) => [s.slug, s])),
   });

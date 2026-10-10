@@ -159,17 +159,20 @@
   {% endif %}
 {% endmacro %}
 
+{# The red 911 notice. #}
+{% macro emergencyNote() %}
+  <p class="flex items-center gap-3 rounded-2xl border border-accent-200 bg-accent-50 px-5 py-3.5 text-[15px] font-medium text-accent-800">
+    <span class="rounded-lg bg-accent-600 px-2 py-0.5 font-display font-extrabold text-white">911</span>
+    <span>{{ cms.text('site.emergency', 'For a life-threatening emergency, call 911.') }}</span>
+  </p>
+{% endmacro %}
+
 {# emergency: also show the 911 notice just above the band. #}
 {% macro ctaBand(site, emergency=false) %}
   {% set ctaPrimary = cms.link('site.cta.primary', 'Request services', '/request-services') %}
   {% set ctaSecondary = cms.link('site.cta.secondary', 'Make a referral', '/referrals') %}
   <section class="container-page section">
-    {% if emergency %}
-      <p class="mb-4 flex items-center gap-3 rounded-2xl border border-accent-200 bg-accent-50 px-5 py-3.5 text-[15px] font-medium text-accent-800">
-        <span class="rounded-lg bg-accent-600 px-2 py-0.5 font-display font-extrabold text-white">911</span>
-        <span>{{ cms.text('site.emergency', 'For a life-threatening emergency, call 911.') }}</span>
-      </p>
-    {% endif %}
+    {% if emergency %}<div class="mb-4">{{ emergencyNote() }}</div>{% endif %}
     <div class="relative overflow-hidden rounded-[2rem] bg-accent-700 px-6 py-14 text-white sm:px-14 sm:py-16">
       <svg class="pointer-events-none absolute -right-10 -bottom-16 size-80 text-white/10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-9-4.78-9-12a4.5 4.5 0 0 1 9-1.27A4.5 4.5 0 0 1 21 9c0 7.22-9 12-9 12z"/></svg>
       <div class="relative grid items-center gap-8 lg:grid-cols-[1fr_auto]">

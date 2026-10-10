@@ -12,7 +12,7 @@ describe('public site', () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.text).toContain('Healthy Living Option Inc.');
-    expect(res.text).toContain('410-874-8551');
+    expect(res.text).toContain('(410) 874-8551');
   });
 
   it('returns a 404 page for unknown routes', async () => {

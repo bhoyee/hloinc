@@ -8,7 +8,7 @@ afterAll(() => db.destroy());
 
 describe('public pages', () => {
   it.each([
-    ['/', 'Supporting people with developmental disabilities'],
+    ['/', 'Supporting adults with developmental disabilities'],
     ['/about', 'Mission statement'],
     ['/services', 'Personal Support'],
     ['/services/employment-services', 'Employment Services'],
@@ -708,7 +708,7 @@ describe('request services', () => {
     const res = await agent.post('/request-services').type('form').send({ ...valid, _csrf: csrf });
     expect(res.status).toBe(303);
     const [row] = await db('contact_messages');
-    expect(row).toMatchObject({ type: 'request', recipient: 'intake', name: 'Robin Example', email: 'robin@example.com', phone: '410-555-0144', email_status: 'sent' });
+    expect(row).toMatchObject({ type: 'request', recipient: 'intake', name: 'Robin Example', email: 'robin@example.com', phone: '(410) 555-0144', email_status: 'sent' });
     expect(JSON.parse(row.details)).toMatchObject({ relationship: 'family', individual_first_name: 'Sam', county: 'Baltimore County', services: ['community-residential-services', 'employment-services'] });
     const page = await agent.get('/request-services');
     expect(page.text).toContain('Thank you, Robin');

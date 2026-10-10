@@ -38,6 +38,7 @@ function base() {
 }
 
 const { insertWithReference, normalizeSearch } = require('../lib/reference');
+const { orWherePhone } = require('../validation/phone');
 
 const likeOf = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
@@ -73,6 +74,7 @@ async function list({ tab = 'requests', q = '', status = '', type = '', source =
     query.where((w) => {
       w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q))
         .orWhere('u.name', 'like', likeOf(q));
+      orWherePhone(w, 'a.phone', q);
       if (code) w.orWhere('a.reference', 'like', `%-${code}`);
     });
   }
@@ -107,6 +109,7 @@ function between(from, to, { q = '', type = '' } = {}) {
     query.where((w) => {
       w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q))
         .orWhere('u.name', 'like', likeOf(q));
+      orWherePhone(w, 'a.phone', q);
       if (code) w.orWhere('a.reference', 'like', `%-${code}`);
     });
   }

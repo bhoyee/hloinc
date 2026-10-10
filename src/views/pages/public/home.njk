@@ -16,7 +16,7 @@
     </section>
   {% endif %}
 
-  {% for sec in cms.sections('home', { hero: 'Top banner', highlights: 'How we work (green band)', paths: 'Three ways in', welcome: 'Welcome', homes: 'Apartment homes', services: 'Services', planning: 'How support is planned', steps: 'Getting started', cta: 'Call to action' }) %}
+  {% for sec in cms.sections('home', { hero: 'Top banner', highlights: 'How we work (green band)', paths: 'Three ways in', welcome: 'Welcome', homes: 'Apartment homes', services: 'Services', planning: 'How support is planned', steps: 'Getting started', cta: '911 notice' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
     {% set heroImg = cms.image('home.hero.image', 'hero-support', 'A support worker and a smiling woman holding hands during a conversation') %}
@@ -26,8 +26,7 @@
     <section class="bg-cream">
       <div class="container-page grid items-center gap-10 py-10 sm:gap-12 sm:py-16 lg:grid-cols-[1fr_1.1fr] lg:items-stretch lg:gap-14 lg:py-20">
         <div class="animate-fade-up">
-          <p class="eyebrow">{{ cms.text('home.hero.eyebrow', page.eyebrow) }}</p>
-          <h1 class="mt-5 text-4xl leading-[1.08] font-extrabold sm:text-5xl xl:text-6xl">{{ cms.text('home.hero.title', page.title) }}</h1>
+          <h1 class="text-4xl leading-[1.08] font-extrabold sm:text-5xl xl:text-6xl">{{ cms.text('home.hero.title', page.title) }}</h1>
           <p class="mt-6 max-w-xl text-lg text-muted sm:text-xl">{{ cms.text('home.hero.intro', page.intro) }}</p>
           <div class="mt-9 flex flex-wrap gap-3">
             <a href="{{ cta1.href }}" {{ cta1.attrs }} class="btn-primary">{{ cta1.label }} {{ icon('arrow-right', 'size-4') }}</a>
@@ -38,9 +37,9 @@
             <a href="{{ site.phone | telHref }}" class="grid size-12 shrink-0 place-items-center rounded-full bg-brand-700 text-white hover:bg-brand-800">
               {{ icon('phone', 'size-5') }}<span class="sr-only">Call {{ site.phone }}</span>
             </a>
-            <p class="text-[15px] leading-snug text-muted">
-              {{ cms.text('home.hero.callPrompt', 'Prefer to talk? Call') }} <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a><br>
-              {{ site.hours }}
+            <p class="text-[15px] leading-relaxed text-muted">
+              {{ cms.text('home.hero.phoneLabel', 'Contact us by Phone:') }} <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a><br>
+              {{ cms.text('home.hero.hoursLabel', 'Office Hours:') }} <span class="font-semibold text-ink">{{ site.hours }}</span>
             </p>
           </div>
         </div>
@@ -218,7 +217,8 @@
 
 
   {% elif sec.key == 'cta' %}
-    {{ ui.ctaBand(site, true) }}
+    {# Only the 911 notice here; the "Not sure where to begin?" band was removed from the home page. #}
+    <section class="container-page py-10 sm:py-12" aria-label="Emergency">{{ ui.emergencyNote() }}</section>
   {% endif %}
   </div>
   {% endfor %}

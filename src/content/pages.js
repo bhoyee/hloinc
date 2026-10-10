@@ -7,8 +7,7 @@
  */
 module.exports = {
   home: {
-    eyebrow: 'Maryland DDA provider',
-    title: 'Supporting people with developmental disabilities',
+    title: 'Supporting adults with developmental disabilities',
     intro:
       'We are committed to supporting people with developmental disabilities to live independent lives as adults, with community inclusion as a choice.',
     welcomeEyebrow: 'Welcome to Healthy Living Option Inc.',
@@ -44,7 +43,7 @@ module.exports = {
       { label: 'Provider', value: 'Maryland DDA provider' },
       { label: 'Region', value: 'Central Maryland and Southern Region' },
       { label: 'Counties', value: 'Nine Maryland counties and Baltimore City' },
-      { label: 'Hours', value: 'Monday – Friday, 9am – 5pm' },
+      { label: 'Office Hours', value: 'Monday – Friday, 9am – 5pm' },
     ],
     applySteps: [
       { title: 'Contact us', text: 'Submit the request form or call (410) 874-8551. Referrals from coordinators, agencies, and families are welcome.' },

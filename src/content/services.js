@@ -85,9 +85,9 @@ const services = [
   },
   {
     slug: 'community-development-services',
-    photo: 'cds-art-class',
+    photo: 'cds-friends',
     where: ['community'],
-    imageAlt: 'Instructor helping an adult student in an art class',
+    imageAlt: 'A group of friends laughing together outdoors',
     name: 'Community Development Services (CDS)',
     icon: 'users',
     summary: 'Community-based activities that build skills, friendships and connection, chosen by the person.',
@@ -127,6 +127,8 @@ const services = [
   },
   {
     slug: 'employment-services',
+    // Not shown in the service listings on the home and services pages (HLO, October 2026).
+    listed: false,
     photo: 'employment-coffee',
     where: ['community'],
     imageAlt: 'Man smiling at his job at a coffee machine',

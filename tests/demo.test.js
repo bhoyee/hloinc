@@ -44,7 +44,7 @@ describe('demo data rules', () => {
   });
 
   it('only uses phone numbers reserved for fiction', () => {
-    for (const i of [0, 7, 42, 99, 150]) expect(demo.phone(i)).toMatch(/^410-555-01\d\d$/);
+    for (const i of [0, 7, 42, 99, 150]) expect(demo.phone(i)).toMatch(/^\(410\) 555-01\d\d$/);
   });
 });
 

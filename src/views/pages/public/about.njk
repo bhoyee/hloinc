@@ -2,10 +2,10 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  {% for sec in cms.sections('about', { hero: 'Top banner', who: 'Who we are', apply: 'How to apply', area: 'Where we serve', values: 'Our values', cta: 'Call to action' }) %}
+  {% for sec in cms.sections('about', { hero: 'Top banner', who: 'Who we are', apply: 'How to apply', area: 'Where we serve', values: 'Our values' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-    {% call ui.pageHero(cms.text('about.hero.eyebrow', 'Our profile'), cms.text('about.hero.title', page.title), cms.text('about.hero.intro', page.intro), [{ label: 'About' }], cms.image('about.hero.image', 'about-team', 'Three team members talking and laughing together')) %}
+    {% call ui.pageHero(cms.text('about.hero.eyebrow', 'Our profile'), cms.text('about.hero.title', page.title), cms.text('about.hero.intro', page.intro), [{ label: 'About' }], cms.image('about.hero.image', 'about-diverse-team', 'Four colleagues smiling together around a laptop')) %}
       <nav aria-label="On this page" class="mt-8 flex flex-wrap gap-2">
         {% for l in [{ href: '#who', label: cms.text('about.nav.who', 'Who we are') }, { href: '#apply', label: cms.text('about.nav.apply', 'How to apply') }, { href: '#service-area', label: cms.text('about.nav.area', 'Service area') }] %}
           <a href="{{ l.href }}" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-800 ring-1 ring-line hover:bg-brand-50">{{ l.label }}</a>
@@ -134,8 +134,6 @@
       </div>
     </section>
 
-  {% elif sec.key == 'cta' %}
-    {{ ui.ctaBand(site) }}
   {% endif %}
   </div>
   {% endfor %}

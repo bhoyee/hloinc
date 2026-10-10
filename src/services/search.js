@@ -1,6 +1,7 @@
 'use strict';
 
 const { MESSAGE_ACCESS } = require('../auth/permissions');
+const { orWherePhone } = require('../validation/phone');
 const db = require('../db/knex');
 const roles = require('./roles');
 const { NAV } = require('../lib/portalNav');
@@ -77,6 +78,7 @@ const providers = [
         .select('a.id', 'a.reference', 'a.name', 'a.status', 'a.scheduled_at', 'a.requested_date', 't.name as type_name')
         .where((w) => {
           w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q));
+          orWherePhone(w, 'a.phone', q);
           if (normalizeSearch(q)) w.orWhere('a.reference', 'like', `%-${normalizeSearch(q)}`);
         })
         .orderBy('a.created_at', 'desc')
@@ -141,6 +143,7 @@ const providers = [
         .select('m.id', 'm.reference', 'm.type', 'm.name', 'm.recipient', 'm.status', 'm.created_at')
         .where((w) => {
           w.where('m.name', 'like', likeOf(q)).orWhere('m.email', 'like', likeOf(q)).orWhere('m.phone', 'like', likeOf(q));
+          orWherePhone(w, 'm.phone', q);
           if (normalizeSearch(q)) w.orWhere('m.reference', 'like', `%-${normalizeSearch(q)}`);
         })
         .orderBy('m.created_at', 'desc')

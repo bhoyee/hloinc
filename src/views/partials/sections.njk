@@ -135,16 +135,17 @@
           {% set k = 'service-' + s.slug %}
           {% set photo = cms.image(k + '.image', s.photo, s.imageAlt) %}
           {% set red = loop.index is even %}
-          <li class="reveal">
-            <a href="/services/{{ s.slug }}" class="group flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}">
-              <div class="relative aspect-[16/10] overflow-hidden">
-                <img src="{{ photo.srcSm }}" srcset="{{ photo.srcset }}" sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" alt="{{ photo.alt }}" loading="lazy" width="560" height="373"
+          {% set wide = loop.first and list.length % 3 == 2 %}
+          <li class="reveal {{ 'md:col-span-2' if wide }}">
+            <a href="/services/{{ s.slug }}" class="group flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift {{ 'md:flex-row' if wide }} {{ 'hover:border-accent-200' if red else 'hover:border-brand-300' }}">
+              <div class="relative aspect-[16/10] overflow-hidden {{ 'md:aspect-auto md:w-1/2 md:shrink-0' if wide }}">
+                <img src="{{ photo.srcSm }}" srcset="{{ photo.srcset }}" sizes="{{ '(min-width: 1024px) 33vw, 100vw' if wide else '(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw' }}" alt="{{ photo.alt }}" loading="lazy" width="560" height="373"
                      class="h-full w-full object-cover transition duration-700 group-hover:scale-105" {{ photo.attrs }}>
                 <span class="absolute top-4 left-4 grid size-11 place-items-center rounded-full bg-white/95 font-display font-extrabold text-ink shadow-soft">{{ '0' + loop.index if loop.index < 10 else loop.index }}</span>
               </div>
-              <div class="flex flex-1 flex-col p-6 sm:p-7">
-                <h3 class="text-xl font-bold group-hover:text-brand-700">{{ cms.text(k + '.name', s.name) }}</h3>
-                <p class="mt-2 flex-1 text-muted">{{ cms.text(k + '.summary', s.summary) }}</p>
+              <div class="flex flex-1 flex-col p-6 sm:p-7 {{ 'md:justify-center md:p-9' if wide }}">
+                <h3 class="{{ 'text-xl md:text-2xl' if wide else 'text-xl' }} font-bold group-hover:text-brand-700">{{ cms.text(k + '.name', s.name) }}</h3>
+                <p class="mt-2 {{ 'md:flex-none md:text-lg' if wide }} flex-1 text-muted">{{ cms.text(k + '.summary', s.summary) }}</p>
                 <span class="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold {{ 'text-accent-600' if red else 'text-brand-700' }}">
                   {{ cms.text('site.services.more', 'Learn more') }} <span class="sr-only">about {{ s.name }}</span> {{ icon('arrow-right', 'size-4 transition group-hover:translate-x-1') }}
                 </span>

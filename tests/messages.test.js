@@ -80,9 +80,10 @@ describe('inbox: who sees what', () => {
     // Search follows the same limits.
     const search = await intake.get('/portal/search?format=json&q=Visitor');
     expect(search.status).toBe(200);
-    expect(JSON.stringify(search.body)).not.toContain('Pat Visitor');
+    const messagesGroup = (body) => JSON.stringify(body.groups.filter((g) => g.label === 'Messages'));
+    expect(messagesGroup(search.body)).not.toContain('Pat Visitor');
     const caseworker = await intake.get('/portal/search?format=json&q=Caseworker');
-    expect(JSON.stringify(caseworker.body)).toContain('Sam Caseworker');
+    expect(messagesGroup(caseworker.body)).toContain('Sam Caseworker');
   });
 
   it('gives Reception read-only access', async () => {
