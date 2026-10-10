@@ -143,7 +143,7 @@
 
       {% if can('leads.delete') %}
         <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
-          <form method="post" action="/portal/leads/{{ l.id }}/delete" data-confirm="Delete this lead and its notes? Their messages and appointments are kept.">
+          <form method="post" action="/portal/leads/{{ l.id }}/delete" data-confirm-title="Delete this lead?" data-confirm="The lead and its notes will be removed. Their messages and appointments are kept.">
             <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
             <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete lead</button>
           </form>

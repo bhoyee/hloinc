@@ -1,6 +1,123 @@
 // Lets CSS hide not-yet-revealed elements only when this script is running.
 document.documentElement.classList.add('js');
 
+/**
+ * A modern confirmation dialog, used instead of the browser's confirm() box.
+ * `hloConfirm({ title, message, confirmLabel, tone })` resolves true or false.
+ * tone: 'danger' (deleting: red, focus starts on Cancel) or 'warning'.
+ * Forms with data-confirm="message" use it automatically (see below); optional
+ * data-confirm-title and data-confirm-button change the wording.
+ */
+window.hloConfirm = (() => {
+  const ICONS = {
+    danger: 'm14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0',
+    warning: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
+  };
+  let dialog;
+  let parts;
+
+  function build() {
+    dialog = document.createElement('dialog');
+    dialog.className = 'm-auto w-[calc(100%-2rem)] max-w-md overflow-visible rounded-3xl bg-transparent p-0 backdrop:bg-[#052a1e]/55 backdrop:backdrop-blur-sm';
+    dialog.setAttribute('aria-labelledby', 'hlo-confirm-title');
+    dialog.setAttribute('aria-describedby', 'hlo-confirm-text');
+    dialog.innerHTML = `
+      <div class="animate-fade-up rounded-3xl bg-white p-6 shadow-lift ring-1 ring-line sm:p-7" data-panel>
+        <div class="flex items-start gap-4">
+          <span class="grid size-12 shrink-0 place-items-center rounded-2xl" data-icon-wrap>
+            <svg class="size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" data-icon></path></svg>
+          </span>
+          <div class="min-w-0 pt-0.5">
+            <h2 id="hlo-confirm-title" class="font-display text-lg font-bold text-ink"></h2>
+            <p id="hlo-confirm-text" class="mt-1.5 text-[15px] leading-relaxed text-muted"></p>
+          </div>
+        </div>
+        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" class="btn-secondary !py-2.5" data-cancel>Cancel</button>
+          <button type="button" class="btn !py-2.5 text-white" data-ok></button>
+        </div>
+      </div>`;
+    document.body.append(dialog);
+    parts = {
+      title: dialog.querySelector('#hlo-confirm-title'),
+      text: dialog.querySelector('#hlo-confirm-text'),
+      icon: dialog.querySelector('[data-icon]'),
+      iconWrap: dialog.querySelector('[data-icon-wrap]'),
+      ok: dialog.querySelector('[data-ok]'),
+      cancel: dialog.querySelector('[data-cancel]'),
+    };
+    // A click on the dimmed area outside the card cancels.
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close('cancel');
+    });
+  }
+
+  return function hloConfirm({ title = 'Are you sure?', message = '', confirmLabel = 'Confirm', tone = 'warning' } = {}) {
+    if (typeof HTMLDialogElement !== 'function') return Promise.resolve(window.confirm(message || title));
+    if (!dialog) build();
+    const danger = tone === 'danger';
+    parts.title.textContent = title;
+    parts.text.textContent = message;
+    parts.text.hidden = !message;
+    parts.icon.setAttribute('d', ICONS[danger ? 'danger' : 'warning']);
+    parts.iconWrap.className = `grid size-12 shrink-0 place-items-center rounded-2xl ${danger ? 'bg-accent-50 text-accent-600 ring-1 ring-accent-100' : 'bg-amber-50 text-amber-600 ring-1 ring-amber-100'}`;
+    parts.ok.textContent = confirmLabel;
+    parts.ok.className = `btn !py-2.5 text-white ${danger ? 'bg-accent-600 hover:bg-accent-700' : 'bg-brand-700 hover:bg-brand-800'}`;
+    return new Promise((resolve) => {
+      const finish = (answer) => {
+        parts.ok.removeEventListener('click', onOk);
+        parts.cancel.removeEventListener('click', onCancel);
+        dialog.removeEventListener('close', onClose);
+        if (dialog.open) dialog.close();
+        resolve(answer);
+      };
+      const onOk = () => finish(true);
+      const onCancel = () => finish(false);
+      const onClose = () => finish(false); // Esc or a click outside
+      parts.ok.addEventListener('click', onOk);
+      parts.cancel.addEventListener('click', onCancel);
+      dialog.addEventListener('close', onClose);
+      dialog.showModal();
+      // Deleting: start on Cancel, so Enter by accident deletes nothing.
+      (danger ? parts.cancel : parts.ok).focus();
+    });
+  };
+})();
+
+// Forms with data-confirm ask first. Delegated, so it also works on parts of a
+// page that refresh live (e.g. the dashboard's staff board).
+document.addEventListener(
+  'submit',
+  (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.dataset.confirm) return;
+    if (form.dataset.confirmed === '1') {
+      delete form.dataset.confirmed;
+      return;
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const action = form.getAttribute('action') || '';
+    const danger = /\/(delete|archive)(\?|$)/.test(action) || /delete/i.test(form.dataset.confirm);
+    const ending = /\/end(\?|$)/.test(action);
+    const submitter = e.submitter;
+    window
+      .hloConfirm({
+        title: form.dataset.confirmTitle || (danger ? 'Delete this?' : ending ? 'End this now?' : 'Are you sure?'),
+        message: form.dataset.confirm,
+        confirmLabel: form.dataset.confirmButton || (danger ? 'Delete' : ending ? 'End now' : 'Confirm'),
+        tone: danger ? 'danger' : 'warning',
+      })
+      .then((ok) => {
+        if (!ok) return;
+        form.dataset.confirmed = '1';
+        if (form.requestSubmit) form.requestSubmit(submitter && form.contains(submitter) ? submitter : undefined);
+        else form.submit();
+      });
+  },
+  true
+);
+
 document.addEventListener('DOMContentLoaded', () => {
   // Mobile navigation toggle.
   const toggle = document.querySelector('[data-menu-toggle]');
@@ -468,10 +585,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Ask before permanent, can't-undo actions.
-  document.querySelectorAll('form[data-confirm]').forEach((form) => {
-    form.addEventListener('submit', (e) => {
-      if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+  // Confirmations (form[data-confirm]) are handled by hloConfirm at the top of this file.
+
+  // Password boxes: an eye button to show or hide what was typed.
+  const EYE = 'M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z';
+  const EYE_OFF = 'M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88';
+  document.querySelectorAll('input[type="password"]:not([data-no-reveal])').forEach((input) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'relative';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.append(input);
+    input.classList.add('!pr-12');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-xl text-muted hover:text-ink focus-visible:text-ink';
+    btn.setAttribute('aria-label', 'Show password');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-controls', input.id || '');
+    btn.title = 'Show password';
+    btn.innerHTML = `<svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="${EYE}"/></svg>`;
+    btn.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', String(show));
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      btn.title = show ? 'Hide password' : 'Show password';
+      btn.querySelector('path').setAttribute('d', show ? EYE_OFF : EYE);
+      // Keep typing where you were.
+      const at = input.selectionStart;
+      input.focus();
+      try { input.setSelectionRange(at, at); } catch { /* some types don't support it */ }
     });
+    wrap.append(btn);
+    // Never submit a visible password box: hide it again on submit.
+    if (input.form) input.form.addEventListener('submit', () => { input.type = 'password'; });
   });
 
   // Disable submit buttons after the first click to avoid double submissions.

@@ -112,7 +112,7 @@
           </div>
 
           {% if job.status == 'archived' and can('jobs.delete') %}
-            <form method="post" action="/portal/jobs/{{ job.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm="Delete “{{ job.title }}” permanently? This can’t be undone.">
+            <form method="post" action="/portal/jobs/{{ job.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm-title="Delete this job permanently?" data-confirm-button="Delete permanently" data-confirm="“{{ job.title }}” will be removed for good. This can’t be undone.">
               <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
               <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
             </form>

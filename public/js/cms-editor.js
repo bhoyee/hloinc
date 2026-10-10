@@ -103,7 +103,7 @@
   }
   if (discardBtn) {
     discardBtn.addEventListener('click', async () => {
-      if (!window.confirm('Throw away all unpublished changes on this page? The live website isn’t affected.')) return;
+      if (!(await window.hloConfirm({ title: 'Discard all changes?', message: 'Throw away all unpublished changes on this page? The live website isn’t affected.', confirmLabel: 'Discard changes', tone: 'danger' }))) return;
       try {
         await post('/discard', { docs });
         frame.contentWindow.location.reload();
@@ -202,7 +202,7 @@
     });
     document.querySelector('[data-close-history]').addEventListener('click', () => historyDialog.close());
     document.querySelector('[data-reset]').addEventListener('click', async () => {
-      if (!window.confirm('Replace this page’s draft with the original design and text? You can still discard the draft afterwards.')) return;
+      if (!(await window.hloConfirm({ title: 'Reset to the original design?', message: 'Replace this page’s draft with the original design and text? You can still discard the draft afterwards.', confirmLabel: 'Reset draft' }))) return;
       try {
         await post('/reset');
         historyDialog.close();

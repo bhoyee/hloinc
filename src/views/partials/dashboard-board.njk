@@ -45,13 +45,13 @@
                       {% if paused %}<button type="submit" class="grid size-8 place-items-center rounded-lg bg-brand-700 text-white hover:bg-brand-800" title="Resume">{{ icon('play', 'size-4') }}<span class="sr-only">Resume</span></button>
                       {% else %}<button type="submit" class="grid size-8 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-white hover:text-amber-700" title="Pause">{{ icon('pause', 'size-4') }}<span class="sr-only">Pause</span></button>{% endif %}
                     </form>
-                    <form method="post" action="/portal/announcements/{{ a.id }}/end" data-confirm="End “{{ a.title }}” now? It stops showing everywhere.">
+                    <form method="post" action="/portal/announcements/{{ a.id }}/end" data-confirm-title="End this announcement?" data-confirm="“{{ a.title }}” stops showing everywhere. It stays on record under Ended.">
                       <input type="hidden" name="_csrf" value="{{ csrfToken() }}"><input type="hidden" name="back" value="/portal#staff-board">
                       <button type="submit" class="grid size-8 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-white hover:text-ink" title="End now">{{ icon('stop', 'size-4') }}<span class="sr-only">End now</span></button>
                     </form>
                   {% endif %}
                   {% if mayDelete %}
-                    <form method="post" action="/portal/announcements/{{ a.id }}/archive" data-confirm="Delete “{{ a.title }}”? It will be hidden everywhere.{{ ' An Admin can restore it.' if not can('announcements.delete') }}">
+                    <form method="post" action="/portal/announcements/{{ a.id }}/archive" data-confirm-title="Delete this announcement?" data-confirm="“{{ a.title }}” will be hidden on the website and staff board. {{ 'An Admin can restore it.' if not can('announcements.delete') else 'You can restore it from the Deleted tab.' }}">
                       <input type="hidden" name="_csrf" value="{{ csrfToken() }}"><input type="hidden" name="back" value="/portal#staff-board">
                       <input type="hidden" name="action" value="delete">
                       <button type="submit" class="grid size-8 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-accent-50 hover:text-accent-700" title="Delete">{{ icon('trash', 'size-4') }}<span class="sr-only">Delete</span></button>

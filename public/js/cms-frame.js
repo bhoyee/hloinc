@@ -368,8 +368,9 @@
         items.splice(i + 1, 0, copy);
         saveList(key, items, { reload: true });
       } },
-      { icon: 'trash', title: 'Delete', disabled: items.length <= 1, run: () => {
-        if (!window.confirm('Delete this item? You can undo by discarding the draft or restoring an earlier version.')) return;
+      { icon: 'trash', title: 'Delete', disabled: items.length <= 1, run: async () => {
+        const ask = window.hloConfirm || ((o) => Promise.resolve(window.confirm(o.message)));
+        if (!(await ask({ title: 'Delete this item?', message: 'You can undo by discarding the draft or restoring an earlier version.', confirmLabel: 'Delete', tone: 'danger' }))) return;
         items.splice(i, 1);
         saveList(key, items, { reload: true });
       } },

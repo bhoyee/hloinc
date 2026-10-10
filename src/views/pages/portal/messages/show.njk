@@ -194,7 +194,7 @@
             </form>
           {% endif %}
           {% if m.archived_at and can('messages.delete') %}
-            <form method="post" action="/portal/messages/{{ m.id }}/delete" class="mt-4 border-t border-line pt-4" data-confirm="Delete this {{ m.type }} and its notes permanently? This can’t be undone.">
+            <form method="post" action="/portal/messages/{{ m.id }}/delete" class="mt-4 border-t border-line pt-4" data-confirm-title="Delete permanently?" data-confirm-button="Delete permanently" data-confirm="This {{ m.type }} and its notes will be removed for good. This can’t be undone.">
               <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
               <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
             </form>

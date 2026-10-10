@@ -112,7 +112,7 @@
                 <button type="submit" class="btn-green w-full">{{ icon('refresh', 'size-4') }} Restore</button>
               </form>
             {% elif a.state != 'archived' and mayDelete %}
-              <form method="post" action="/portal/announcements/{{ a.id }}/archive" data-confirm="Delete this announcement? It will be hidden everywhere.{{ ' An Admin can restore it.' if not can('announcements.delete') }}">
+              <form method="post" action="/portal/announcements/{{ a.id }}/archive" data-confirm-title="Delete this announcement?" data-confirm="It will be hidden on the website and staff board. {{ 'An Admin can restore it.' if not can('announcements.delete') else 'You can restore it from the Deleted tab.' }}">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
                 <input type="hidden" name="action" value="delete">
                 <button type="submit" class="btn-secondary w-full !text-accent-700">{{ icon('trash', 'size-4') }} Delete</button>
@@ -121,7 +121,7 @@
           </div>
           {% if a.paused_at and a.state == 'paused' %}<p class="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">Paused {{ a.paused_at | dateTime }}. It’s hidden on the website and staff board until resumed.</p>{% endif %}
           {% if a.state == 'archived' and can('announcements.delete') %}
-            <form method="post" action="/portal/announcements/{{ a.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm="Delete this announcement permanently? This can’t be undone.">
+            <form method="post" action="/portal/announcements/{{ a.id }}/delete" class="mt-5 border-t border-line pt-4" data-confirm-title="Delete permanently?" data-confirm-button="Delete permanently" data-confirm="This announcement will be removed for good. This can’t be undone.">
               <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
               <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
             </form>
