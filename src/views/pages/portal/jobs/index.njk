@@ -5,7 +5,7 @@
 {% block actions %}
   <div class="flex flex-wrap gap-2">
     <a href="/careers" target="_blank" rel="noopener" class="btn-secondary">{{ icon('external', 'size-4') }} Careers page</a>
-    {% if can('jobs.applications') %}<a href="/portal/applications" class="btn-secondary">{{ icon('document', 'size-4') }} Applications</a>{% endif %}
+    {% if can('jobs.applications') %}<a href="/portal/applications" class="btn-secondary">{{ icon('document', 'size-4') }} Applications{% if navBadges.applications %} <span class="rounded-full bg-accent-600 px-2 py-0.5 text-xs font-bold text-white">{{ navBadges.applications }} new</span>{% endif %}</a>{% endif %}
     {% if can('jobs.edit') %}<a href="/portal/jobs/new" class="btn-primary">{{ icon('plus', 'size-4') }} New job</a>{% endif %}
   </div>
 {% endblock %}

@@ -5,7 +5,9 @@
   <div class="container-page flex h-20 items-center justify-between gap-6">
     <a href="/" class="shrink-0" aria-label="{{ site.legalName }} home">
       {% set logo = cms.image('site.logo', { src: '/img/logo.png', srcSm: '/img/logo.png', w: 647, h: 200, alt: site.legalName }) %}
-      <img src="{{ logo.src }}" alt="{{ logo.alt or site.legalName }}" width="{{ logo.w }}" height="{{ logo.h }}" class="h-12 w-auto sm:h-16" {{ logo.attrs }}>
+      <img src="{{ logo.src }}" alt="{{ logo.alt or site.legalName }}" width="{{ logo.w }}" height="{{ logo.h }}" class="h-12 w-auto sm:h-16 dark:hidden" {{ logo.attrs }}>
+      {# The same logo with light lettering on a clear background, for the dark theme. #}
+      <img src="/img/logo-dark.png" alt="{{ logo.alt or site.legalName }}" width="647" height="200" class="hidden h-12 w-auto sm:h-16 dark:block">
     </a>
 
     <nav aria-label="Main" class="hidden lg:block">
@@ -22,6 +24,11 @@
     </nav>
 
     <div class="flex items-center gap-2">
+      <button type="button" data-theme-toggle class="grid size-11 place-items-center rounded-full text-muted transition hover:bg-surface hover:text-ink"
+              aria-label="Switch to dark theme" title="Switch to dark theme">
+        <span class="dark:hidden">{{ icon('moon', 'size-5') }}</span>
+        <span class="hidden dark:inline">{{ icon('sun', 'size-5') }}</span>
+      </button>
       <a href="{{ headerCta.href }}" {{ headerCta.attrs }} class="btn-primary hidden !px-5 sm:inline-flex">{{ headerCta.label }} {{ icon('arrow-right', 'size-4') }}</a>
       <button type="button" class="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-surface lg:hidden"
               aria-controls="mobile-nav" aria-expanded="false" data-menu-toggle>

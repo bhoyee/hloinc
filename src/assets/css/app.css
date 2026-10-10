@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: styles apply when html has .dark (public website only, see public/js/theme.js). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source "../../views";
 @source "../../lib";
 @source "../../../public/js";
@@ -74,6 +77,8 @@
   --color-line: #dfe8e3;
   --color-surface: #f6f9f7;
   --color-cream: #fbf8f3;
+  /* Cards and panels: white here, dark grey-green in the dark theme. */
+  --color-card: #ffffff;
 
   --shadow-soft: 0 1px 2px rgb(15 28 22 / 0.04), 0 8px 24px -8px rgb(15 28 22 / 0.10);
   --shadow-lift: 0 2px 4px rgb(15 28 22 / 0.05), 0 18px 40px -12px rgb(15 28 22 / 0.18);
@@ -158,7 +163,7 @@
 
 /* Surfaces */
 @utility card {
-  @apply rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8;
+  @apply rounded-3xl border border-line bg-card p-6 shadow-soft sm:p-8;
 }
 @utility card-hover {
   @apply transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lift;
@@ -325,4 +330,97 @@
     outline-offset: 2px;
     border-radius: 0.75rem;
   }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Dark theme — public website only.
+ * public/js/theme.js puts .dark on <html> (following the visitor's device setting, or their
+ * choice from the sun/moon button). The staff portal never loads it, so it always stays light.
+ *
+ * 1. The main colours are tokens, so most of the site follows by redefining them here.
+ * 2. Classes that mean "light background" or "dark-green/red text on a light background"
+ *    are given dark-theme equivalents below. :where(.dark) keeps their weight equal to the
+ *    original class, so hover and group-hover effects still win as they do in the light theme.
+ *    Classes used on the always-dark sections (white text, brand-100/200 text) are left alone.
+ * ------------------------------------------------------------------------------------------- */
+.dark {
+  color-scheme: dark;
+  --color-ink: #e8efeb;
+  --color-muted: #a6b8af;
+  --color-line: #2b3a33;
+  --color-surface: #131d19;
+  --color-cream: #111916;
+  --color-card: #17221d;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.45);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 18px 40px -12px rgb(0 0 0 / 0.6);
+}
+
+@layer utilities {
+  :where(.dark) body { background-color: #0d1512; }
+
+  /* Light backgrounds */
+  :where(.dark) .bg-white { background-color: var(--color-card); }
+  :where(.dark) .bg-white\/95 { background-color: rgb(23 34 29 / 0.95); }
+  :where(.dark) .bg-brand-50 { background-color: #153325; }
+  :where(.dark) .bg-brand-100 { background-color: #1a3d2d; }
+  :where(.dark) .bg-brand-200\/50, :where(.dark) .bg-brand-200\/60 { background-color: rgb(29 68 51 / 0.7); }
+  :where(.dark) .bg-accent-50 { background-color: #3b1517; }
+  :where(.dark) .bg-accent-50\/40 { background-color: rgb(59 21 23 / 0.6); }
+  :where(.dark) .bg-amber-50 { background-color: #36290b; }
+  :where(.dark) .bg-amber-100 { background-color: #4a380f; }
+  :where(.dark) .has-\[\:checked\]\:bg-brand-50:has(:checked) { background-color: #153325; }
+
+  /* Borders and rings that are pale tints */
+  :where(.dark) .ring-brand-100, :where(.dark) .has-\[\:checked\]\:ring-brand-100:has(:checked) { --tw-ring-color: #24503c; }
+  :where(.dark) .ring-brand-200 { --tw-ring-color: #2d6049; }
+  :where(.dark) .border-brand-200 { border-color: #2d6049; }
+  :where(.dark) .ring-accent-100 { --tw-ring-color: #5c2226; }
+  :where(.dark) .ring-accent-200 { --tw-ring-color: #742a2f; }
+  :where(.dark) .border-accent-100 { border-color: #5c2226; }
+  :where(.dark) .border-accent-200 { border-color: #742a2f; }
+  :where(.dark) .border-accent-300 { border-color: #8a3036; }
+  :where(.dark) .border-amber-200 { border-color: #6b5214; }
+  :where(.dark) .ring-amber-300 { --tw-ring-color: #6b5214; }
+  /* White frames around photos and step circles become a soft dark frame. */
+  :where(.dark) .ring-white { --tw-ring-color: #22302a; }
+
+  /* Dark green, red and amber text becomes light */
+  :where(.dark) .text-brand-600, :where(.dark) .text-brand-700, :where(.dark) .text-brand-800, :where(.dark) .text-brand-900 { color: #74d4a8; }
+  :where(.dark) .text-accent-600, :where(.dark) .text-accent-700, :where(.dark) .text-accent-800 { color: #ff8f94; }
+  :where(.dark) .text-amber-900, :where(.dark) .text-amber-950 { color: #f6d58a; }
+  :where(.dark) .\!text-accent-800 { color: #ff8f94 !important; }
+  :where(.dark) .accent-brand-700 { accent-color: #3fae82; }
+
+  /* The same, on hover */
+  @media (hover: hover) {
+    :where(.dark) .hover\:bg-brand-50:hover { background-color: #1a3d2d; }
+    :where(.dark) .hover\:bg-brand-50\/40:hover { background-color: rgb(26 61 45 / 0.6); }
+    :where(.dark) .hover\:text-brand-700:hover, :where(.dark) .hover\:text-brand-800:hover { color: #9be3c1; }
+    :where(.dark) .hover\:text-accent-600:hover, :where(.dark) .hover\:text-accent-700:hover { color: #ffb0b4; }
+    :where(.dark) .group-hover\:text-brand-700:is(:where(.group):hover *) { color: #9be3c1; }
+    :where(.dark) .group-hover\:text-accent-600:is(:where(.group):hover *) { color: #ffb0b4; }
+    :where(.dark) .hover\:ring-brand-200:hover { --tw-ring-color: #2d6049; }
+    :where(.dark) .hover\:ring-accent-200:hover { --tw-ring-color: #742a2f; }
+    :where(.dark) .hover\:border-brand-200:hover { border-color: #2d6049; }
+    :where(.dark) .hover\:border-accent-200:hover, :where(.dark) .group-hover\:border-accent-200:is(:where(.group):hover *) { border-color: #742a2f; }
+  }
+
+  /* Site components */
+  :where(.dark) .eyebrow { color: #ff8f94; }
+  :where(.dark) .link { color: #74d4a8; text-decoration-color: rgb(116 212 168 / 0.45); }
+  :where(.dark) .link:hover { color: #9be3c1; text-decoration-color: #74d4a8; }
+  :where(.dark) .btn-secondary { background-color: var(--color-card); color: #9be3c1; }
+  :where(.dark) .btn-secondary:hover { background-color: #1a3d2d; }
+  :where(.dark) .btn-light { background-color: var(--color-card); color: #9be3c1; }
+  :where(.dark) .btn-light:hover { background-color: #1a3d2d; }
+  :where(.dark) .icon-tile { background-color: #153325; color: #74d4a8; --tw-ring-color: #24503c; }
+  :where(.dark) .icon-tile-red { background-color: #3b1517; color: #ff8f94; --tw-ring-color: #5c2226; }
+  :where(.dark) .card-hover:hover { border-color: #2d6049; }
+  :where(.dark) .form-control { background-color: #0f1915; border-color: #3b4c44; }
+  :where(.dark) .form-control::placeholder { color: #7f938a; }
+  :where(.dark) .form-control:focus { border-color: #3fae82; --tw-ring-color: #24503c; }
+  :where(.dark) .skip-link:focus { background-color: var(--color-card); }
+  :where(.dark) .scroll-panel { scrollbar-color: #3b4c44 transparent; }
+  /* The cookie notice is a dark box in both themes. */
+  :where(.dark) #cookie-notice { background-color: #0a110e; box-shadow: 0 0 0 1px var(--color-line), var(--shadow-lift); }
 }

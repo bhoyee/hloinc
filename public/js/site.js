@@ -329,6 +329,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Light/dark switch in the header (public website; theme.js applies the theme).
+  document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+    const label = () => {
+      const text = document.documentElement.classList.contains('dark') ? 'Switch to light theme' : 'Switch to dark theme';
+      btn.setAttribute('aria-label', text);
+      btn.title = text;
+    };
+    label();
+    btn.addEventListener('click', () => {
+      if (window.hloTheme) window.hloTheme.toggle();
+      label();
+    });
+  });
+
   // Resume picker (job applications): show the chosen file; flag size or type problems before sending.
   document.querySelectorAll('input[data-file-input]').forEach((input) => {
     const zone = input.closest('div');

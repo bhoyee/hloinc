@@ -12,8 +12,8 @@ const NAV = [
   { label: 'Schedule', href: '/portal/schedule', icon: 'clock', badge: 'timeOff', badgeLabel: 'time-off requests waiting' },
   { label: 'Messages', href: '/portal/messages', icon: 'inbox', permission: MESSAGE_ACCESS, badge: 'messages', badgeLabel: 'unread' },
   { label: 'Leads', href: '/portal/leads', icon: 'heart', permission: 'leads.view' },
-  { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view' },
-  { label: 'Applications', href: '/portal/applications', icon: 'document', permission: 'jobs.applications', badge: 'applications', badgeLabel: 'new' },
+  // Applications are reached from the Jobs page; the counter shows new ones (for roles that can see them).
+  { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view', badge: 'applications', badgeLabel: 'new applications', also: ['/portal/applications'] },
   { label: 'Announcements', href: '/portal/announcements', icon: 'megaphone', permission: 'announcements.view' },
   { label: 'Site content', href: '/portal/content', icon: 'document', permission: ['site_content.view', 'site_content.edit', 'site_content.edit_limited'] },
   { label: 'Staff accounts', href: '/portal/accounts', icon: 'users', permission: 'accounts.view', group: 'admin' },
@@ -25,7 +25,7 @@ const NAV = [
 function navFor(can, currentPath) {
   return NAV.filter((item) => !item.permission || [].concat(item.permission).some((p) => can(p))).map((item) => ({
     ...item,
-    active: item.href && (item.href === '/portal' ? currentPath === '/portal' : currentPath.startsWith(item.href)),
+    active: item.href && (item.href === '/portal' ? currentPath === '/portal' : [item.href, ...(item.also || [])].some((h) => currentPath.startsWith(h))),
   }));
 }
 

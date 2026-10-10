@@ -1,5 +1,8 @@
 {% extends "layouts/base.njk" %}
 
+{# Light/dark theme: set before the page is drawn (public website only). #}
+{% block headEarly %}<meta name="color-scheme" content="light dark"><script src="/js/theme.js"></script>{% endblock %}
+
 {% block body %}
   {% include "partials/header.njk" %}
   <main id="main">
