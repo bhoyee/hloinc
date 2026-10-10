@@ -587,6 +587,94 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ask before permanent, can't-undo actions.
   // Confirmations (form[data-confirm]) are handled by hloConfirm at the top of this file.
 
+  document.addEventListener('change', (e) => {
+    const perPage = e.target.closest('form[data-per-page]');
+    if (perPage && e.target.matches('select') && !perPage.closest('[data-live-results]')) perPage.submit();
+  });
+
+  // Live filters: forms with data-live-filter="#results" update that part of the
+  // page as you type (after a short pause) or change a choice, and page links
+  // inside it (data-page-link) work without reloading. The address keeps the
+  // search, so refreshing or sharing the link shows the same list.
+  document.querySelectorAll('form[data-live-filter]').forEach((form) => {
+    const selector = form.dataset.liveFilter;
+    const results = document.querySelector(selector);
+    if (!results) return;
+    form.querySelectorAll('[data-live-hide]').forEach((el) => el.classList.add('hidden'));
+    let timer = 0;
+    let controller = null;
+
+    const urlFor = () => {
+      const params = new URLSearchParams();
+      for (const [k, v] of new FormData(form)) if (String(v).trim() !== '') params.append(k, v);
+      return `${form.getAttribute('action') || location.pathname}?${params}`;
+    };
+    const load = async (url) => {
+      if (controller) controller.abort();
+      controller = new AbortController();
+      results.setAttribute('aria-busy', 'true');
+      results.classList.add('opacity-60', 'transition-opacity');
+      try {
+        const res = await fetch(url, { signal: controller.signal, headers: { Accept: 'text/html' } });
+        if (!res.ok || res.redirected) throw new Error(String(res.status));
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const fresh = doc.querySelector(selector);
+        if (!fresh) throw new Error('missing');
+        results.innerHTML = fresh.innerHTML;
+        for (const extra of (form.dataset.liveAlso || '').split(',').map((x) => x.trim()).filter(Boolean)) {
+          const here = document.querySelector(extra);
+          const there = doc.querySelector(extra);
+          if (here && there) here.innerHTML = there.innerHTML;
+        }
+        const tabNow = doc.querySelector('[data-live-tab]');
+        const tabHere = form.querySelector('[data-live-tab]');
+        if (tabNow && tabHere) tabHere.value = tabNow.value;
+        history.replaceState(null, '', url);
+      } catch (err) {
+        if (err.name !== 'AbortError') location.href = url; // fall back to a normal page load
+      } finally {
+        results.removeAttribute('aria-busy');
+        results.classList.remove('opacity-60');
+      }
+    };
+
+    form.addEventListener('input', (e) => {
+      if (!e.target.matches('input[type="search"], input[type="text"]')) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => load(urlFor()), 300);
+    });
+    form.addEventListener('change', (e) => {
+      if (e.target.matches('select, input[type="date"], input[type="checkbox"], input[type="radio"]')) load(urlFor());
+    });
+    form.liveLoad = load; // used by the rows-per-page choice below the list
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      clearTimeout(timer);
+      load(urlFor());
+    });
+    results.addEventListener('change', (e) => {
+      const perPage = e.target.closest('form[data-per-page]');
+      if (!perPage || !e.target.matches('select')) return;
+      const params = new URLSearchParams(new FormData(perPage));
+      load(`${perPage.getAttribute('action')}?${params}`);
+    });
+    results.addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-page-link]');
+      if (!link) return;
+      e.preventDefault();
+      // Keep hidden fields (e.g. the calendar's view and date) in step with where the link goes.
+      const target = new URL(link.href, location.href);
+      form.querySelectorAll('input[type="hidden"]').forEach((input) => {
+        if (target.searchParams.has(input.name)) input.value = target.searchParams.get(input.name);
+      });
+      if (link.hasAttribute('data-clear-filters')) {
+        form.querySelectorAll('input[type="search"], input[type="text"]').forEach((input) => { input.value = ''; });
+        form.querySelectorAll('select').forEach((select) => { select.selectedIndex = 0; });
+      }
+      load(link.href).then(() => form.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    });
+  });
+
   // Password boxes: an eye button to show or hide what was typed.
   const EYE = 'M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z';
   const EYE_OFF = 'M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88';

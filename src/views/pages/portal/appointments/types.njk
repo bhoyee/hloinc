@@ -1,8 +1,12 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 
+{% import "partials/appointment-nav.njk" as apptNav with context %}
 {% block actions %}
-  <a href="/portal/appointments/types/new" class="btn-primary shrink-0">{{ icon('plus', 'size-4') }} New type</a>
+  <div class="flex flex-wrap gap-2">
+    {{ apptNav.nav('types') }}
+    <a href="/portal/appointments/types/new" class="btn-secondary shrink-0">{{ icon('plus', 'size-4') }} New type</a>
+  </div>
 {% endblock %}
 
 {% block content %}

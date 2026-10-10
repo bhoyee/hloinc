@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-  <form method="get" action="/portal/accounts" role="search" aria-label="Find staff accounts" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-[2fr_1fr_1fr_auto]">
+  <form method="get" data-live-filter="#accounts-results" action="/portal/accounts" role="search" aria-label="Find staff accounts" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-[2fr_1fr_1fr_auto]">
     <div class="relative">
       <label for="f-q" class="sr-only">Search by name or email</label>
       <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
@@ -30,8 +30,11 @@
         <option value="deactivated" {% if filters.status == 'deactivated' %}selected{% endif %}>Deactivated</option>
       </select>
     </div>
-    <button type="submit" class="btn-green">Filter</button>
+    <button type="submit" class="btn-green" data-live-hide>Filter</button>
   </form>
+
+  <div id="accounts-results" data-live-results>
+  {{ ui.listBar(pager, 'accounts') }}
 
   <p class="mb-3 text-sm text-muted">{{ total }} {{ 'account' if total == 1 else 'accounts' }}</p>
 
@@ -69,14 +72,9 @@
         </tbody>
       </table>
     </div>
-    {% if pages > 1 %}
-      <nav aria-label="Account pages" class="mt-6 flex items-center justify-between">
-        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
-        <span class="text-sm text-muted">Page {{ page }} of {{ pages }}</span>
-        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
-      </nav>
-    {% endif %}
+    {{ ui.pager(pager, 'accounts') }}
   {% else %}
     <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center text-muted">No accounts match these filters.</div>
   {% endif %}
+  </div>
 {% endblock %}

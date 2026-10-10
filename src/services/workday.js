@@ -115,6 +115,78 @@ async function today(user, now = new Date()) {
   return out;
 }
 
+const dayHeading = (iso, todayIso) => {
+  if (iso === todayIso) return 'Today';
+  if (iso === addDaysIso(todayIso, 1)) return 'Tomorrow';
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`));
+};
+
+/**
+ * This person's upcoming shifts and time off (next 60 days, up to 60 entries),
+ * grouped by day, with a short summary of this week.
+ */
+async function myShifts(user, now = new Date()) {
+  const todayIso = marylandParts(now).date;
+  const rows = await db('shifts')
+    .where({ user_id: user.id })
+    .where('end_at', '>', now)
+    .where('start_at', '<', marylandDateTime(addDaysIso(todayIso, 60), '00:00'))
+    .orderBy('start_at')
+    .limit(60);
+  const weekEnd = marylandDateTime(addDaysIso(todayIso, 7 - ((new Date(`${todayIso}T12:00:00Z`).getUTCDay() + 6) % 7)), '00:00'); // next Monday
+  let weekCount = 0;
+  let weekHours = 0;
+  const days = new Map();
+  for (const s of rows) {
+    const start = new Date(s.start_at);
+    const end = new Date(s.end_at);
+    const hours = (end - start) / 3600000;
+    if (s.kind === 'shift' && start < weekEnd) {
+      weekCount += 1;
+      weekHours += hours;
+    }
+    const iso = marylandParts(start < now ? now : start).date;
+    if (!days.has(iso)) days.set(iso, { date: iso, heading: dayHeading(iso, todayIso), items: [] });
+    days.get(iso).items.push({
+      kind: s.kind,
+      label: s.kind === 'time_off' ? s.label || 'Time off' : s.label || 'Shift',
+      location: s.location,
+      from: timeOf(start),
+      until: timeOf(end),
+      allDay: s.kind === 'time_off' && hours >= 23.9,
+      overnight: marylandParts(end).date !== marylandParts(start).date && hours < 23.9,
+      onNow: start <= now && now < end,
+      hours: Math.round(hours * 10) / 10,
+    });
+  }
+  return { count: rows.length, weekCount, weekHours: Math.round(weekHours * 10) / 10, days: [...days.values()] };
+}
+
+/** Recent audit-log entries with an icon for each kind of action and a "time ago". */
+const ACTIVITY_ICONS = [
+  [/^auth\.|^mfa\./, 'lock'], [/^message/, 'inbox'], [/^appointment/, 'calendar'], [/^lead/, 'heart'],
+  [/^announcement/, 'megaphone'], [/^content\./, 'pencil'], [/^shift/, 'clock'], [/^job/, 'briefcase'],
+  [/^(account|user|role|invite)/, 'users'], [/^security/, 'shield'],
+];
+function ago(when, now = new Date()) {
+  const mins = Math.round((now - new Date(when)) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} h ago`;
+  const days = Math.round(hrs / 24);
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}
+async function recentActivity(limit = 30, now = new Date()) {
+  const rows = await db('audit_log').select('id', 'action', 'user_name', 'summary', 'created_at').orderBy('id', 'desc').limit(limit);
+  return rows.map((e) => ({
+    ...e,
+    icon: (ACTIVITY_ICONS.find(([re]) => re.test(e.action)) || [null, 'info'])[1],
+    tone: /failed|delete|lock/.test(e.action) ? 'red' : /^auth\./.test(e.action) ? 'grey' : 'green',
+    ago: ago(e.created_at, now),
+  }));
+}
+
 /** Shortcuts to the things this person does most, limited to what they may do. */
 function quickActions(user) {
   return [
@@ -161,4 +233,4 @@ async function panels(user, now = new Date()) {
   return { ...data, version: crypto.createHash('sha1').update(stamp).digest('hex').slice(0, 12) };
 }
 
-module.exports = { attention, today, quickActions, panels, staffSecurity, businessDaysBefore, WAIT };
+module.exports = { attention, today, quickActions, panels, staffSecurity, myShifts, recentActivity, businessDaysBefore, WAIT };

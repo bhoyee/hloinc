@@ -23,7 +23,7 @@
     {% endfor %}
   </nav>
 
-  <form method="get" action="/portal/messages" role="search" aria-label="Filter messages" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_auto_auto] xl:items-center">
+  <form method="get" data-live-filter="#msg-results" action="/portal/messages" role="search" aria-label="Filter messages" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_auto_auto] xl:items-center">
     <input type="hidden" name="tab" value="{{ tab }}">
     <div class="relative sm:col-span-2 xl:col-span-1">
       <label for="f-q" class="sr-only">Search by name, email, phone or text</label>
@@ -51,8 +51,11 @@
     </label>
     {% if filters.unassigned %}<input type="hidden" name="unassigned" value="1">{% endif %}
     {% if filters.failed %}<input type="hidden" name="failed" value="1">{% endif %}
-    <button type="submit" class="btn-green">Filter</button>
+    <button type="submit" class="btn-green" data-live-hide>Filter</button>
   </form>
+
+  <div id="msg-results" data-live-results>
+  {{ ui.listBar(pager, 'messages') }}
 
   {% if filters.unassigned or filters.failed %}
     <p class="-mt-2 mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
@@ -92,13 +95,7 @@
         </li>
       {% endfor %}
     </ul>
-    {% if pages > 1 %}
-      <nav aria-label="Message pages" class="mt-6 flex items-center justify-between">
-        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
-        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
-        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
-      </nav>
-    {% endif %}
+    {{ ui.pager(pager, 'messages') }}
   {% else %}
     <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
       <span class="icon-tile mx-auto">{{ icon('inbox', 'size-6') }}</span>
@@ -106,4 +103,5 @@
       <p class="mt-1 text-muted">{% if tab == 'new' %}New messages, referrals and service requests from the website appear here.{% else %}Try another tab or filter.{% endif %}</p>
     </div>
   {% endif %}
+  </div>
 {% endblock %}

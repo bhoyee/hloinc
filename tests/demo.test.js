@@ -72,5 +72,5 @@ describe('demo staff password', () => {
     // Same password again: nothing changes.
     await demoStaffSeed.seed(db);
     expect((await db('users').where({ email: 'admin@hloinc.test' }).first()).session_version).toBe(after.session_version);
-  });
+  }, 30000); // password hashing for six accounts, three times over
 });

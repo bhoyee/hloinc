@@ -339,3 +339,79 @@ describe('staff schedule', () => {
     expect((await reception.get('/portal/schedule/new')).status).toBe(403);
   });
 });
+
+describe('appointments page: buttons, live filtering and pages', () => {
+  it('shows List, Calendar and Types on both the list and the calendar', async () => {
+    const agent = await signIn(await makeUser('admin'));
+    for (const path of ['/portal/appointments', '/portal/appointments/calendar']) {
+      const html = (await agent.get(path)).text;
+      expect(html).toContain('href="/portal/appointments/types"');
+      expect(html).toContain('href="/portal/appointments/calendar"');
+      expect(html).toMatch(/class="btn-green[^"]*"[^>]*>[\s\S]*?List/);
+    }
+    expect((await agent.get('/portal/appointments')).text).toContain('data-live-filter="#appt-results"');
+  });
+
+  it('numbers the pages and says how many are shown', async () => {
+    const rows = Array.from({ length: 45 }, (_, i) => ({ type_id: typeId, source: 'phone', status: 'completed', name: `Paged ${i}`, phone: '410-555-0100', scheduled_at: new Date(Date.now() - (i + 1) * 3600000), duration_minutes: 30 }));
+    await db('appointments').insert(rows);
+    const user = await makeUser('admin');
+    const agent = await signIn(user);
+    // 25 per page by default.
+    const page2 = (await agent.get('/portal/appointments?tab=all&page=2')).text;
+    expect(page2).toMatch(/Showing <span[^>]*>26–45<\/span> of <span[^>]*>45<\/span>/);
+    expect(page2).toMatch(/aria-current="page"[^>]*>2</);
+    expect(page2).toContain('data-page-link');
+    expect(page2).toMatch(/<option value="25"\s+selected>/);
+
+    // Choosing 10 per page is remembered on the account, on every list.
+    const ten = (await agent.get('/portal/appointments?tab=all&per=10')).text;
+    expect(ten).toMatch(/Showing <span[^>]*>1–10<\/span> of <span[^>]*>45<\/span>/);
+    expect((await db('users').where({ id: user.id }).first()).page_size).toBe(10);
+    expect((await agent.get('/portal/appointments?tab=all')).text).toMatch(/Showing <span[^>]*>1–10<\/span>/);
+
+    // Anything other than 10/25/50/100 is ignored.
+    expect((await agent.get('/portal/appointments?tab=all&per=7')).text).toMatch(/Showing <span[^>]*>1–10<\/span>/);
+  });
+
+  it('lets the status filter work from any tab (it switches to All)', async () => {
+    await db('appointments').insert([
+      { type_id: typeId, source: 'website', status: 'requested', name: 'Waiting Person', email: 'w@example.com' },
+      { type_id: typeId, source: 'phone', status: 'cancelled', name: 'Cancelled Person', phone: '410-555-0101' },
+    ]);
+    const agent = await signIn(await makeUser('admin'));
+    const html = (await agent.get('/portal/appointments?tab=requests&status=cancelled')).text;
+    expect(html).not.toMatch(/<select id="f-status"[^>]*disabled/);
+    expect(html).toContain('Cancelled Person');
+    expect(html).not.toContain('Waiting Person');
+    expect(html).toMatch(/href="\/portal\/appointments\?tab=all" aria-current="page"/);
+    expect(html).toMatch(/name="per"/); // rows per page shows even on a short list
+  });
+
+  it('searches and filters the calendar, keeping the search when moving between weeks', async () => {
+    const staff = await makeUser('program_coordinator', 'Casey Coordinator');
+    const when = new Date(Date.now() + 2 * 3600000);
+    await db('appointments').insert([
+      { type_id: typeId, source: 'phone', status: 'confirmed', name: 'Findable Person', phone: '410-555-0102', scheduled_at: when, duration_minutes: 30, assigned_to: staff.id },
+      { type_id: typeId, source: 'phone', status: 'confirmed', name: 'Other Person', phone: '410-555-0103', scheduled_at: when, duration_minutes: 30 },
+    ]);
+    const agent = await signIn(await makeUser('admin'));
+    const all = (await agent.get('/portal/appointments/calendar')).text;
+    expect(all).toContain('Findable Person');
+    expect(all).toContain('Other Person');
+
+    const found = (await agent.get('/portal/appointments/calendar?q=findable')).text;
+    expect(found).toContain('Findable Person');
+    expect(found).not.toContain('Other Person');
+    expect(found).toMatch(/1 match<\/span> this week/);
+    expect(found).toContain('href="/portal/appointments?tab=all&q=findable"'); // search all dates
+    expect(found).toMatch(/date=\d{4}-\d{2}-\d{2}&(amp;)?q=findable" data-page-link/); // next / previous keep the search
+
+    // Searching a staff member's name finds the appointments they're on.
+    const byStaff = (await agent.get('/portal/appointments/calendar?q=casey')).text;
+    expect(byStaff).toContain('Findable Person');
+    expect(byStaff).not.toContain('Other Person');
+    expect(byStaff).not.toContain('id="c-staff"');
+    expect((await agent.get('/portal/appointments?tab=all&q=casey')).text).toContain('Findable Person');
+  });
+});

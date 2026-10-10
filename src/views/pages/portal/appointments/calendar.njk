@@ -12,26 +12,52 @@
   </a>
 {% endmacro %}
 
-{% block actions %}
-  <div class="flex flex-wrap gap-2">
-    <a href="/portal/appointments" class="btn-secondary">{{ icon('inbox', 'size-4') }} List</a>
-    {% if can('appointments.log') %}<a href="/portal/appointments/new" class="btn-primary">{{ icon('plus', 'size-4') }} Log walk-in / phone</a>{% endif %}
-  </div>
-{% endblock %}
+{% import "partials/appointment-nav.njk" as apptNav with context %}
+{% block actions %}{{ apptNav.nav('calendar') }}{% endblock %}
 
 {% block content %}
   <div class="grid gap-6 2xl:grid-cols-[1fr_20rem]">
+    <div class="min-w-0">
+    <form method="get" action="/portal/appointments/calendar" role="search" aria-label="Search the calendar" data-live-filter="#cal-results"
+          class="mb-4 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-[2fr_1fr_auto]">
+      <input type="hidden" name="view" value="{{ view }}">
+      <input type="hidden" name="date" value="{{ anchor }}">
+      <div class="relative">
+        <label for="c-q" class="sr-only">Search by person, phone, reference or staff member</label>
+        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+        <input id="c-q" type="search" name="q" value="{{ filters.q }}" placeholder="Person, phone, reference or staff member" class="form-control !pl-12" maxlength="100">
+      </div>
+      <div>
+        <label for="c-type" class="sr-only">Type</label>
+        <select id="c-type" name="type" class="form-control">
+          <option value="">All types</option>
+          {% for t in types %}<option value="{{ t.id }}" {% if filters.type == t.id | string %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn-green" data-live-hide>Search</button>
+    </form>
+
+    <div id="cal-results" data-live-results>
+    {% if filtering %}
+      <p class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-brand-50/70 px-4 py-2.5 text-sm text-ink ring-1 ring-brand-100" role="status">
+        <span><span class="font-semibold">{{ matches }} {{ 'match' if matches == 1 else 'matches' }}</span> this {{ view }}{% if filters.q %} for “{{ filters.q }}”{% endif %}</span>
+        <span class="flex flex-wrap gap-x-4 gap-y-1 font-semibold">
+          {% if filters.q %}<a href="/portal/appointments?tab=all&q={{ filters.q | urlencode }}" class="text-brand-700 hover:text-brand-800">Search all dates &rarr;</a>{% endif %}
+          <a href="?view={{ view }}&date={{ anchor }}" data-page-link class="text-muted hover:text-ink" data-clear-filters>Clear</a>
+        </span>
+      </p>
+    {% endif %}
     <section class="min-w-0 rounded-3xl border border-line bg-white shadow-soft" aria-labelledby="cal-h">
       <div class="flex flex-col gap-3 border-b border-line p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div class="flex items-center gap-2">
-          <a href="?view={{ view }}&date={{ prev }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5 rotate-180') }}<span class="sr-only">Previous {{ view }}</span></a>
-          <a href="?view={{ view }}&date={{ today }}" class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-line hover:bg-surface">Today</a>
-          <a href="?view={{ view }}&date={{ next }}" class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5') }}<span class="sr-only">Next {{ view }}</span></a>
+          <a href="?view={{ view }}&date={{ prev }}{{ keep }}" data-page-link class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5 rotate-180') }}<span class="sr-only">Previous {{ view }}</span></a>
+          <a href="?view={{ view }}&date={{ today }}{{ keep }}" data-page-link class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 ring-line hover:bg-surface">Today</a>
+          <a href="?view={{ view }}&date={{ next }}{{ keep }}" data-page-link class="grid size-10 place-items-center rounded-xl ring-1 ring-line hover:bg-surface">{{ icon('chevron-right', 'size-5') }}<span class="sr-only">Next {{ view }}</span></a>
           <h2 id="cal-h" class="ml-2 font-display text-lg font-bold" aria-live="polite">{{ label }}</h2>
         </div>
         <div class="flex rounded-xl bg-surface p-1 ring-1 ring-line" role="group" aria-label="Calendar view">
           {% for v in ['week', 'month'] %}
-            <a href="?view={{ v }}&date={{ anchor }}" {% if v == view %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold capitalize {{ 'bg-white text-ink shadow-sm' if v == view else 'text-muted hover:text-ink' }}">{{ v }}</a>
+            <a href="?view={{ v }}&date={{ anchor }}{{ keep }}" data-page-link {% if v == view %}aria-current="page"{% endif %} class="rounded-lg px-4 py-1.5 text-sm font-semibold capitalize {{ 'bg-white text-ink shadow-sm' if v == view else 'text-muted hover:text-ink' }}">{{ v }}</a>
           {% endfor %}
         </div>
       </div>
@@ -61,7 +87,7 @@
         <ol class="lg:grid lg:grid-cols-7">
           {% for d in grid %}
             <li class="border-line p-2 lg:min-h-32 lg:border-r lg:border-b {{ 'hidden lg:block' if not d.items.length and not d.isToday }} {{ 'lg:bg-surface/60' if not d.inMonth }} {{ 'bg-brand-50/40' if d.isToday }} border-b">
-              <a href="?view=week&date={{ d.date }}" class="mb-1 inline-flex items-center gap-2 text-sm font-semibold {{ 'text-muted' if not d.inMonth else 'text-ink' }} hover:text-brand-700">
+              <a href="?view=week&date={{ d.date }}{{ keep }}" data-page-link class="mb-1 inline-flex items-center gap-2 text-sm font-semibold {{ 'text-muted' if not d.inMonth else 'text-ink' }} hover:text-brand-700">
                 <span class="lg:hidden">{{ d.dow }}</span>
                 <span class="{{ 'grid size-7 place-items-center rounded-full bg-accent-600 text-white' if d.isToday }}">{{ d.dayNum }}</span>
               </a>
@@ -69,13 +95,15 @@
                 {% for a in d.items %}
                   {% if loop.index <= 3 %}<li>{{ chip(a, statusLabels, true) }}</li>{% endif %}
                 {% endfor %}
-                {% if d.items.length > 3 %}<li><a href="?view=week&date={{ d.date }}" class="text-xs font-semibold text-brand-700">+{{ d.items.length - 3 }} more</a></li>{% endif %}
+                {% if d.items.length > 3 %}<li><a href="?view=week&date={{ d.date }}{{ keep }}" data-page-link class="text-xs font-semibold text-brand-700">+{{ d.items.length - 3 }} more</a></li>{% endif %}
               </ul>
             </li>
           {% endfor %}
         </ol>
       {% endif %}
     </section>
+    </div>
+    </div>
 
     <aside class="space-y-4" aria-labelledby="wait-h">
       <section class="rounded-3xl border border-line bg-white p-5 shadow-soft">
@@ -84,7 +112,7 @@
           <span class="rounded-full {{ 'bg-accent-600 text-white' if waiting.length else 'bg-surface text-muted ring-1 ring-line' }} px-2.5 py-0.5 text-sm">{{ waiting.length }}</span>
         </h2>
         {% if waiting.length %}
-          <ul class="mt-3 space-y-2">
+          <ul class="scroll-panel -mx-1 mt-3 max-h-[22rem] space-y-2 overflow-y-auto px-1" tabindex="0" aria-label="Requests waiting to be scheduled">
             {% for w in waiting %}
               <li>
                 <a href="/portal/appointments/{{ w.id }}#schedule" class="block rounded-xl border-l-4 border-amber-400 bg-amber-50 px-3 py-2 hover:bg-amber-100">

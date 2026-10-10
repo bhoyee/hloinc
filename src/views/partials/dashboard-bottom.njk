@@ -1,50 +1,70 @@
-{# Recent activity, staff account security, your account and your next shift. Refreshed live. #}
-  <div class="mt-8 grid gap-4 lg:grid-cols-[1.5fr_1fr] lg:gap-5">
+{# Recent activity and my shifts (side by side, each scrolls), then the two security cards. Refreshed live. #}
+  <div class="mt-8 grid gap-4 lg:grid-cols-2 lg:gap-5">
     {% if recentActivity.length %}
-      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft {{ 'lg:row-span-3' if staffSecurity else 'lg:row-span-2' }}">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold">Recent activity</h2>
+      <section class="flex flex-col rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6 lg:h-[30rem]" aria-labelledby="activity-h">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="activity-h" class="text-lg font-bold">Recent activity</h2>
           <a href="/portal/audit" class="text-sm font-semibold text-brand-700 hover:text-brand-800">Full audit log &rarr;</a>
         </div>
-        <ul class="mt-4 divide-y divide-line">
+        <ol class="scroll-panel -mx-1 mt-4 max-h-[26rem] min-h-0 flex-1 overflow-y-auto px-1 lg:max-h-none" tabindex="0" aria-label="Recent activity">
           {% for e in recentActivity %}
-            <li class="flex items-start justify-between gap-4 py-3">
-              <p class="text-[15px] text-ink">{{ e.summary or e.action }}</p>
-              <time class="shrink-0 text-sm text-muted">{{ e.created_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</time>
+            <li class="flex items-start gap-3 border-b border-line py-2.5 last:border-b-0">
+              <span class="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ring-1 {{ {'red': 'bg-accent-50 text-accent-600 ring-accent-100', 'grey': 'bg-surface text-muted ring-line', 'green': 'bg-brand-50 text-brand-700 ring-brand-100'}[e.tone] }}" aria-hidden="true">{{ icon(e.icon, 'size-4') }}</span>
+              <p class="min-w-0 flex-1 text-[15px] leading-snug text-ink">{{ e.summary or e.action }}</p>
+              <time class="shrink-0 pt-0.5 text-xs text-muted" title="{{ e.created_at | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}">{{ e.ago }}</time>
             </li>
           {% endfor %}
-        </ul>
+        </ol>
       </section>
     {% else %}
-      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft {{ 'lg:row-span-3' if staffSecurity else 'lg:row-span-2' }}">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft lg:h-[30rem]">
         <h2 class="text-lg font-bold">Welcome to the staff portal</h2>
         <p class="mt-2 text-muted">Use the menu on the left to reach the areas your role can use, or search from the bar at the top.</p>
       </section>
     {% endif %}
 
-    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
-      <h2 class="text-lg font-bold">Your account security</h2>
-      <ul class="mt-4 space-y-3 text-[15px]">
-        <li class="flex items-center gap-3">
-          {% if user.twoStepOff %}
-            <span class="grid size-8 place-items-center rounded-full bg-surface text-muted ring-1 ring-line">{{ icon('info', 'size-4') }}</span>
-            <span>Two-step sign-in is switched off for everyone{% if can('security.edit') %} · <a href="/portal/settings/security" class="link">Security settings</a>{% endif %}</span>
-          {% elif security.mfaEnabled %}
-            <span class="grid size-8 place-items-center rounded-full bg-brand-100 text-brand-800">{{ icon('check', 'size-4') }}</span>
-            <span>Two-step sign-in is on · {{ security.recoveryLeft }} recovery codes left</span>
-          {% else %}
-            <span class="grid size-8 place-items-center rounded-full bg-amber-100 text-amber-900">{{ icon('exclamation', 'size-4') }}</span>
-            <span>Two-step sign-in is off. <a href="/portal/account/two-step" class="link">Turn it on</a></span>
-          {% endif %}
-        </li>
-        <li class="flex items-center gap-3">
-          <span class="hidden size-8 shrink-0 place-items-center rounded-full bg-surface sm:grid text-muted ring-1 ring-line">{{ icon('clock', 'size-4') }}</span>
-          <span>Previous sign-in: {{ previousLogin | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) if previousLogin else 'this is your first' }}</span>
-        </li>
-      </ul>
-      <a href="/portal/account" class="btn-secondary mt-5 w-full">Manage my account</a>
+    {# My shifts: everything coming up, grouped by day. #}
+    {% set ms = myShifts %}
+    <section class="flex flex-col rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6 lg:h-[30rem]" aria-labelledby="shift-h">
+      <div class="flex items-center justify-between gap-3">
+        <h2 id="shift-h" class="flex items-center gap-2.5 text-lg font-bold">
+          My shifts
+          {% if ms.count %}<span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-line">{{ ms.count }}</span>{% endif %}
+        </h2>
+        <a href="/portal/schedule?view=mine" class="btn-dark !px-3.5 !py-1.5 text-sm">{{ icon('calendar', 'size-4') }} My schedule</a>
+      </div>
+      {% if ms.count %}
+        <p class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl bg-brand-50/70 px-4 py-2.5 text-sm text-ink ring-1 ring-brand-100">
+          <span><span class="font-semibold">This week:</span> {{ ms.weekCount }} {{ 'shift' if ms.weekCount == 1 else 'shifts' }} · {{ ms.weekHours }} h</span>
+          {% set first = ms.days[0].items[0] %}
+          <span class="text-muted">{{ 'On now' if first.onNow else 'Next' }}: <span class="font-semibold text-ink">{{ ms.days[0].heading }}, {{ first.from }}</span></span>
+        </p>
+        <div class="scroll-panel -mx-1 mt-3 max-h-[26rem] min-h-0 flex-1 overflow-y-auto px-1 lg:max-h-none" tabindex="0" aria-label="My upcoming shifts">
+          {% for d in ms.days %}
+            <h3 class="sticky top-0 z-[1] bg-white pt-2 pb-1.5 text-xs font-bold tracking-wide text-muted uppercase">{{ d.heading }}</h3>
+            <ul class="space-y-1.5 pb-2">
+              {% for sh in d.items %}
+                <li class="flex items-center gap-3 rounded-xl px-3 py-2 ring-1 {{ 'bg-amber-50 ring-amber-200' if sh.kind == 'time_off' else ('bg-brand-50 ring-brand-200' if sh.onNow else 'ring-line') }}">
+                  <span class="size-2 shrink-0 rounded-full {{ 'bg-amber-500' if sh.kind == 'time_off' else ('bg-brand-500' if sh.onNow else 'bg-line') }}" aria-hidden="true"></span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-[15px] font-semibold text-ink">{{ sh.label }}{% if sh.onNow %} <span class="text-xs font-semibold text-brand-700">· on now</span>{% endif %}</span>
+                    {% if sh.location %}<span class="block truncate text-sm text-muted">{{ sh.location }}</span>{% endif %}
+                  </span>
+                  <span class="shrink-0 text-right text-sm text-ink tabular-nums">
+                    {% if sh.allDay %}All day{% else %}{{ sh.from }}–{{ sh.until }}{% if sh.overnight %}<span class="block text-xs text-muted">overnight</span>{% endif %}{% endif %}
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="mt-4 flex flex-1 items-center justify-center rounded-2xl bg-surface px-4 py-6 text-center text-[15px] text-muted">Nothing on your schedule for the next 60 days.</p>
+      {% endif %}
     </section>
+  </div>
 
+  <div class="mt-4 grid gap-4 lg:mt-5 lg:grid-cols-2 lg:gap-5">
     {% if staffSecurity %}
       {% set sec = staffSecurity %}
       {% set problems = sec.noTwoStep.length + sec.locked.length + sec.invited.length %}
@@ -99,15 +119,26 @@
         {% endif %}
       </section>
     {% endif %}
-
-    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="shift-h">
-      <h2 id="shift-h" class="text-lg font-bold">My next shift</h2>
-      {% if nextShift %}
-        <p class="mt-3 font-display text-xl font-bold text-ink">{{ nextShift.start_at | dateTime }}</p>
-        <p class="text-[15px] text-muted">{{ 'Time off' if nextShift.kind == 'time_off' else (nextShift.label or 'Shift') }}{% if nextShift.location %} · {{ nextShift.location }}{% endif %} · until {{ nextShift.end_at | time }}</p>
-      {% else %}
-        <p class="mt-2 text-[15px] text-muted">Nothing scheduled.</p>
-      {% endif %}
-      <a href="/portal/schedule?view=mine" class="btn-secondary mt-5 w-full">My schedule</a>
+    <section class="rounded-3xl border border-line bg-white p-6 shadow-soft">
+      <h2 class="text-lg font-bold">Your account security</h2>
+      <ul class="mt-4 space-y-3 text-[15px]">
+        <li class="flex items-center gap-3">
+          {% if user.twoStepOff %}
+            <span class="grid size-8 place-items-center rounded-full bg-surface text-muted ring-1 ring-line">{{ icon('info', 'size-4') }}</span>
+            <span>Two-step sign-in is switched off for everyone{% if can('security.edit') %} · <a href="/portal/settings/security" class="link">Security settings</a>{% endif %}</span>
+          {% elif security.mfaEnabled %}
+            <span class="grid size-8 place-items-center rounded-full bg-brand-100 text-brand-800">{{ icon('check', 'size-4') }}</span>
+            <span>Two-step sign-in is on · {{ security.recoveryLeft }} recovery codes left</span>
+          {% else %}
+            <span class="grid size-8 place-items-center rounded-full bg-amber-100 text-amber-900">{{ icon('exclamation', 'size-4') }}</span>
+            <span>Two-step sign-in is off. <a href="/portal/account/two-step" class="link">Turn it on</a></span>
+          {% endif %}
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="hidden size-8 shrink-0 place-items-center rounded-full bg-surface sm:grid text-muted ring-1 ring-line">{{ icon('clock', 'size-4') }}</span>
+          <span>Previous sign-in: {{ previousLogin | date({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) if previousLogin else 'this is your first' }}</span>
+        </li>
+      </ul>
+      <a href="/portal/account" class="btn-secondary mt-5 w-full">Manage my account</a>
     </section>
   </div>

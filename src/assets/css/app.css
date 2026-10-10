@@ -142,6 +142,10 @@
 @utility btn-dark {
   @apply btn bg-[#1e293b] text-white shadow-sm shadow-[#0f172a]/25 hover:bg-[#0f172a];
 }
+/* Blue = settings-style pages (e.g. appointment types). */
+@utility btn-blue {
+  @apply btn bg-[#2a78d6] text-white shadow-sm hover:bg-[#1f5fae];
+}
 @utility btn-light {
   @apply btn bg-white text-brand-900 hover:bg-brand-50;
 }

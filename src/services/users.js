@@ -16,6 +16,7 @@ const PUBLIC_COLUMNS = [
   'must_change_password',
   'mfa_enabled',
   'last_login_at',
+  'page_size',
   'password_changed_at',
   'deactivated_at',
   'created_at',

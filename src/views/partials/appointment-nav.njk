@@ -1,0 +1,11 @@
+{# Header buttons shared by the appointment pages; `current` marks the page you are on. #}
+{% macro nav(current) %}
+  <nav aria-label="Appointments" class="flex flex-wrap items-center gap-2">
+    {% set ring = 'ring-2 ring-offset-2 ring-offset-surface' %}
+    {% set small = '!gap-1.5 !px-3.5 !py-2 !text-sm' %}
+    <a href="/portal/appointments" class="btn-green {{ small }} {{ ring ~ ' ring-brand-700' if current == 'list' }}" {% if current == 'list' %}aria-current="page"{% endif %}>{{ icon('inbox', 'size-4') }} List</a>
+    <a href="/portal/appointments/calendar" class="btn-dark {{ small }} {{ ring ~ ' ring-[#1e293b]' if current == 'calendar' }}" {% if current == 'calendar' %}aria-current="page"{% endif %}>{{ icon('calendar', 'size-4') }} Calendar</a>
+    {% if can('appointments.manage_types') %}<a href="/portal/appointments/types" class="btn-blue {{ small }} {{ ring ~ ' ring-[#2a78d6]' if current == 'types' }}" {% if current == 'types' %}aria-current="page"{% endif %}>{{ icon('key', 'size-4') }} Types</a>{% endif %}
+    {% if can('appointments.log') %}<a href="/portal/appointments/new" class="btn-primary">{{ icon('plus', 'size-4') }} Log walk-in / phone</a>{% endif %}
+  </nav>
+{% endmacro %}

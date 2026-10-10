@@ -1,5 +1,7 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const { of: ref } = require('../../lib/reference');
 const express = require('express');
 const db = require('../../db/knex');
@@ -53,9 +55,12 @@ async function notifyAssignee(req, appt, previousAssignee) {
 
 router.get('/', can('appointments.view'), async (req, res) => {
   const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
-  const tab = appts.TABS[req.query.tab] ? req.query.tab : 'requests';
   const filters = { q: str(req.query.q), status: str(req.query.status), type: /^\d+$/.test(req.query.type || '') ? req.query.type : '', source: str(req.query.source) };
-  const result = await appts.list({ tab, ...filters, page: req.query.page });
+  if (!appts.STATUS_LABELS[filters.status]) filters.status = '';
+  // A status cuts across the tabs (e.g. "Cancelled"), so choosing one shows the All tab.
+  const tab = filters.status ? 'all' : appts.TABS[req.query.tab] ? req.query.tab : 'requests';
+  const perPage = await perPageFor(req);
+  const result = await appts.list({ tab, ...filters, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/appointments?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
   res.render('pages/portal/appointments/index.njk', {
     title: 'Appointments',
@@ -72,6 +77,7 @@ router.get('/', can('appointments.view'), async (req, res) => {
     windowLabels: appts.WINDOW_LABELS,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
+    pager: pagerFor('/portal/appointments', { tab, ...filters }, result, perPage),
   });
 });
 
@@ -80,6 +86,13 @@ router.get('/', can('appointments.view'), async (req, res) => {
 router.get('/calendar', can('appointments.view'), async (req, res) => {
   const view = req.query.view === 'month' ? 'month' : 'week';
   const anchor = isIsoDate(req.query.date) ? req.query.date : todayIso();
+  // Search and filters narrow what the calendar shows, and are kept when moving between weeks.
+  const filters = {
+    q: typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '',
+    type: /^\d+$/.test(req.query.type || '') ? req.query.type : '',
+  };
+  const keep = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
+  const filtering = Boolean(keep);
 
   let first;
   let days;
@@ -107,7 +120,7 @@ router.get('/calendar', can('appointments.view'), async (req, res) => {
 
   const rangeStart = marylandDateTime(first, '00:00');
   const rangeEnd = marylandDateTime(addDaysIso(first, days), '00:00');
-  const items = await appts.between(rangeStart, rangeEnd);
+  const items = await appts.between(rangeStart, rangeEnd, filters);
   const byDay = {};
   for (const a of items) (byDay[marylandParts(a.scheduled_at).date] ||= []).push(a);
 
@@ -135,8 +148,13 @@ router.get('/calendar', can('appointments.view'), async (req, res) => {
     prev,
     next,
     today,
-    waiting: await appts.waiting(10),
+    waiting: await appts.waiting(100), // the panel scrolls
     statusLabels: appts.STATUS_LABELS,
+    filters,
+    filtering,
+    keep: keep ? `&${keep}` : '',
+    matches: items.length,
+    types: await db('appointment_types').orderBy('sort_order').orderBy('name'),
     windowLabels: appts.WINDOW_LABELS,
   });
 });

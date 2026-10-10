@@ -81,6 +81,10 @@ exports.seed = async function seed(knex) {
       if (dow % 2 === 1) add('team.marcus', day, '22:00', '08:00', 'Overnight cover', 'Residential home');
       else add('team.marcus', day, '09:00', '17:00', 'Community visits', 'Anne Arundel County');
       add('team.nadia', day, '11:00', '19:00', 'Day program', 'CDS centre');
+      // Leadership and IT, so "My shifts" has something for every demo login.
+      if (dow !== 5) add('admin', day, '09:00', '17:00', dow === 1 ? 'Leadership meeting' : 'Office', OFFICE);
+      else add('admin', day, '10:00', '14:00', 'Site visits', 'Residential homes');
+      if ([2, 4].includes(dow)) add('it', day, '09:00', '13:00', 'IT support', OFFICE);
       // The director takes a weekday off every other week; otherwise in the office.
       if (week % 2 === 1 && dow === 5) add('director', day, '00:00', '00:00', 'Annual leave', null, 'time_off');
       else add('director', day, '09:00', '17:00', 'Office', OFFICE);
@@ -91,6 +95,7 @@ exports.seed = async function seed(knex) {
       add('team.marcus', day, '00:00', '08:00', 'Overnight cover', 'Residential home');
       add('team.tyler', day, '09:00', '13:00', 'Weekend phones', OFFICE);
       add(dow === 6 ? 'director' : 'coordinator', day, '09:00', '17:00', 'On call', 'Remote');
+      if (dow === 6 && week % 2 === 0) add('admin', day, '10:00', '12:00', 'On call (leadership)', 'Remote');
     }
   }
   // "All day" time off runs midnight to midnight.

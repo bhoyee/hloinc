@@ -1,11 +1,12 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const express = require('express');
 const db = require('../../db/knex');
 const { marylandDayStart } = require('../../lib/hours');
 
 const router = express.Router();
-const PER_PAGE = 50;
 
 /** Friendly names for action codes, grouped for the filter dropdown. */
 const ACTION_LABELS = {
@@ -64,14 +65,15 @@ router.get('/', async (req, res) => {
     query.where('created_at', '<', marylandDayStart(next.toISOString().slice(0, 10)));
   }
 
+  const perPage = await perPageFor(req);
   const { total } = await query.clone().count({ total: '*' }).first();
-  const pages = Math.max(1, Math.ceil(Number(total) / PER_PAGE));
+  const pages = Math.max(1, Math.ceil(Number(total) / perPage));
   const page = Math.min(Math.max(1, Number.parseInt(req.query.page, 10) || 1), pages);
   const entries = await query
     .select('id', 'user_id', 'user_name', 'action', 'entity_type', 'entity_id', 'summary', 'ip', 'user_agent', 'metadata', 'created_at')
     .orderBy('id', 'desc')
-    .limit(PER_PAGE)
-    .offset((page - 1) * PER_PAGE);
+    .limit(perPage)
+    .offset((page - 1) * perPage);
 
   for (const e of entries) {
     e.label = ACTION_LABELS[e.action] || e.action;
@@ -99,6 +101,7 @@ router.get('/', async (req, res) => {
     actionOptions: Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label })),
     prevUrl: page > 1 ? pageUrl(page - 1) : null,
     nextUrl: page < pages ? pageUrl(page + 1) : null,
+    pager: pagerFor('/portal/audit', filters, { page, pages, total: Number(total) }, perPage),
   });
 });
 

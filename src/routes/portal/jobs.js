@@ -1,5 +1,7 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const express = require('express');
 const jobs = require('../../services/jobs');
 const { audit } = require('../../services/audit');
@@ -21,7 +23,8 @@ const DEFAULT_APPLY_URL = 'https://workforcenow.adp.com/';
 router.get('/', async (req, res) => {
   const tab = jobs.TABS[req.query.tab] ? req.query.tab : 'published';
   const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
-  const result = await jobs.portalList({ tab, q, page: req.query.page });
+  const perPage = await perPageFor(req);
+  const result = await jobs.portalList({ tab, q, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/jobs?${new URLSearchParams(Object.entries({ tab, q, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
   res.render('pages/portal/jobs/index.njk', {
     title: 'Jobs',
@@ -35,6 +38,7 @@ router.get('/', async (req, res) => {
     statusLabels: jobs.STATUS_LABELS,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
+    pager: pagerFor('/portal/jobs', { tab, q }, result, perPage),
   });
 });
 

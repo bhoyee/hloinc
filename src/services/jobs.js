@@ -172,7 +172,7 @@ async function tabCounts() {
   return { published: by.published || 0, draft: by.draft || 0, archived: by.archived || 0, all: Object.values(by).reduce((a, b) => a + b, 0) };
 }
 
-async function portalList({ tab = 'published', q = '', page = 1 } = {}) {
+async function portalList({ tab = 'published', q = '', page = 1, perPage = PORTAL_PER_PAGE } = {}) {
   const query = TABS[tab].where(db('jobs as j'));
   const keyword = String(q).trim().slice(0, 100);
   if (keyword) {
@@ -180,7 +180,7 @@ async function portalList({ tab = 'published', q = '', page = 1 } = {}) {
     query.where((w) => w.where('j.title', 'like', like).orWhere('j.department', 'like', like).orWhere('j.location', 'like', like));
   }
   const { total } = await query.clone().count({ total: '*' }).first();
-  const pages = Math.max(1, Math.ceil(Number(total) / PORTAL_PER_PAGE));
+  const pages = Math.max(1, Math.ceil(Number(total) / perPage));
   const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
   const items = await query
     .leftJoin('users as u', 'u.id', 'j.updated_by')
@@ -188,8 +188,8 @@ async function portalList({ tab = 'published', q = '', page = 1 } = {}) {
     .orderByRaw("FIELD(j.status, 'published', 'draft', 'archived')")
     .orderBy('j.updated_at', 'desc')
     .orderBy('j.id', 'desc')
-    .limit(PORTAL_PER_PAGE)
-    .offset((current - 1) * PORTAL_PER_PAGE);
+    .limit(perPage)
+    .offset((current - 1) * perPage);
   return { items, total: Number(total), page: current, pages };
 }
 

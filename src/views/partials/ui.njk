@@ -186,3 +186,44 @@
     </div>
   </section>
 {% endmacro %}
+
+{# Above a portal list: "Showing 26–50 of 112 leads" and Rows per page (10/25/50/100,
+   remembered on the person's account). #}
+{% macro listBar(p, noun='items') %}
+  {% if p and p.total %}
+    {% set first = (p.page - 1) * p.perPage + 1 %}
+    {% set lastRow = p.page * p.perPage if p.page * p.perPage < p.total else p.total %}
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+      <p class="text-sm text-muted">Showing <span class="font-semibold text-ink">{{ first }}–{{ lastRow }}</span> of <span class="font-semibold text-ink">{{ p.total }}</span> {{ noun }}</p>
+      <form method="get" action="{{ p.path }}" class="flex items-center gap-2" data-per-page>
+        {% for k, v in p.query %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <label for="per-page-{{ noun | replace(' ', '-') }}" class="text-sm text-muted">Rows per page</label>
+        <select id="per-page-{{ noun | replace(' ', '-') }}" name="per" class="form-control !w-auto !rounded-xl !py-1.5 !pr-8 !pl-3 text-sm">
+          {% for n in p.perPageOptions %}<option value="{{ n }}" {% if n == p.perPage %}selected{% endif %}>{{ n }}</option>{% endfor %}
+        </select>
+        <noscript><button type="submit" class="btn-secondary !px-3 !py-1.5 text-sm">Show</button></noscript>
+      </form>
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{# Below a portal list: numbered pages. Links carry data-page-link so live-filtered
+   lists page without a reload. #}
+{% macro pager(p, noun='items') %}
+  {% if p and p.pages > 1 %}
+    <nav aria-label="Pages" class="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+      <p class="text-sm text-muted">Page <span class="font-semibold text-ink">{{ p.page }}</span> of <span class="font-semibold text-ink">{{ p.pages }}</span></p>
+      <ul class="flex items-center gap-1">
+        <li>{% if p.prevUrl %}<a href="{{ p.prevUrl }}" rel="prev" data-page-link class="grid h-9 min-w-9 place-items-center rounded-xl px-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-white">&larr;<span class="sr-only"> Previous page</span></a>{% else %}<span class="grid h-9 min-w-9 place-items-center rounded-xl px-2 text-sm text-line ring-1 ring-line" aria-hidden="true">&larr;</span>{% endif %}</li>
+        {% for l in p.links %}
+          <li>
+            {% if l.gap %}<span class="px-1 text-sm text-muted" aria-hidden="true">…</span>
+            {% elif l.current %}<span aria-current="page" class="grid h-9 min-w-9 place-items-center rounded-xl bg-brand-700 px-2 text-sm font-semibold text-white">{{ l.n }}</span>
+            {% else %}<a href="{{ l.url }}" data-page-link class="grid h-9 min-w-9 place-items-center rounded-xl px-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-white"><span class="sr-only">Page </span>{{ l.n }}</a>{% endif %}
+          </li>
+        {% endfor %}
+        <li>{% if p.nextUrl %}<a href="{{ p.nextUrl }}" rel="next" data-page-link class="grid h-9 min-w-9 place-items-center rounded-xl px-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-white">&rarr;<span class="sr-only"> Next page</span></a>{% else %}<span class="grid h-9 min-w-9 place-items-center rounded-xl px-2 text-sm text-line ring-1 ring-line" aria-hidden="true">&rarr;</span>{% endif %}</li>
+      </ul>
+    </nav>
+  {% endif %}
+{% endmacro %}

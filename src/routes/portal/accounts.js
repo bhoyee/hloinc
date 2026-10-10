@@ -1,5 +1,7 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const express = require('express');
 const db = require('../../db/knex');
 const users = require('../../services/users');
@@ -36,7 +38,8 @@ router.get('/', async (req, res) => {
   const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
   const roleLabels = await roles.labels();
   const filters = { q: str(req.query.q), role: roleLabels[req.query.role] ? req.query.role : '', status: ['active', 'deactivated'].includes(req.query.status) ? req.query.status : '' };
-  const result = await users.list({ ...filters, page: req.query.page });
+  const perPage = await perPageFor(req);
+  const result = await users.list({ ...filters, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/accounts?${new URLSearchParams(Object.entries({ ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
   res.render('pages/portal/accounts/list.njk', {
     title: 'Accounts',
@@ -47,6 +50,7 @@ router.get('/', async (req, res) => {
     roleOptions: await roleOptions(req.user),
     roleLabels,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
+    pager: pagerFor('/portal/accounts', filters, result, perPage),
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
   });
 });

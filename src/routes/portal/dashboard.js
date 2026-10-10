@@ -26,11 +26,9 @@ async function sections(req) {
     board: await announcements.activeForStaff(20, { includePaused: can(user, 'announcements.edit') }),
     recentLeads: can(user, 'leads.view') ? await require('../../services/leads').recent(6) : null,
     stages: require('../../services/leads').STAGES,
-    recentActivity: can(user, 'audit.view')
-      ? await db('audit_log').select('action', 'user_name', 'summary', 'created_at').orderBy('id', 'desc').limit(6)
-      : [],
-    // Everyone: their next shift (staff always see their own schedule).
-    nextShift: (await db('shifts').where({ user_id: user.id }).where('end_at', '>', new Date()).orderBy('start_at').first()) || null,
+    recentActivity: can(user, 'audit.view') ? await workday.recentActivity(30) : [],
+    // Everyone: their own upcoming shifts (staff always see their own schedule).
+    myShifts: await workday.myShifts(user),
     previousLogin: req.session.previousLoginAt,
     security: {
       mfaEnabled: user.mfa_enabled,

@@ -99,7 +99,7 @@ async function tabCounts() {
 
 const PER_PAGE = 20;
 
-async function list({ tab = 'live', q = '', page = 1 } = {}) {
+async function list({ tab = 'live', q = '', page = 1, perPage = PER_PAGE } = {}) {
   const now = new Date();
   const query = TABS[tab].where(db('announcements as a'), now);
   const keyword = String(q).trim().slice(0, 100);
@@ -108,15 +108,15 @@ async function list({ tab = 'live', q = '', page = 1 } = {}) {
     query.where((w) => w.where('a.title', 'like', like).orWhere('a.body', 'like', like));
   }
   const { total } = await query.clone().count({ total: '*' }).first();
-  const pages = Math.max(1, Math.ceil(Number(total) / PER_PAGE));
+  const pages = Math.max(1, Math.ceil(Number(total) / perPage));
   const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
   const items = await query
     .leftJoin('users as u', 'u.id', 'a.created_by')
     .select('a.*', 'u.name as author')
     .orderBy(tab === 'scheduled' ? 'a.starts_at' : 'a.updated_at', tab === 'scheduled' ? 'asc' : 'desc')
     .orderBy('a.id', 'desc')
-    .limit(PER_PAGE)
-    .offset((current - 1) * PER_PAGE);
+    .limit(perPage)
+    .offset((current - 1) * perPage);
   return { items: items.map((a) => ({ ...a, state: stateOf(a, now) })), total: Number(total), page: current, pages };
 }
 

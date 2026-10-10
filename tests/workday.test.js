@@ -6,7 +6,7 @@ import { resetRoles, makeUser, signIn } from './portal-helpers.js';
 const require = createRequire(import.meta.url);
 const workday = require('../src/services/workday');
 const roles = require('../src/services/roles');
-const { marylandDateTime, marylandParts } = require('../src/lib/hours');
+const { marylandDateTime, marylandParts, addDaysIso } = require('../src/lib/hours');
 
 const app = createApp();
 const DAY = 24 * 60 * 60 * 1000;
@@ -140,5 +140,46 @@ describe('quick actions and live refresh', () => {
     const page = await agent.get('/portal/messages?tab=all&unassigned=1');
     expect(page.text).toContain('Open items with nobody assigned');
     expect(page.text).toContain('Nobody Assigned');
+  });
+});
+
+describe('my shifts and recent activity', () => {
+  it('lists every upcoming shift by day, with this week’s total, and scrolls on the dashboard', async () => {
+    const user = await makeUser('program_coordinator');
+    const today = marylandParts(new Date()).date;
+    const rows = [];
+    for (let i = 1; i <= 25; i++) {
+      const d = addDaysIso(today, i);
+      rows.push({ user_id: user.id, kind: 'shift', start_at: marylandDateTime(d, '09:00'), end_at: marylandDateTime(d, '17:00'), label: `Shift ${i}` });
+    }
+    rows.push({ user_id: user.id, kind: 'time_off', start_at: marylandDateTime(addDaysIso(today, 3), '00:00'), end_at: marylandDateTime(addDaysIso(today, 4), '00:00'), label: 'Annual leave' });
+    await db('shifts').insert(rows);
+
+    const mine = await workday.myShifts(user);
+    expect(mine.count).toBe(26);
+    expect(mine.days[0].heading).toBe('Tomorrow');
+    expect(mine.days.find((d) => d.items.some((x) => x.kind === 'time_off')).items.find((x) => x.kind === 'time_off')).toMatchObject({ label: 'Annual leave', allDay: true });
+    expect(mine.weekHours).toBe(mine.weekCount * 8);
+
+    const page = (await (await signIn(app, user)).get('/portal')).text;
+    expect(page).toContain('My shifts');
+    expect(page).toContain('Shift 25');
+    expect(page).toContain('aria-label="My upcoming shifts"');
+  });
+
+  it('shows recent activity with an icon per kind of action, only to people who can see the audit log', async () => {
+    await db('audit_log').insert([
+      { action: 'lead.stage', user_name: 'Casey', summary: 'Casey moved lead J.E. to Intake in progress', created_at: new Date(Date.now() - 5 * 60000) },
+      { action: 'auth.login_failed', user_name: null, summary: 'Failed sign-in', created_at: new Date() },
+    ]);
+    const items = await workday.recentActivity(30);
+    expect(items.find((e) => e.action === 'lead.stage')).toMatchObject({ icon: 'heart', ago: '5 min ago' });
+    expect(items.find((e) => e.action === 'auth.login_failed')).toMatchObject({ icon: 'lock', tone: 'red' });
+
+    const admin = (await (await signIn(app, await makeUser('admin'))).get('/portal')).text;
+    expect(admin).toContain('Casey moved lead J.E. to Intake in progress');
+    const reception = (await (await signIn(app, await makeUser('reception'))).get('/portal')).text;
+    expect(reception).not.toContain('Casey moved lead J.E.');
+    expect(reception).toContain('Welcome to the staff portal');
   });
 });

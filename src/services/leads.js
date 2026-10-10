@@ -179,14 +179,15 @@ async function touchpoints(ids) {
 }
 
 async function list(user, filters = {}) {
-  const page = Math.max(1, Number(filters.page) || 1);
+  const perPage = filters.perPage || PER_PAGE;
   const query = applyFilters(base(), user, filters);
   const total = Number((await query.clone().count({ n: '*' }).first()).n);
+  const page = Math.min(Math.max(1, Number(filters.page) || 1), Math.max(1, Math.ceil(total / perPage)));
   const rows = await query
     .select('l.*', 'o.name as owner_name')
     .orderBy('l.last_activity_at', 'desc')
-    .limit(PER_PAGE)
-    .offset((page - 1) * PER_PAGE);
+    .limit(perPage)
+    .offset((page - 1) * perPage);
   const touches = await touchpoints(rows.map((r) => r.id));
   const counts = Object.fromEntries(
     (await db('leads').select('stage').count({ n: '*' }).groupBy('stage')).map((r) => [r.stage, Number(r.n)])
@@ -195,7 +196,7 @@ async function list(user, filters = {}) {
     items: rows.map((r) => ({ ...r, touches: touches.get(r.id) })),
     total,
     page,
-    pages: Math.max(1, Math.ceil(total / PER_PAGE)),
+    pages: Math.max(1, Math.ceil(total / perPage)),
     stageCounts: { ...counts, open: OPEN_STAGES.reduce((n, k) => n + (counts[k] || 0), 0) },
   };
 }

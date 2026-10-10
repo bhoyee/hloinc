@@ -97,7 +97,7 @@ async function tabCounts(user) {
 
 const PER_PAGE = 25;
 
-async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine = false, unassigned = false, failed = false, page = 1 } = {}) {
+async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine = false, unassigned = false, failed = false, page = 1, perPage = PER_PAGE } = {}) {
   const query = TABS[tab].where(base(user));
   const keyword = String(q).trim().slice(0, 100);
   if (keyword) {
@@ -115,15 +115,15 @@ async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine
   if (mine) query.where('m.assigned_to', user.id);
 
   const { total } = await query.clone().count({ total: '*' }).first();
-  const pages = Math.max(1, Math.ceil(Number(total) / PER_PAGE));
+  const pages = Math.max(1, Math.ceil(Number(total) / perPage));
   const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
   const items = await query
     .leftJoin('users as a', 'a.id', 'm.assigned_to')
     .select('m.id', 'm.reference', 'm.type', 'm.recipient', 'm.name', 'm.email', 'm.phone', 'm.message', 'm.details', 'm.status', 'm.email_status', 'm.archived_at', 'm.created_at', 'm.assigned_to', 'a.name as assigned_name')
     .orderBy('m.created_at', tab === 'new' ? 'asc' : 'desc') // oldest new message first: it's waited longest
     .orderBy('m.id', 'desc')
-    .limit(PER_PAGE)
-    .offset((current - 1) * PER_PAGE);
+    .limit(perPage)
+    .offset((current - 1) * perPage);
   return { items: items.map(withDetails), total: Number(total), page: current, pages };
 }
 

@@ -1,5 +1,7 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const { of: ref } = require('../../lib/reference');
 const express = require('express');
 const { z } = require('zod');
@@ -28,7 +30,8 @@ router.get('/', async (req, res) => {
     // From the dashboard's "Needs attention" links.
     unassigned: req.query.unassigned === '1' ? '1' : '', failed: req.query.failed === '1' ? '1' : '',
   };
-  const result = await msgs.list(req.user, { tab, ...filters, mine: filters.mine === '1', unassigned: filters.unassigned === '1', failed: filters.failed === '1', page: req.query.page });
+  const perPage = await perPageFor(req);
+  const result = await msgs.list(req.user, { tab, ...filters, mine: filters.mine === '1', unassigned: filters.unassigned === '1', failed: filters.failed === '1', page: req.query.page, perPage });
   const readIds = new Set(await require('../../db/knex')('message_reads').where({ user_id: req.user.id }).whereIn('message_id', result.items.map((m) => m.id)).pluck('message_id'));
   result.items = result.items.map((m) => ({ ...m, unread: !readIds.has(m.id) && !m.archived_at && m.status !== 'resolved' }));
   const pageUrl = (p) => `/portal/messages?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
@@ -48,6 +51,7 @@ router.get('/', async (req, res) => {
     recipientLabels: msgs.RECIPIENT_LABELS,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
+    pager: pagerFor('/portal/messages', { tab, ...filters }, result, perPage),
   });
 });
 

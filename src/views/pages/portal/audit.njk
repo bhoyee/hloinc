@@ -2,7 +2,7 @@
 {% import "partials/ui.njk" as ui %}
 
 {% block content %}
-  <form method="get" action="/portal/audit" role="search" aria-label="Filter the audit log" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto]">
+  <form method="get" data-live-filter="#audit-results" action="/portal/audit" role="search" aria-label="Filter the audit log" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto]">
     <div class="relative sm:col-span-2 xl:col-span-1">
       <label for="f-q" class="sr-only">Search</label>
       <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
@@ -30,8 +30,11 @@
       <label for="f-to" class="sr-only">To date</label>
       <input id="f-to" type="date" name="to" value="{{ filters.to }}" class="form-control" title="To">
     </div>
-    <button type="submit" class="btn-green">Filter</button>
+    <button type="submit" class="btn-green" data-live-hide>Filter</button>
   </form>
+
+  <div id="audit-results" data-live-results>
+  {{ ui.listBar(pager, 'entries') }}
 
   <p class="mb-3 text-sm text-muted">{{ total }} {{ 'entry' if total == 1 else 'entries' }}{% if filters.q or filters.action or filters.user or filters.from or filters.to %} · <a href="/portal/audit" class="font-semibold text-accent-600 hover:text-accent-700">Clear filters</a>{% endif %}</p>
 
@@ -60,14 +63,9 @@
         </li>
       {% endfor %}
     </ol>
-    {% if pages > 1 %}
-      <nav aria-label="Audit log pages" class="mt-6 flex items-center justify-between">
-        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Newer</a>{% else %}<span></span>{% endif %}
-        <span class="text-sm text-muted">Page {{ page }} of {{ pages }}</span>
-        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Older &rarr;</a>{% else %}<span></span>{% endif %}
-      </nav>
-    {% endif %}
+    {{ ui.pager(pager, 'entries') }}
   {% else %}
     <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center text-muted">No entries match these filters.</div>
   {% endif %}
+  </div>
 {% endblock %}

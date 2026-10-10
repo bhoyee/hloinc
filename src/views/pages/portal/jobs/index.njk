@@ -20,15 +20,18 @@
     {% endfor %}
   </nav>
 
-  <form method="get" action="/portal/jobs" role="search" aria-label="Search jobs" class="mb-5 flex gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft">
+  <form method="get" data-live-filter="#jobs-results" action="/portal/jobs" role="search" aria-label="Search jobs" class="mb-5 flex gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft">
     <input type="hidden" name="tab" value="{{ tab }}">
     <div class="relative flex-1">
       <label for="f-q" class="sr-only">Search by title, department or location</label>
       <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
       <input id="f-q" type="search" name="q" value="{{ q }}" placeholder="Title, department or location" class="form-control !pl-12" maxlength="100">
     </div>
-    <button type="submit" class="btn-green">Search</button>
+    <button type="submit" class="btn-green" data-live-hide>Search</button>
   </form>
+
+  <div id="jobs-results" data-live-results>
+  {{ ui.listBar(pager, 'jobs') }}
 
   {% if items.length %}
     <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
@@ -58,13 +61,7 @@
         </li>
       {% endfor %}
     </ul>
-    {% if pages > 1 %}
-      <nav aria-label="Job pages" class="mt-6 flex items-center justify-between">
-        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
-        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
-        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
-      </nav>
-    {% endif %}
+    {{ ui.pager(pager, 'jobs') }}
   {% else %}
     <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
       <span class="icon-tile mx-auto">{{ icon('briefcase', 'size-6') }}</span>
@@ -73,4 +70,5 @@
       {% if can('jobs.edit') and not q %}<a href="/portal/jobs/new" class="btn-primary mt-5">{{ icon('plus', 'size-4') }} New job</a>{% endif %}
     </div>
   {% endif %}
+  </div>
 {% endblock %}

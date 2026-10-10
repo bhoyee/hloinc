@@ -1,5 +1,7 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const express = require('express');
 const ann = require('../../services/announcements');
 const notifications = require('../../services/notifications');
@@ -53,7 +55,8 @@ async function announceToStaff(req, a) {
 router.get('/', async (req, res) => {
   const tab = ann.TABS[req.query.tab] ? req.query.tab : 'live';
   const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
-  const result = await ann.list({ tab, q, page: req.query.page });
+  const perPage = await perPageFor(req);
+  const result = await ann.list({ tab, q, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/announcements?${new URLSearchParams(Object.entries({ tab, q, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
   res.render('pages/portal/announcements/index.njk', {
     title: 'Announcements',
@@ -68,6 +71,7 @@ router.get('/', async (req, res) => {
     stateLabels: ann.STATE_LABELS,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
+    pager: pagerFor('/portal/announcements', { tab, q }, result, perPage),
   });
 });
 

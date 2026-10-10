@@ -21,7 +21,7 @@
     {% endfor %}
   </nav>
 
-  <form method="get" action="/portal/leads" role="search" aria-label="Filter leads" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_auto] xl:items-center">
+  <form method="get" data-live-filter="#leads-results" action="/portal/leads" role="search" aria-label="Filter leads" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_auto] xl:items-center">
     <input type="hidden" name="tab" value="{{ filters.tab }}">
     <div class="relative sm:col-span-2 xl:col-span-1">
       <label for="f-q" class="sr-only">Search by name, email, phone, county or reference</label>
@@ -43,8 +43,11 @@
         <option value="none" {% if filters.owner == 'none' %}selected{% endif %}>Nobody yet</option>
       </select>
     </div>
-    <button type="submit" class="btn-green">Filter</button>
+    <button type="submit" class="btn-green" data-live-hide>Filter</button>
   </form>
+
+  <div id="leads-results" data-live-results>
+  {{ ui.listBar(pager, 'leads') }}
 
   {% if items.length %}
     <div class="overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
@@ -82,13 +85,7 @@
         </tbody>
       </table>
     </div>
-    {% if pages > 1 %}
-      <nav aria-label="Lead pages" class="mt-6 flex items-center justify-between">
-        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
-        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
-        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
-      </nav>
-    {% endif %}
+    {{ ui.pager(pager, 'leads') }}
   {% else %}
     <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
       <span class="icon-tile mx-auto">{{ icon('heart', 'size-6') }}</span>
@@ -96,4 +93,5 @@
       <p class="mt-1 text-muted">Requests, referrals, appointments and enquiries from the website appear here automatically.</p>
     </div>
   {% endif %}
+  </div>
 {% endblock %}

@@ -1,5 +1,7 @@
 'use strict';
 
+const { perPageFor, pagerFor } = require('../../lib/pager');
+
 const express = require('express');
 const { z } = require('zod');
 const db = require('../../db/knex');
@@ -46,7 +48,8 @@ const queryString = (filters, extra = {}) => new URLSearchParams(Object.entries(
 
 router.get('/', async (req, res) => {
   const filters = readFilters(req.query);
-  const result = await leads.list(req.user, { ...filters, page: req.query.page });
+  const perPage = await perPageFor(req);
+  const result = await leads.list(req.user, { ...filters, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/leads?${queryString(filters, { page: p > 1 ? p : '' })}`;
   res.render('pages/portal/leads/index.njk', {
     title: 'Leads',
@@ -60,6 +63,7 @@ router.get('/', async (req, res) => {
     exportUrl: `/portal/leads/export.csv?${queryString(filters)}`,
     prevUrl: result.page > 1 ? pageUrl(result.page - 1) : null,
     nextUrl: result.page < result.pages ? pageUrl(result.page + 1) : null,
+    pager: pagerFor('/portal/leads', filters, result, perPage),
   });
 });
 

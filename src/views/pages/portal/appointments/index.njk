@@ -1,17 +1,12 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 {% import "partials/portal-badges.njk" as badges %}
+{% import "partials/appointment-nav.njk" as apptNav with context %}
 
-{% block actions %}
-  <div class="flex flex-wrap gap-2">
-    <a href="/portal/appointments/calendar" class="btn-secondary">{{ icon('calendar', 'size-4') }} Calendar</a>
-    {% if can('appointments.manage_types') %}<a href="/portal/appointments/types" class="btn-secondary">Types</a>{% endif %}
-    {% if can('appointments.log') %}<a href="/portal/appointments/new" class="btn-primary">{{ icon('plus', 'size-4') }} Log walk-in / phone</a>{% endif %}
-  </div>
-{% endblock %}
+{% block actions %}{{ apptNav.nav('list') }}{% endblock %}
 
 {% block content %}
-  <nav aria-label="Appointment lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+  <nav id="appt-tabs" aria-label="Appointment lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
     {% for t in tabs %}
       <a href="/portal/appointments?tab={{ t.key }}" {% if t.key == tab %}aria-current="page"{% endif %}
          class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
@@ -23,12 +18,12 @@
     {% endfor %}
   </nav>
 
-  <form method="get" action="/portal/appointments" role="search" aria-label="Filter appointments" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto]">
-    <input type="hidden" name="tab" value="{{ tab }}">
+  <form method="get" action="/portal/appointments" role="search" aria-label="Filter appointments" data-live-filter="#appt-results" data-live-also="#appt-tabs" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto]">
+    <input type="hidden" name="tab" value="{{ tab }}" data-live-tab>
     <div class="relative sm:col-span-2 xl:col-span-1">
-      <label for="f-q" class="sr-only">Search by name, email or phone</label>
+      <label for="f-q" class="sr-only">Search by person, phone, reference or staff member</label>
       <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
-      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Name, email or phone" class="form-control !pl-12" maxlength="100">
+      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Person, phone, reference or staff member" class="form-control !pl-12" maxlength="100">
     </div>
     <div>
       <label for="f-type" class="sr-only">Type</label>
@@ -46,14 +41,17 @@
     </div>
     <div>
       <label for="f-status" class="sr-only">Status</label>
-      <select id="f-status" name="status" class="form-control" {% if tab != 'all' %}disabled title="Status filter applies to the All tab"{% endif %}>
+      <select id="f-status" name="status" class="form-control">
         <option value="">Any status</option>
         {% for key, label in statusLabels %}<option value="{{ key }}" {% if filters.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn-green">Filter</button>
+    <button type="submit" class="btn-green" data-live-hide>Filter</button>
   </form>
 
+  <div id="appt-results" data-live-results>
+  <p class="sr-only" role="status">{{ total }} {{ 'appointment' if total == 1 else 'appointments' }} found</p>
+  {{ ui.listBar(pager, 'appointments') }}
   {% if items.length %}
     <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
       {% for a in items %}
@@ -84,13 +82,7 @@
         </li>
       {% endfor %}
     </ul>
-    {% if pages > 1 %}
-      <nav aria-label="Appointment pages" class="mt-6 flex items-center justify-between">
-        {% if prevUrl %}<a href="{{ prevUrl }}" rel="prev" class="btn-secondary !py-2">&larr; Previous</a>{% else %}<span></span>{% endif %}
-        <span class="text-sm text-muted">Page {{ page }} of {{ pages }} · {{ total }} total</span>
-        {% if nextUrl %}<a href="{{ nextUrl }}" rel="next" class="btn-secondary !py-2">Next &rarr;</a>{% else %}<span></span>{% endif %}
-      </nav>
-    {% endif %}
+    {{ ui.pager(pager, 'appointments') }}
   {% else %}
     <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
       <span class="icon-tile mx-auto">{{ icon('calendar', 'size-6') }}</span>
@@ -100,4 +92,5 @@
       <p class="mt-1 text-muted">{% if tab == 'requests' %}New website requests will appear here.{% elif tab == 'outcome' %}Past appointments needing “Completed” or “No-show” appear here.{% else %}Try another tab or filter.{% endif %}</p>
     </div>
   {% endif %}
+  </div>
 {% endblock %}

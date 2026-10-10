@@ -65,13 +65,14 @@ async function tabCounts() {
   return counts;
 }
 
-async function list({ tab = 'requests', q = '', status = '', type = '', source = '', page = 1 } = {}) {
+async function list({ tab = 'requests', q = '', status = '', type = '', source = '', page = 1, perPage = PER_PAGE } = {}) {
   const query = base();
   TABS[tab].apply(query);
   if (q) {
     const code = normalizeSearch(q);
     query.where((w) => {
-      w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q));
+      w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q))
+        .orWhere('u.name', 'like', likeOf(q));
       if (code) w.orWhere('a.reference', 'like', `%-${code}`);
     });
   }
@@ -81,21 +82,36 @@ async function list({ tab = 'requests', q = '', status = '', type = '', source =
 
   const counter = query.clone().clearSelect().clearOrder().count({ total: '*' }).first();
   const total = Number((await counter).total);
-  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const pages = Math.max(1, Math.ceil(total / perPage));
   const current = Math.min(Math.max(1, Number.parseInt(page, 10) || 1), pages);
-  const items = await query.limit(PER_PAGE).offset((current - 1) * PER_PAGE);
+  const items = await query.limit(perPage).offset((current - 1) * perPage);
   return { items, total, page: current, pages };
 }
 
 const get = (id) => base().where('a.id', id).first();
 
 /** Booked appointments (not cancelled, not still requests) between two instants, for the calendar. */
-function between(from, to) {
-  return base()
+/**
+ * Scheduled appointments in [from, to), optionally narrowed by a search (the
+ * person, their contact details, the reference, or the staff member it's with)
+ * and a type.
+ */
+function between(from, to, { q = '', type = '' } = {}) {
+  const query = base()
     .whereIn('a.status', ['confirmed', 'completed', 'no_show'])
     .where('a.scheduled_at', '>=', from)
     .where('a.scheduled_at', '<', to)
     .orderBy('a.scheduled_at');
+  if (q) {
+    const code = normalizeSearch(q);
+    query.where((w) => {
+      w.where('a.name', 'like', likeOf(q)).orWhere('a.email', 'like', likeOf(q)).orWhere('a.phone', 'like', likeOf(q))
+        .orWhere('u.name', 'like', likeOf(q));
+      if (code) w.orWhere('a.reference', 'like', `%-${code}`);
+    });
+  }
+  if (type) query.where('a.type_id', Number(type));
+  return query;
 }
 
 /** Requests not yet scheduled, oldest first. */
@@ -147,6 +163,7 @@ module.exports = {
   DEFAULT_DURATION,
   tabCounts,
   list,
+  PER_PAGE,
   get,
   between,
   waiting,
