@@ -329,6 +329,98 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Searchable dropdowns: <select data-searchable> gets a type-to-filter box. The select
+  // stays in the form (hidden), so the page works the same without JavaScript.
+  document.querySelectorAll('select[data-searchable]').forEach((select, n) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'relative min-w-0 flex-1';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control !py-2 !pr-9';
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+    input.autocomplete = 'off';
+    input.placeholder = select.dataset.placeholder || 'Type to search…';
+    if (select.id) {
+      const label = document.querySelector(`label[for="${select.id}"]`);
+      if (label) { label.htmlFor = `${select.id}-search`; }
+      input.id = `${select.id}-search`;
+    }
+    const list = document.createElement('ul');
+    list.id = `searchable-${n}`;
+    list.setAttribute('role', 'listbox');
+    list.className = 'scroll-panel absolute inset-x-0 top-full z-40 mt-1 max-h-64 overflow-y-auto rounded-2xl border border-line bg-white p-1 shadow-lift';
+    list.hidden = true;
+    input.setAttribute('aria-controls', list.id);
+    const caret = document.createElement('span');
+    caret.className = 'pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted';
+    caret.innerHTML = '<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+    select.hidden = true;
+    select.setAttribute('aria-hidden', 'true');
+    select.tabIndex = -1;
+    select.after(wrap);
+    wrap.append(input, caret, list);
+
+    const options = [...select.options].map((o) => ({ value: o.value, label: o.textContent.trim() }));
+    const current = () => options.find((o) => o.value === select.value);
+    const showSelected = () => { input.value = current() && current().value ? current().label : ''; };
+    let shown = [];
+    let active = -1;
+
+    const render = () => {
+      const q = input.value.trim().toLowerCase();
+      const sel = current();
+      shown = options.filter((o) => !q || (sel && q === sel.label.toLowerCase()) || o.label.toLowerCase().includes(q));
+      list.innerHTML = '';
+      if (!shown.length) {
+        const li = document.createElement('li');
+        li.className = 'px-3 py-2 text-sm text-muted';
+        li.textContent = 'No one matches';
+        list.append(li);
+      }
+      shown.forEach((o, i) => {
+        const li = document.createElement('li');
+        li.id = `${list.id}-${i}`;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', String(o.value === select.value));
+        li.className = `flex cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2 text-[15px] ${i === active ? 'bg-brand-50 text-brand-900' : 'text-ink hover:bg-surface'}`;
+        li.textContent = o.label;
+        if (o.value === select.value) li.insertAdjacentHTML('beforeend', '<svg class="size-4 shrink-0 text-brand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m4.5 12.75 6 6 9-13.5"/></svg>');
+        li.addEventListener('mousedown', (e) => { e.preventDefault(); choose(o); });
+        list.append(li);
+      });
+      if (active >= 0) input.setAttribute('aria-activedescendant', `${list.id}-${active}`);
+      else input.removeAttribute('aria-activedescendant');
+    };
+    const open = () => { list.hidden = false; input.setAttribute('aria-expanded', 'true'); render(); };
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; showSelected(); };
+    const choose = (o) => {
+      select.value = o.value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      close();
+    };
+
+    input.addEventListener('focus', () => { input.select(); open(); });
+    input.addEventListener('input', () => { active = 0; open(); });
+    input.addEventListener('blur', () => setTimeout(close, 100));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (list.hidden) open();
+        active = Math.max(0, Math.min(shown.length - 1, active + (e.key === 'ArrowDown' ? 1 : -1)));
+        render();
+        const el = document.getElementById(`${list.id}-${active}`);
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        if (!list.hidden && shown[active]) { e.preventDefault(); choose(shown[active]); }
+      } else if (e.key === 'Escape') {
+        close();
+      }
+    });
+    showSelected();
+  });
+
   // Light/dark switch in the header (public website; theme.js applies the theme).
   document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
     const label = () => {
@@ -759,19 +851,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Disable submit buttons after the first click to avoid double submissions.
   document.querySelectorAll('form[data-once]').forEach((form) => {
     form.addEventListener('submit', (e) => {
-      // Disabled buttons aren't sent, so keep the clicked button's name/value (e.g. "Save" vs "Publish").
-      if (e.submitter && e.submitter.name) {
-        const keep = document.createElement('input');
-        keep.type = 'hidden';
-        keep.name = e.submitter.name;
-        keep.value = e.submitter.value;
-        form.appendChild(keep);
-      }
-      form.querySelectorAll('button[type="submit"]').forEach((b) => {
-        b.disabled = true;
-        b.dataset.label = b.textContent;
-        b.textContent = 'Sending…';
-      });
+      // Disabled a moment later (after the browser has collected the form, so the clicked
+      // button's name/value, e.g. "Save" vs "Publish", is still sent), and only if no other
+      // handler stopped the send (e.g. a check failed).
+      setTimeout(() => {
+        if (e.defaultPrevented) return;
+        form.querySelectorAll('button[type="submit"]').forEach((b) => {
+          b.disabled = true;
+          b.dataset.label = b.textContent;
+          b.textContent = 'Sending…';
+        });
+      }, 0);
     });
   });
 

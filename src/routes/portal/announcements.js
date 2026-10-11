@@ -4,7 +4,6 @@ const { perPageFor, pagerFor } = require('../../lib/pager');
 
 const express = require('express');
 const ann = require('../../services/announcements');
-const notifications = require('../../services/notifications');
 const { audit } = require('../../services/audit');
 const { requirePermission } = require('../../middleware/auth');
 const { fieldErrors, setFlash } = require('../../lib/forms');
@@ -32,6 +31,7 @@ function valuesOf(a) {
     title: a.title,
     body: a.body,
     audience: a.audience,
+    priority: a.priority || 'normal',
     start_date: start.date,
     start_time: hhmm(start),
     end_date: end ? end.date : '',
@@ -41,14 +41,8 @@ function valuesOf(a) {
   };
 }
 
-/** Tell staff about an internal announcement that's live now. */
-async function announceToStaff(req, a) {
-  if (a.state !== 'live' || a.audience === 'public') return;
-  await notifications.notifyAllStaff(
-    { type: 'announcement', title: a.title, body: a.body.slice(0, 200), link: '/portal#staff-board' },
-    { exceptId: req.user.id }
-  );
-}
+/** Bell alert to staff for important staff announcements that are live (once each). */
+const announceToStaff = (req) => ann.notifyImportant({ exceptId: req.user.id });
 
 // --- List -------------------------------------------------------------------------------
 
@@ -93,7 +87,7 @@ function renderForm(res, { a = null, values, errors = {}, status = 200 }) {
 
 router.get('/new', can('announcements.edit'), (req, res) => {
   const now = marylandParts(new Date());
-  renderForm(res, { values: { audience: 'public', start_date: now.date, start_time: now.time, link_label: 'Learn more' } });
+  renderForm(res, { values: { audience: 'public', priority: 'normal', start_date: now.date, start_time: now.time, link_label: 'Learn more' } });
 });
 
 router.post('/', can('announcements.edit'), async (req, res) => {
@@ -101,7 +95,7 @@ router.post('/', can('announcements.edit'), async (req, res) => {
   if (!parsed.success) return renderForm(res, { values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   const a = await ann.create(toRow(parsed.data), req.user);
   await audit(req, { action: 'announcement.create', entityType: 'announcement', entityId: a.id, summary: `${req.user.name} posted the announcement “${a.title}” (${ann.AUDIENCE_LABELS[a.audience].toLowerCase()})` });
-  await announceToStaff(req, a);
+  await announceToStaff(req);
   setFlash(req, 'success', a.state === 'live' ? 'Announcement posted. It’s live now.' : 'Announcement scheduled.');
   res.redirect(303, `/portal/announcements/${a.id}`);
 });
@@ -123,6 +117,7 @@ router.post('/:id', can('announcements.edit'), async (req, res) => {
   if (!parsed.success) return renderForm(res, { a: req.ann, values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   const a = await ann.update(req.ann.id, toRow(parsed.data), req.user);
   await audit(req, { action: 'announcement.update', entityType: 'announcement', entityId: a.id, summary: `${req.user.name} updated the announcement “${a.title}”` });
+  await announceToStaff(req);
   setFlash(req, 'success', `Saved. ${a.state === 'live' ? 'It’s live now.' : `It’s ${ann.STATE_LABELS[a.state].toLowerCase()}.`}`);
   res.redirect(303, `/portal/announcements/${a.id}`);
 });
@@ -149,6 +144,7 @@ router.post('/:id/pause', can('announcements.edit'), async (req, res) => {
   }
   const a = await ann.setPaused(req.ann.id, pause, req.user);
   await audit(req, { action: pause ? 'announcement.pause' : 'announcement.resume', entityType: 'announcement', entityId: req.ann.id, summary: `${req.user.name} ${pause ? 'paused' : 'resumed'} the announcement “${req.ann.title}”` });
+  if (!pause) await announceToStaff(req);
   setFlash(req, 'success', pause ? `“${a.title}” paused. It’s hidden until you resume it.` : `“${a.title}” resumed. ${a.state === 'live' ? 'It’s live again.' : `It’s ${ann.STATE_LABELS[a.state].toLowerCase()}.`}`);
   done(req, res, here);
 });

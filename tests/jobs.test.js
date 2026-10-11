@@ -177,3 +177,36 @@ describe('jobs manager: archive and delete', () => {
     expect(await db('jobs').where({ id }).first()).toBeTruthy();
   });
 });
+
+describe('jobs manager: formatted text', () => {
+  it('saves formatted description, requirements and benefits (cleaned) and shows them on the careers page', async () => {
+    const director = await signIn(app, await makeUser('program_director'));
+    await post(director, '/portal/jobs/new', '/portal/jobs', {
+      ...JOB,
+      intent: 'publish',
+      description: 'ignored', // the plain text the browser sends alongside
+      description_html: '<p>You help people <strong>live well</strong> at home.<script>alert(1)</script></p><ol><li>Daily routines</li><li>Outings</li></ol>',
+      requirements_html: '<ul><li>Diploma</li><li>Driver’s <em>licence</em></li></ul>',
+      benefits_html: '<p>See <a href="https://hloinc.com/careers">our benefits</a> <a href="javascript:alert(1)">x</a></p>',
+    });
+    const job = await db('jobs').first();
+    expect(job.description).toContain('<strong>live well</strong>');
+    expect(job.description).not.toContain('script');
+    expect(job.benefits).not.toContain('javascript');
+    const page = (await request(app).get(`/careers/${job.slug}`)).text;
+    expect(page).toContain('<ol><li>Daily routines</li><li>Outings</li></ol>');
+    expect(page).toContain('href="https://hloinc.com/careers"');
+    // The editor opens with the same formatting.
+    const form = (await director.get(`/portal/jobs/${job.id}`)).text;
+    expect(form).toContain('data-rich-box');
+    expect(form).toContain('<strong>live well</strong>');
+  });
+
+  it('still shows older plain-text jobs (blank lines and "- " bullets), and the editor opens them formatted', async () => {
+    const director = await signIn(app, await makeUser('program_director'));
+    await post(director, '/portal/jobs/new', '/portal/jobs', { ...JOB, intent: 'publish' });
+    const job = await db('jobs').first();
+    expect((await request(app).get(`/careers/${job.slug}`)).text).toContain('<ul><li>High school diploma</li></ul>');
+    expect((await director.get(`/portal/jobs/${job.id}`)).text).toContain('<ul><li>High school diploma</li></ul>');
+  });
+});

@@ -195,13 +195,32 @@ async function assignableStaff() {
 }
 
 /** Email a reply to the sender (plain text), and keep a copy in the history. */
-async function reply(m, user, text) {
+/**
+ * Email a reply. `html` (optional) is the formatted version from the editor, already
+ * cleaned by lib/richText; `text` is always the plain-text version.
+ */
+async function reply(m, user, text, html = null) {
   const business = await content.getBusiness();
   const from = await content.getRecipientEmail(m.recipient);
+  const sentOn = new Date(m.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
+  let bodyHtml = null;
+  if (html) {
+    const { forEmail } = require('../lib/richText');
+    const { escape } = require('../lib/emailLayout');
+    const p = (s, extra = '') => `<p style="margin:0 0 16px;color:#0f1c16;font-size:15px;line-height:1.65${extra}">${s}</p>`;
+    bodyHtml = [
+      p(`Hello ${escape(m.name)},`),
+      forEmail(html),
+      p(`${escape(user.name)}<br>${escape(business.legalName)}<br>${escape(business.phone)} · ${escape(business.hours)}`),
+      `<div style="margin:24px 0 8px;padding-top:14px;border-top:1px solid #dfe8e3;color:#475950;font-size:13px">Your ${escape(KIND[m.type] || 'message')} (sent ${escape(sentOn)}):</div>`,
+      `<blockquote style="margin:0 0 16px;padding:4px 0 4px 14px;border-left:3px solid #dfe8e3;color:#475950;font-size:14px;line-height:1.6;white-space:pre-line">${escape(String(m.message))}</blockquote>`,
+    ].join('\n');
+  }
   const result = await notify({
     to: m.email,
     replyTo: from,
     subject: `Re: your ${KIND[m.type] || 'message'} to ${business.legalName} (ref ${ref(m)})`,
+    html: bodyHtml,
     text: [
       `Hello ${m.name},`,
       '',
@@ -212,11 +231,11 @@ async function reply(m, user, text) {
       `${business.phone} · ${business.hours}`,
       '',
       '---',
-      `Your ${KIND[m.type] || 'message'} (sent ${new Date(m.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}):`,
+      `Your ${KIND[m.type] || 'message'} (sent ${sentOn}):`,
       ...String(m.message).split('\n').map((line) => `> ${line}`),
     ].join('\n'),
   });
-  await addEvent(m.id, user, 'reply', text, { email_status: result.ok ? 'sent' : 'failed' });
+  await addEvent(m.id, user, 'reply', text, { email_status: result.ok ? 'sent' : 'failed', body_html: html || null });
   if (result.ok && m.status === 'new') await setStatus(m, 'in_progress', user);
   else if (result.ok) await require('./leads').markContacted(m.lead_id, user);
   return result.ok;

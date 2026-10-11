@@ -1,8 +1,12 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 {% import "partials/portal-badges.njk" as badges %}
+{% import "partials/rich-editor.njk" as re %}
 
 {% set editable = can('messages.edit') %}
+
+{% block scripts %}<script src="/js/rich-editor.js" defer></script>{% endblock %}
+
 
 {% block actions %}
   <div class="flex flex-wrap items-center gap-2">
@@ -65,14 +69,10 @@
       {% if editable %}
         <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="reply-h">
           <h2 id="reply-h" class="flex items-center gap-2 text-lg font-bold">{{ icon('reply', 'size-5 text-brand-700') }} Reply by email</h2>
-          <p class="mt-1 text-sm text-muted">Sent to {{ m.email }} as plain text, with their original message quoted. Their answer comes back to the {{ recipientLabels[m.recipient] or 'team' }} inbox.</p>
+          <p class="mt-1 text-sm text-muted">Sent to {{ m.email }} as a formatted email, with their original message quoted. Their answer comes back to the {{ recipientLabels[m.recipient] or 'team' }} inbox.</p>
           <form method="post" action="/portal/messages/{{ m.id }}/reply" class="mt-4 space-y-4" novalidate data-once>
             <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
-            <div>
-              <label for="f-reply" class="sr-only">Your reply</label>
-              <textarea id="f-reply" name="reply" rows="5" maxlength="5000" class="form-control" placeholder="Hello {{ m.name }}, thank you for reaching out…" {% if errors.reply %}aria-invalid="true" aria-describedby="f-reply-error"{% endif %}>{{ values.reply }}</textarea>
-              {{ ui.fieldError('reply', errors) }}
-            </div>
+            {{ re.editor('reply', 'Your reply', values, errors, maxlength=5000, minlength=5, placeholder='Hello ' + m.name + ', thank you for reaching out…', showLabel=false) }}
             <p class="text-xs text-muted">Don’t include health or other sensitive details in email. Ask them to call instead.</p>
             <button type="submit" class="btn-primary">{{ icon('mail', 'size-4') }} Send reply</button>
           </form>
@@ -95,7 +95,7 @@
         {% endif %}
 
         {% if events.length %}
-          <ol class="mt-6 space-y-5 border-l-2 border-line pl-6">
+          <ol class="scroll-panel mt-6 max-h-[34rem] space-y-5 overflow-y-auto border-l-2 border-line pr-2 pl-6" tabindex="0" aria-label="Notes and history (scrolls)">
             {% for e in events %}
               <li class="relative">
                 <span class="absolute top-0.5 -left-[2.1rem] grid size-6 place-items-center rounded-full ring-4 ring-white {{ 'bg-brand-700 text-white' if e.kind == 'reply' else ('bg-amber-100 text-amber-900' if e.kind == 'note' else 'bg-surface text-muted ring-line') }}" aria-hidden="true">
@@ -107,7 +107,10 @@
                   · {{ e.created_at | dateTime }}
                   {% if e.kind == 'reply' and e.email_status == 'failed' %}<span class="ml-1 inline-flex items-center gap-1 font-semibold text-accent-700">{{ icon('exclamation', 'size-3.5') }} Not delivered</span>{% endif %}
                 </p>
-                {% if e.kind in ['reply', 'note'] %}
+                {% if e.kind == 'reply' and e.body_html %}
+                  {# Cleaned on the server when it was sent (lib/richText). #}
+                  <div class="prose-reply mt-1.5 rounded-2xl bg-brand-50 px-4 py-3 text-[15px] text-ink">{{ e.body_html | safe }}</div>
+                {% elif e.kind in ['reply', 'note'] %}
                   <p class="mt-1.5 rounded-2xl px-4 py-3 text-[15px] whitespace-pre-line text-ink {{ 'bg-brand-50' if e.kind == 'reply' else 'bg-amber-50' }}">{{ e.body }}</p>
                 {% endif %}
               </li>
@@ -130,13 +133,14 @@
       <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="status-h">
         <h2 id="status-h" class="text-lg font-bold">Status</h2>
         {% if editable %}
-          <div class="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-surface p-1 ring-1 ring-line" role="group" aria-labelledby="status-h">
+          <div class="mt-3 grid grid-cols-3 gap-1.5" role="group" aria-labelledby="status-h">
             {% for key, label in statusLabels %}
               <form method="post" action="/portal/messages/{{ m.id }}/status">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
                 <input type="hidden" name="status" value="{{ key }}">
+                {% set tone = { new: ['bg-amber-500 text-white', 'bg-amber-50 text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100'], in_progress: ['bg-[#2a78d6] text-white', 'bg-[#eaf2fc] text-[#1f5fae] ring-1 ring-[#c4dbf6] hover:bg-[#d8e8fa]'], resolved: ['bg-brand-700 text-white', 'bg-brand-50 text-brand-800 ring-1 ring-brand-100 hover:bg-brand-100'] }[key] %}
                 <button type="submit" {% if key == m.status %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}
-                        class="w-full rounded-xl px-2 py-2 text-sm font-semibold transition {{ 'bg-white text-ink shadow-sm ring-1 ring-line' if key == m.status else 'text-muted hover:text-ink' }}">{{ label }}</button>
+                        class="flex w-full items-center justify-center gap-1 rounded-xl px-2 py-2 text-sm font-semibold transition {{ (tone[0] + ' shadow-sm') if key == m.status else tone[1] }}">{% if key == m.status %}{{ icon('check', 'size-3.5') }}{% endif %}{{ label }}</button>
               </form>
             {% endfor %}
           </div>
@@ -150,7 +154,7 @@
           <form method="post" action="/portal/messages/{{ m.id }}/assign" class="mt-2 flex gap-2">
             <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
             <label for="f-assign" class="sr-only">Assign to</label>
-            <select id="f-assign" name="assigned_to" class="form-control !py-2">
+            <select id="f-assign" name="assigned_to" class="form-control !py-2" data-searchable data-placeholder="Search staff by name…">
               <option value="">Nobody yet</option>
               {% for s in staff %}<option value="{{ s.id }}" {% if m.assigned_to == s.id %}selected{% endif %}>{{ s.name }}{% if s.id == user.id %} (me){% endif %}</option>{% endfor %}
             </select>
@@ -194,10 +198,10 @@
               <button type="submit" class="btn-secondary w-full">{{ icon('refresh' if m.archived_at else 'archive', 'size-4') }} {{ 'Restore to inbox' if m.archived_at else 'Archive' }}</button>
             </form>
           {% endif %}
-          {% if m.archived_at and can('messages.delete') %}
-            <form method="post" action="/portal/messages/{{ m.id }}/delete" class="mt-4 border-t border-line pt-4" data-confirm-title="Delete permanently?" data-confirm-button="Delete permanently" data-confirm="This {{ m.type }} and its notes will be removed for good. This can’t be undone.">
+          {% if can('messages.delete') %}
+            <form method="post" action="/portal/messages/{{ m.id }}/delete" class="{{ 'mt-3' if can('messages.archive') }}" data-confirm-title="Delete this {{ typeLabels[m.type] | lower }} permanently?" data-confirm-button="Delete permanently" data-confirm="“{{ m.name }}” ({{ m.reference or ('#' + m.id) }}) and all its notes and replies will be removed for good. This can’t be undone.{{ '' if m.archived_at else ' To keep it but hide it from the inbox, use Archive instead.' }}">
               <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
-              <button type="submit" class="text-sm font-semibold text-accent-700 hover:text-accent-800">{{ icon('trash', 'inline size-4') }} Delete permanently</button>
+              <button type="submit" class="btn w-full bg-accent-600 text-white hover:bg-accent-700">{{ icon('trash', 'size-4') }} Delete permanently</button>
             </form>
           {% endif %}
         </section>

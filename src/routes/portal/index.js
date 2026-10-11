@@ -36,7 +36,16 @@ router.use(async (req, res, next) => {
   ]);
   res.locals.unreadCount = unread;
   res.locals.navBadges = badges;
+  // The staff announcement banner across the top of every page.
+  res.locals.staffBanner = await require('../../services/announcements').bannerFor(req.user);
   next();
+});
+
+// Close a (normal) staff announcement banner; it comes back if the announcement is edited.
+router.post('/banner/:id/dismiss', async (req, res) => {
+  if (/^\d+$/.test(req.params.id)) await require('../../services/announcements').dismiss(Number(req.params.id), req.user);
+  const back = typeof req.body.back === 'string' && /^\/portal(?:[/?#]|$)/.test(req.body.back) ? req.body.back : '/portal';
+  res.redirect(303, back);
 });
 
 router.use('/', require('./dashboard'));

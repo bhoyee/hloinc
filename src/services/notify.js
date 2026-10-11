@@ -40,8 +40,8 @@ const outbox = [];
 
 const channels = {
   // Every email goes out as plain text plus a branded HTML version of the same text.
-  async email({ to, subject, text, replyTo, cta, footnote }) {
-    const html = emailLayout.render({ subject, text, cta, footnote, business: await businessDetails() });
+  async email({ to, subject, text, html: bodyHtml, replyTo, cta, footnote }) {
+    const html = emailLayout.render({ subject, text, bodyHtml, cta, footnote, business: await businessDetails() });
     const mail = { from: config.mail.from, to, subject, text, html, replyTo };
     if (config.isTest) outbox.push(mail);
     const info = await getTransporter().sendMail(mail);

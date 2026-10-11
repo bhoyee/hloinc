@@ -8,6 +8,9 @@ const { escape } = require('nunjucks').lib;
  * HTML-escaped first, so staff can't (accidentally) inject markup.
  */
 function richText(text) {
+  // Saved from the formatted editor: clean it again on the way out (belt and braces).
+  const rich = require('./richText');
+  if (rich.isHtml(text)) return rich.clean(text);
   const blocks = String(text || '')
     .replace(/\r\n/g, '\n')
     .split(/\n{2,}/)

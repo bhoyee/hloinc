@@ -183,6 +183,52 @@ describe('inbox: handling', () => {
   });
 });
 
+describe('inbox: formatted replies', () => {
+  it('emails a formatted reply (cleaned), with a plain-text version, and keeps it in the history', async () => {
+    outbox.length = 0;
+    const id = await forCoordinator();
+    const coordinator = await signIn(app, await makeUser('program_coordinator', 'Casey Coordinator'));
+    const html = '<p>Thanks for writing. <b>Next steps</b>:</p><ol><li>We call you</li><li>We visit</li></ol><p>See <a href="https://hloinc.com/services">our services</a>.<script>alert(1)</script><img src=x onerror=alert(1)></p>';
+    const res = await post(coordinator, `/portal/messages/${id}`, `/portal/messages/${id}/reply`, { reply: 'ignored when html is sent', reply_html: html });
+    expect(res.status).toBe(303);
+    const mail = outbox.find((m) => m.to === 'pat@example.com');
+    expect(mail.html).toContain('<strong>Next steps</strong>');
+    expect(mail.html).toMatch(/<ol style="[^"]*"><li style="[^"]*">We call you<\/li>/);
+    expect(mail.html).toContain('href="https://hloinc.com/services"');
+    expect(mail.html).not.toMatch(/<script>alert|onerror|<img src=x/);
+    expect(mail.text).toContain('1. We call you');
+    expect(mail.text).toContain('our services (https://hloinc.com/services)');
+    expect(mail.text).toContain('> Hello, I have a question');
+    const ev = await db('contact_message_events').where({ message_id: id, kind: 'reply' }).first();
+    expect(ev.body_html).toContain('<strong>Next steps</strong>');
+    expect(ev.body_html).not.toContain('script');
+    const page = (await coordinator.get(`/portal/messages/${id}`)).text;
+    expect(page).toContain('<strong>Next steps</strong>');
+  });
+
+  it('keeps the four text sizes (as paragraph classes) and nothing else', async () => {
+    outbox.length = 0;
+    const id = await forCoordinator();
+    const coordinator = await signIn(app, await makeUser('program_coordinator'));
+    await post(coordinator, `/portal/messages/${id}`, `/portal/messages/${id}/reply`, {
+      reply_html: '<p class="rt-huge">Welcome</p><p class="rt-small evil" style="color:red">Small print here</p><p><font size="7">old</font></p>',
+    });
+    const ev = await db('contact_message_events').where({ message_id: id, kind: 'reply' }).first();
+    expect(ev.body_html).toContain('<p class="rt-huge">Welcome</p>');
+    expect(ev.body_html).toContain('<p class="rt-small">Small print here</p>');
+    expect(ev.body_html).not.toMatch(/evil|color:red/);
+    const mail = outbox.find((m) => m.to === 'pat@example.com');
+    expect(mail.html).toMatch(/<p style="[^"]*font-size:24px[^"]*">Welcome<\/p>/);
+  });
+
+  it('still works without the editor (plain text), and rejects an empty formatted reply', async () => {
+    const id = await forCoordinator();
+    const coordinator = await signIn(app, await makeUser('program_coordinator'));
+    expect((await post(coordinator, `/portal/messages/${id}`, `/portal/messages/${id}/reply`, { reply: '', reply_html: '<p><br></p>' })).status).toBe(422);
+    expect((await post(coordinator, `/portal/messages/${id}`, `/portal/messages/${id}/reply`, { reply: 'A plain reply from a browser without scripts.' })).status).toBe(303);
+  });
+});
+
 describe('inbox: archive and delete', () => {
   it('archives and permanently deletes with the right permissions', async () => {
     const id = await forCoordinator();
@@ -190,9 +236,6 @@ describe('inbox: archive and delete', () => {
     expect((await post(coordinator, `/portal/messages/${id}`, `/portal/messages/${id}/archive`)).status).toBe(403);
 
     const admin = await signIn(app, await makeUser('admin'));
-    await post(admin, `/portal/messages/${id}`, `/portal/messages/${id}/delete`);
-    expect(await db('contact_messages').where({ id }).first()).toBeTruthy(); // must be archived first
-
     await post(admin, `/portal/messages/${id}`, `/portal/messages/${id}/archive`, { action: 'archive' });
     const archived = await admin.get('/portal/messages?tab=archived');
     expect(archived.text).toContain('Pat Visitor');

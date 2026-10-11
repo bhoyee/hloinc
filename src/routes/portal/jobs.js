@@ -17,6 +17,27 @@ const can = requirePermission;
 
 const FIELDS = ['title', 'department', 'location', 'employment_type', 'pay_range', 'description', 'requirements', 'benefits'];
 
+/*
+ * Fields written in the formatted editor. The browser sends the plain text (checked by
+ * the form rules) and `<field>_html`; we keep the cleaned HTML. Without JavaScript only
+ * the plain text arrives, and that's saved as before.
+ */
+const RICH = ['description', 'requirements', 'benefits'];
+const richText = require('../../lib/richText');
+
+function parseJob(body) {
+  const html = {};
+  const input = { ...body };
+  for (const f of RICH) {
+    if (typeof body[`${f}_html`] !== 'string' || body[`${f}_html`].length > 60000) continue;
+    html[f] = richText.clean(body[`${f}_html`]);
+    input[f] = html[f] ? richText.toText(html[f]) : '';
+  }
+  const parsed = jobSchema.safeParse(input);
+  if (parsed.success) for (const f of Object.keys(html)) parsed.data[f] = html[f];
+  return parsed;
+}
+
 // --- List -------------------------------------------------------------------------------
 
 router.get('/', async (req, res) => {
@@ -61,7 +82,7 @@ router.get('/new', can('jobs.edit'), (req, res) => renderForm(req, res, { values
 
 router.post('/', can('jobs.edit'), async (req, res) => {
   const publish = req.body.intent === 'publish';
-  const parsed = jobSchema.safeParse(req.body);
+  const parsed = parseJob(req.body);
   if (!parsed.success) return renderForm(req, res, { values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   const problems = publish ? jobs.publishProblems(parsed.data) : {};
   if (Object.keys(problems).length) return renderForm(req, res, { values: req.body, errors: problems, status: 422 });
@@ -102,7 +123,7 @@ router.get('/:id/preview', (req, res) => {
 
 router.post('/:id', can('jobs.edit'), async (req, res) => {
   const job = req.job;
-  const parsed = jobSchema.safeParse(req.body);
+  const parsed = parseJob(req.body);
   if (!parsed.success) return renderForm(req, res, { job, values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   // A live posting must keep its pay range and benefits.
   const problems = job.status === 'published' || req.body.intent === 'publish' ? jobs.publishProblems(parsed.data) : {};

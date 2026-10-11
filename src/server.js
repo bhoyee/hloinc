@@ -30,6 +30,9 @@ function createApp() {
   env.addGlobal('currentYear', new Date().getFullYear());
   env.addGlobal('cms', cms.helpers);
   env.addGlobal('icon', (name, className) => new nunjucks.runtime.SafeString(icon(name, className)));
+  // The editor's starting content (clean HTML) from saved text of either kind, and its plain-text fallback.
+  env.addFilter('editorHtml', (value) => new nunjucks.runtime.SafeString(richText(value)));
+  env.addFilter('editorText', (value) => (require('./lib/richText').isHtml(value) ? require('./lib/richText').toText(require('./lib/richText').clean(value)) : value || ''));
   env.addFilter('initials', (name) => require('./lib/avatar').initials(name));
   env.addFilter('avatarColor', (name) => require('./lib/avatar').color(name));
   env.addFilter('telHref', (phone) => `tel:+1${String(phone).replace(/\D/g, '').replace(/^1/, '')}`);

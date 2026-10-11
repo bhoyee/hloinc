@@ -175,9 +175,12 @@ router.post('/:id/note', can('messages.edit'), async (req, res) => {
 });
 
 router.post('/:id/reply', can('messages.edit'), async (req, res) => {
-  const parsed = replySchema.safeParse(req.body.reply);
+  // From the formatted editor: cleaned HTML, and its plain text (used for length checks and the text email).
+  const richText = require('../../lib/richText');
+  const html = typeof req.body.reply_html === 'string' && req.body.reply_html.length <= 50000 ? richText.clean(req.body.reply_html) : '';
+  const parsed = replySchema.safeParse(html ? richText.toText(html) : req.body.reply);
   if (!parsed.success) return renderShow(req, res, { values: req.body, errors: { reply: parsed.error.issues[0].message }, status: 422 });
-  const sent = await msgs.reply(req.msg, req.user, parsed.data);
+  const sent = await msgs.reply(req.msg, req.user, parsed.data, html || null);
   await audit(req, { action: 'message.reply', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} ${sent ? 'emailed a reply to' : 'tried to email a reply to'} ${req.msg.name} (${ref(req.msg)})` });
   setFlash(req, sent ? 'success' : 'error', sent ? `Reply emailed to ${req.msg.email}.` : `The reply couldn’t be emailed, so ${req.msg.name} hasn’t received it. It’s saved below; please try again later or call them.`);
   back(req, res, '#history');
@@ -198,14 +201,10 @@ router.post('/:id/archive', can('messages.archive'), async (req, res) => {
 });
 
 router.post('/:id/delete', can('messages.delete'), async (req, res) => {
-  if (!req.msg.archived_at) {
-    setFlash(req, 'error', 'Archive it first. Only archived messages can be deleted permanently.');
-    return back(req, res);
-  }
   await msgs.remove(req.msg);
   await audit(req, { action: 'message.delete', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} permanently deleted ${req.msg.type} ${ref(req.msg)} (${req.msg.name})` });
   setFlash(req, 'success', 'Deleted permanently.');
-  res.redirect(303, '/portal/messages?tab=archived');
+  res.redirect(303, req.msg.archived_at ? '/portal/messages?tab=archived' : '/portal/messages');
 });
 
 module.exports = router;

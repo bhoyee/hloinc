@@ -37,6 +37,7 @@
     "nunjucks": "^3.2.4",
     "otplib": "^13.5.0",
     "qrcode": "^1.5.4",
+    "sanitize-html": "^2.18.0",
     "sharp": "^0.35.5",
     "zod": "^4.6.5"
   },

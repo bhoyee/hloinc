@@ -63,7 +63,7 @@ async function activeForStaff(limit = 20, { includePaused = false } = {}) {
   const now = new Date();
   const q = db('announcements as a')
     .leftJoin('users as u', 'u.id', 'a.created_by')
-    .select('a.id', 'a.title', 'a.body', 'a.audience', 'a.link_url', 'a.link_label', 'a.starts_at', 'a.ends_at', 'a.paused_at', 'a.created_by', 'u.name as author')
+    .select('a.id', 'a.title', 'a.body', 'a.audience', 'a.priority', 'a.link_url', 'a.link_label', 'a.starts_at', 'a.ends_at', 'a.paused_at', 'a.created_by', 'u.name as author')
     .whereNull('a.archived_at')
     .where('a.starts_at', '<=', now)
     .where((w) => w.whereNull('a.ends_at').orWhere('a.ends_at', '>', now))
@@ -157,11 +157,62 @@ async function setArchived(id, archived, user) {
   return get(id);
 }
 
+// --- Portal banner -------------------------------------------------------------------------------
+
+/**
+ * The staff banner for this person: live staff announcements, important ones first
+ * (then newest), leaving out normal ones they've closed since the last edit.
+ * Returns { top, more } or null.
+ */
+async function bannerFor(user) {
+  const rows = await live(db('announcements as a'))
+    .whereIn('a.audience', ['internal', 'both'])
+    .leftJoin('announcement_dismissals as d', (j) => j.on('d.announcement_id', 'a.id').andOn('d.user_id', db.raw('?', [user.id])))
+    // Closed banners stay closed for that version; any edit (a new updated_at) brings them back.
+    .where((w) => w.where('a.priority', 'important').orWhereNull('d.dismissed_at').orWhereRaw('a.updated_at <> d.dismissed_at'))
+    .select('a.id', 'a.title', 'a.body', 'a.priority', 'a.link_url', 'a.link_label')
+    .orderByRaw("a.priority = 'important' DESC")
+    .orderBy('a.starts_at', 'desc')
+    .limit(20);
+  return rows.length ? { top: rows[0], more: rows.length - 1 } : null;
+}
+
+/** Close a normal banner for this person (important ones stay until they end). */
+async function dismiss(id, user) {
+  const a = await db('announcements').where({ id }).first('priority', 'updated_at');
+  if (!a || a.priority === 'important') return false;
+  // Records which version was closed (its updated_at), not the clock time, so server time zones can't matter.
+  await db('announcement_dismissals').insert({ announcement_id: id, user_id: user.id, dismissed_at: a.updated_at }).onConflict(['announcement_id', 'user_id']).merge();
+  return true;
+}
+
+/**
+ * Bell alert to all staff for an important staff announcement, once, when it's live.
+ * Runs after saving, and every 15 minutes for scheduled ones that have since gone live.
+ */
+async function notifyImportant({ exceptId = null } = {}) {
+  const due = await live(db('announcements'))
+    .whereIn('audience', ['internal', 'both'])
+    .where({ priority: 'important' })
+    .whereNull('notified_at')
+    .select('id', 'title', 'body');
+  if (!due.length) return 0;
+  const notifications = require('./notifications');
+  for (const a of due) {
+    await db('announcements').where({ id: a.id }).update({ notified_at: db.fn.now() });
+    await notifications.notifyAllStaff({ type: 'announcement', title: `Important: ${a.title}`, body: a.body.slice(0, 200), link: '/portal#staff-board' }, { exceptId });
+  }
+  return due.length;
+}
+
 function remove(id) {
   return db('announcements').where({ id }).del();
 }
 
 module.exports = {
+  bannerFor,
+  dismiss,
+  notifyImportant,
   AUDIENCE_LABELS,
   STATE_LABELS,
   TABS,

@@ -160,7 +160,11 @@ async function checkOverdue(now = new Date()) {
 /** Check every 15 minutes while the app is running (not in tests). */
 function startOverdueChecks() {
   if (config.env === 'test') return;
-  const run = () => checkOverdue().catch((err) => console.error('Overdue check failed:', err.message));
+  const run = () => {
+    checkOverdue().catch((err) => console.error('Overdue check failed:', err.message));
+    // Important staff announcements that were scheduled and have now gone live.
+    require('./announcements').notifyImportant().catch((err) => console.error('Announcement alert failed:', err.message));
+  };
   setTimeout(run, 60 * 1000).unref();
   setInterval(run, 15 * 60 * 1000).unref();
 }

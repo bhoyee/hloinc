@@ -1,9 +1,11 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 {% import "partials/portal-badges.njk" as badges %}
+{% import "partials/rich-editor.njk" as re %}
+
+{% block scripts %}<script src="/js/rich-editor.js" defer></script>{% endblock %}
 
 {% set editable = can('jobs.edit') %}
-{% set textHint = 'Start a line with “- ” for a bullet point. Leave a blank line between paragraphs.' %}
 
 {% block actions %}
   {% if job %}
@@ -45,13 +47,13 @@
             <p class="mt-1 text-sm text-muted">Maryland’s Wage Range Transparency Act requires both on public job postings, so a job can’t be published without them.</p>
           </div>
           {{ ui.input('pay_range', 'Pay range', values, errors, required=false, autocomplete='off', attrs='maxlength="120"', hint='For example “$17.00 – $19.00 per hour”. This format also lets Google show the pay in job search.') }}
-          {{ ui.textarea('benefits', 'Benefits', values, errors, required=false, rows=4, maxlength=4000, hint=textHint) }}
+          {{ re.editor('benefits', 'Benefits', values, errors, html=(values.benefits_html or values.benefits) | editorHtml, maxlength=4000, required=false, hint='Use the list buttons for bullet points.', placeholder='For example: paid training, health insurance, paid time off…', minHeight='min-h-32') }}
         </section>
 
         <section class="space-y-5 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="desc-h">
           <h2 id="desc-h" class="text-lg font-bold">Description</h2>
-          {{ ui.textarea('description', 'About the role', values, errors, rows=10, maxlength=10000, hint=textHint) }}
-          {{ ui.textarea('requirements', 'Requirements', values, errors, required=false, rows=6, maxlength=6000, hint=textHint) }}
+          {{ re.editor('description', 'About the role', values, errors, html=(values.description_html or values.description) | editorHtml, maxlength=10000, minlength=20, hint='What the job involves, day to day.', placeholder='Describe the role in a few short paragraphs…', minHeight='min-h-56') }}
+          {{ re.editor('requirements', 'Requirements', values, errors, html=(values.requirements_html or values.requirements) | editorHtml, maxlength=6000, required=false, hint='Use the list buttons for bullet points.', placeholder='For example: high school diploma, valid driver’s licence…', minHeight='min-h-40') }}
         </section>
 
       </fieldset>
@@ -59,15 +61,15 @@
       {% if editable %}
         <div class="sticky bottom-0 z-10 -mx-4 flex flex-wrap gap-3 border-t border-line bg-surface/95 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:bg-white/95 sm:px-5 sm:shadow-soft">
           {% if not job %}
-            <button type="submit" name="intent" value="publish" class="btn-primary">{{ icon('check', 'size-4') }} Publish now</button>
-            <button type="submit" name="intent" value="draft" class="btn-secondary">Save as draft</button>
+            <button type="submit" name="intent" value="publish" class="btn-green">{{ icon('check', 'size-4') }} Publish now</button>
+            <button type="submit" name="intent" value="draft" class="btn-blue">{{ icon('document', 'size-4') }} Save as draft</button>
           {% elif job.status == 'published' %}
-            <button type="submit" name="intent" value="save" class="btn-primary">Save changes</button>
+            <button type="submit" name="intent" value="save" class="btn-green">{{ icon('check', 'size-4') }} Save changes</button>
           {% else %}
-            <button type="submit" name="intent" value="save" class="btn-secondary">Save {{ 'draft' if job.status == 'draft' else '' }}</button>
-            <button type="submit" name="intent" value="publish" class="btn-primary">{{ icon('check', 'size-4') }} Save &amp; publish</button>
+            <button type="submit" name="intent" value="save" class="btn-blue">{{ icon('document', 'size-4') }} Save {{ 'draft' if job.status == 'draft' else '' }}</button>
+            <button type="submit" name="intent" value="publish" class="btn-green">{{ icon('check', 'size-4') }} Save &amp; publish</button>
           {% endif %}
-          <a href="/portal/jobs" class="btn-secondary !ring-0">Cancel</a>
+          <a href="/portal/jobs" class="btn-primary">{{ icon('close', 'size-4') }} Cancel</a>
         </div>
       {% endif %}
     </form>

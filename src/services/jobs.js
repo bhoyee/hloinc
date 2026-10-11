@@ -101,12 +101,14 @@ function parsePay(payRange) {
 
 /** schema.org JobPosting, so the role can appear in Google's job search. */
 function toJobPosting(job, site) {
-  const sections = [job.description, job.requirements && `Requirements:\n${job.requirements}`, job.benefits && `Benefits:\n${job.benefits}`];
+  // Each part on its own (any of them may be formatted HTML or older plain text).
+  const part = (heading, value) => (value ? `${heading ? `<p><strong>${heading}</strong></p>` : ''}${richText(value)}` : '');
+  const description = part('', job.description) + part('Requirements', job.requirements) + part('Benefits', job.benefits);
   return {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
     title: job.title,
-    description: richText(sections.filter(Boolean).join('\n\n')),
+    description,
     datePosted: job.published_at ? new Date(job.published_at).toISOString().slice(0, 10) : undefined,
     employmentType: EMPLOYMENT_TYPES[String(job.employment_type || '').toLowerCase()],
     hiringOrganization: {

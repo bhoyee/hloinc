@@ -31,7 +31,7 @@
     <div class="flex h-16 items-center justify-between gap-3 border-b border-white/10 px-4 lg:h-[4.5rem]">
       <a href="/portal" class="flex min-w-0 items-center gap-3">
         <span class="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
-          <img src="/apple-touch-icon.png" alt="" width="40" height="40" class="size-full object-contain">
+          <img src="/img/portal-mark.png?v=1" alt="" width="160" height="160" class="size-full object-contain">
         </span>
         <span class="min-w-0 leading-tight">
           <span class="block font-display text-base font-bold text-white">Healthy Living Option</span>
@@ -167,6 +167,31 @@
         <p class="sr-only" aria-live="polite" data-search-status></p>
       </form>
     </header>
+
+    {# Staff announcement banner: important (red, stays until it ends) or normal (green, can be closed). #}
+    {% if staffBanner %}
+      {% set b = staffBanner.top %}
+      {% set important = b.priority == 'important' %}
+      <div class="{{ 'bg-accent-700' if important else 'bg-brand-800' }} text-white" role="region" aria-label="Staff announcement">
+        <div class="flex items-start gap-3 px-4 py-3 sm:px-6 lg:px-8 xl:px-10">
+          {{ icon('exclamation' if important else 'megaphone', 'mt-0.5 size-5 shrink-0') }}
+          <p class="min-w-0 flex-1 text-[15px] leading-snug">
+            {% if important %}<span class="mr-1.5 rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide uppercase">Important</span>{% endif %}
+            <strong class="font-semibold">{{ b.title }}</strong>
+            <span class="{{ 'text-accent-50' if important else 'text-brand-100' }}"> — {{ b.body }}</span>
+            {% if b.link_url %} <a href="{{ b.link_url }}" class="font-semibold whitespace-nowrap text-white underline decoration-white/50 underline-offset-4 hover:decoration-white" {% if b.link_url.startsWith('https://') %}target="_blank" rel="noopener"{% endif %}>{{ b.link_label or 'Learn more' }} &rarr;</a>{% endif %}
+            {% if staffBanner.more %} <a href="/portal#staff-board" class="font-semibold whitespace-nowrap text-white underline decoration-white/50 underline-offset-4 hover:decoration-white">+{{ staffBanner.more }} more {{ 'announcement' if staffBanner.more == 1 else 'announcements' }}</a>{% endif %}
+          </p>
+          {% if not important %}
+            <form method="post" action="/portal/banner/{{ b.id }}/dismiss" class="shrink-0">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <input type="hidden" name="back" value="{{ currentPath }}">
+              <button type="submit" class="grid size-8 place-items-center rounded-full hover:bg-white/15" title="Close this announcement">{{ icon('close', 'size-4') }}<span class="sr-only">Close this announcement</span></button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
 
     <main id="main" class="w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
       <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">

@@ -90,8 +90,9 @@ function bodyToHtml(text) {
  * @param {object} opts.business       business details (name, phone, email, address, hours)
  * @param {{label: string, href: string}} [opts.cta]
  * @param {string} [opts.footnote]     small print under the footer
+ * @param {string} [opts.bodyHtml]     a body already in safe, styled HTML (replaces the text conversion)
  */
-function render({ subject, text, business, cta, footnote }) {
+function render({ subject, text, business, cta, footnote, bodyHtml }) {
   const b = business;
   const siteUrl = config.appUrl;
   const logo = `${siteUrl}/img/logo.png?v=3`;
@@ -121,7 +122,7 @@ function render({ subject, text, business, cta, footnote }) {
       </td></tr>
       <tr><td style="background:#ffffff;padding:30px 32px 14px">
         <h1 style="margin:0 0 20px;font-size:22px;line-height:1.3;color:${COLORS.ink};font-weight:800">${escape(subject)}</h1>
-        ${bodyToHtml(text)}
+        ${bodyHtml || bodyToHtml(text)}
         ${button}
       </td></tr>
       <tr><td style="background:${COLORS.brandDark};border-radius:0 0 18px 18px;padding:24px 32px;color:#d3efe2;font-size:13px;line-height:1.7">
@@ -141,4 +142,4 @@ function render({ subject, text, business, cta, footnote }) {
 </html>`;
 }
 
-module.exports = { render, bodyToHtml, linkify };
+module.exports = { render, bodyToHtml, linkify, escape };

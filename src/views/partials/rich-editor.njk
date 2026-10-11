@@ -1,0 +1,66 @@
+{#
+  A formatted-text editor (public/js/rich-editor.js). Without JavaScript the plain
+  textarea is used instead. On send: `name` holds the plain text (for checks) and
+  `name_html` the formatting, which the server cleans again (lib/richText).
+
+  html: what to show in the editor to start (already-clean HTML), or '' to start
+  from the textarea's text.
+#}
+{% macro tool(cmd, label, iconName='', glyph='', glyphClass='') %}
+  <button type="button" data-cmd="{{ cmd }}" title="{{ label }}" aria-pressed="false"
+          class="grid size-9 place-items-center rounded-lg text-muted transition hover:bg-white hover:text-ink aria-pressed:bg-white aria-pressed:text-brand-800 aria-pressed:shadow-sm">
+    {% if iconName %}{{ icon(iconName, 'size-[18px]') }}{% else %}<span class="text-[15px] leading-none {{ glyphClass }}" aria-hidden="true">{{ glyph }}</span>{% endif %}
+    <span class="sr-only">{{ label }}</span>
+  </button>
+{% endmacro %}
+
+{% macro editor(name, label, values, errors, html='', maxlength=5000, minlength=0, required=true, hint='', placeholder='', showLabel=true, minHeight='min-h-40') %}
+  <div data-rich-editor data-min="{{ minlength }}" data-label="{{ label }}">
+    <label for="f-{{ name }}" class="{{ 'form-label' if showLabel else 'sr-only' }}">{{ label }}{% if not required %} <span class="font-normal text-muted">(optional)</span>{% endif %}</label>
+    <input type="hidden" name="{{ name }}_html" value="" data-rich-html>
+    <div class="overflow-hidden rounded-2xl border border-[#b9c8c0] bg-white focus-within:border-brand-600 focus-within:ring-4 focus-within:ring-brand-100 {{ 'border-accent-600' if errors[name] }}" data-rich-only hidden>
+      <div class="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-2 py-1.5" role="toolbar" aria-label="Formatting for {{ label }}" data-rich-toolbar>
+        <label class="sr-only" for="f-{{ name }}-size">Text size</label>
+        <select id="f-{{ name }}-size" data-rich-size title="Text size (for the paragraph)"
+                class="mr-1 h-9 rounded-lg border-0 bg-transparent py-0 pr-7 pl-2 text-sm font-semibold text-ink hover:bg-white focus:bg-white focus:ring-2 focus:ring-brand-100">
+          <option value="rt-small">Small</option>
+          <option value="" selected>Normal</option>
+          <option value="rt-large">Large</option>
+          <option value="rt-huge">Huge</option>
+        </select>
+        <span class="mr-1 h-6 w-px bg-line" aria-hidden="true"></span>
+        {{ tool('bold', 'Bold (Ctrl+B)', glyph='B', glyphClass='font-extrabold') }}
+        {{ tool('italic', 'Italic (Ctrl+I)', glyph='I', glyphClass='font-serif italic font-semibold') }}
+        {{ tool('underline', 'Underline (Ctrl+U)', glyph='U', glyphClass='underline font-semibold') }}
+        {{ tool('strikeThrough', 'Strikethrough', glyph='S', glyphClass='line-through font-semibold') }}
+        <span class="mx-1 h-6 w-px bg-line" aria-hidden="true"></span>
+        {{ tool('insertUnorderedList', 'Bulleted list', 'list-bullet') }}
+        {{ tool('insertOrderedList', 'Numbered list', 'list-number') }}
+        {{ tool('formatBlock', 'Quote', 'quote') }}
+        <span class="mx-1 h-6 w-px bg-line" aria-hidden="true"></span>
+        {{ tool('createLink', 'Add or edit a link (Ctrl+K)', 'link') }}
+        {{ tool('unlink', 'Remove link', glyph='⛓︎̸', glyphClass='text-sm') }}
+        <span class="mx-1 h-6 w-px bg-line" aria-hidden="true"></span>
+        {{ tool('undo', 'Undo (Ctrl+Z)', 'undo') }}
+        {{ tool('redo', 'Redo (Ctrl+Y)', 'redo') }}
+        {{ tool('removeFormat', 'Clear formatting', glyph='T̸', glyphClass='font-semibold') }}
+      </div>
+      <div class="flex flex-wrap items-center gap-2 border-b border-line bg-brand-50 px-3 py-2" data-rich-link hidden>
+        <label for="f-{{ name }}-link" class="text-sm font-semibold text-ink">Link</label>
+        <input id="f-{{ name }}-link" type="text" inputmode="url" class="form-control !w-auto min-w-0 flex-1 !py-1.5 text-sm" placeholder="https://… or an email address" autocomplete="off">
+        <button type="button" class="btn-green !px-3 !py-1.5 text-sm" data-link-apply>Apply</button>
+        <button type="button" class="btn-secondary !px-3 !py-1.5 text-sm" data-link-cancel>Cancel</button>
+      </div>
+      <div data-rich-box contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ label }}" spellcheck="true"
+           class="prose-reply {{ minHeight }} px-4 py-3 text-[15px] leading-relaxed text-ink focus:outline-none"
+           data-placeholder="{{ placeholder }}">{{ html | safe }}</div>
+      <div class="flex items-center justify-between gap-3 border-t border-line bg-surface px-3 py-1.5 text-xs text-muted">
+        <span>{{ hint or 'Pasted text keeps only its words, not its formatting.' }}</span>
+        <span data-rich-count>0 / {{ maxlength }}</span>
+      </div>
+    </div>
+    <p class="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-accent-700" data-rich-error hidden>{{ icon('exclamation', 'size-4') }} <span></span></p>
+    <textarea id="f-{{ name }}" name="{{ name }}" rows="6" maxlength="{{ maxlength }}" class="form-control" placeholder="{{ placeholder }}" {% if errors[name] %}aria-invalid="true" aria-describedby="f-{{ name }}-error"{% endif %}>{{ values[name] | editorText }}</textarea>
+    {% if errors[name] %}<p id="f-{{ name }}-error" class="form-error">{{ icon('exclamation', 'size-4 shrink-0') }} {{ errors[name] }}</p>{% endif %}
+  </div>
+{% endmacro %}
