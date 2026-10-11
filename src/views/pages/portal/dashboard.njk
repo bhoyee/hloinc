@@ -150,6 +150,8 @@
 
   <div class="mt-8" data-live-region="panels">{% include "partials/dashboard-panels.njk" %}</div>
 
+  {% if appts %}<div class="mt-8">{% include "partials/dashboard-appointments.njk" %}</div>{% endif %}
+
   {# Recent leads and the staff board, side by side when both are there. #}
   {% set showBoard = board.length or can('announcements.edit') %}
   <div class="mt-8 grid gap-4 lg:gap-5 {{ 'lg:grid-cols-2' if recentLeads and showBoard }}">

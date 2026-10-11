@@ -47,6 +47,7 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 **Staff portal**
 - **Dashboard** (live):
   - Cards and charts, plus "Needs attention" and "Today at HLO".
+  - **Appointments** widget (roles that see appointments): Week or Month view with the number booked per day; pick a day to list its appointments, hover for details.
   - The staff announcement board and recent leads.
   - Recent activity (audit-log roles) or **My work** (everyone else), and My shifts.
 - **Messages**:

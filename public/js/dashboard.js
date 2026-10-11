@@ -475,7 +475,10 @@
       const next = await res.json();
       applyTiles(next.tiles);
       applyOffice(next.office);
-      if (next.sections !== data.sections && !(await refreshSections())) next.sections = data.sections; // try again next round
+      if (next.sections !== data.sections) {
+        if (!(await refreshSections())) next.sections = data.sections; // try again next round
+        else document.dispatchEvent(new Event('hlo:dashboard-changed')); // e.g. the appointments widget
+      }
       for (const chart of next.charts) {
         const box = chartBox(chart.key);
         if (!box) continue;

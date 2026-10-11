@@ -105,7 +105,7 @@
             {% if a.updated_by_name %}<div class="flex justify-between gap-3"><dt>Last change</dt><dd class="text-right text-ink">{{ a.updated_by_name }}, {{ a.updated_at | date({ month: 'short', day: 'numeric' }) }}</dd></div>{% endif %}
           </dl>
           <div class="mt-5 space-y-2">
-            {% if can('announcements.edit') and a.state in ['live', 'scheduled', 'paused'] %}
+            {% if can('announcements.pause') and a.state in ['live', 'scheduled', 'paused'] %}
               <form method="post" action="/portal/announcements/{{ a.id }}/pause">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
                 <input type="hidden" name="action" value="{{ 'resume' if a.paused_at else 'pause' }}">
@@ -113,7 +113,7 @@
                 {% else %}<button type="submit" class="btn-secondary w-full">{{ icon('pause', 'size-4') }} Pause</button>{% endif %}
               </form>
             {% endif %}
-            {% if can('announcements.edit') and a.state in ['live', 'paused'] %}
+            {% if can('announcements.end') and a.state in ['live', 'paused'] %}
               <form method="post" action="/portal/announcements/{{ a.id }}/end">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
                 <button type="submit" class="btn-secondary w-full">{{ icon('stop', 'size-4') }} End now</button>

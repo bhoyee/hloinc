@@ -1,0 +1,114 @@
+{#
+  Appointments at a glance: Week (7-day strip) or Month (compact grid) with the number
+  booked per day; choose a day to list its appointments. Moving around fetches this
+  partial again (/portal/dashboard/appointments) and swaps it in; without JavaScript
+  the links reload the dashboard with the same choices. Refreshes itself every minute.
+#}
+{% set a = appts %}
+{% macro link(view, date, day, label, cls, extra='') %}
+  <a href="/portal?av={{ view }}&ad={{ date }}{% if day %}&aday={{ day }}{% endif %}#appointments" data-appt-nav="/portal/dashboard/appointments?av={{ view }}&ad={{ date }}{% if day %}&aday={{ day }}{% endif %}" class="{{ cls }}" {{ extra | safe }}>{{ caller() if caller else label }}</a>
+{% endmacro %}
+
+<section id="appointments" class="scroll-mt-24 rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6" aria-labelledby="appts-h"
+         data-appt-widget data-appt-state="/portal/dashboard/appointments?av={{ a.view }}&ad={{ a.date }}&aday={{ a.selected }}">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-2.5">
+      <h2 id="appts-h" class="text-lg font-bold">Appointments</h2>
+      {% if a.waiting %}<a href="/portal/appointments?tab=requests" class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100">{{ a.waiting }} {{ 'request' if a.waiting == 1 else 'requests' }} to confirm</a>{% endif %}
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex rounded-xl bg-surface p-1 ring-1 ring-line" role="group" aria-label="Show">
+        {% call link('week', a.date, '', '', 'rounded-lg px-3 py-1.5 text-sm font-semibold ' + ('bg-white text-ink shadow-sm' if a.view == 'week' else 'text-muted hover:text-ink'), 'aria-current="' + ('true' if a.view == 'week' else 'false') + '"') %}Week{% endcall %}
+        {% call link('month', a.date, '', '', 'rounded-lg px-3 py-1.5 text-sm font-semibold ' + ('bg-white text-ink shadow-sm' if a.view == 'month' else 'text-muted hover:text-ink'), 'aria-current="' + ('true' if a.view == 'month' else 'false') + '"') %}Month{% endcall %}
+      </div>
+      {% if can('appointments.log') %}<a href="/portal/appointments/new" class="btn-green !px-3.5 !py-1.5 text-sm">{{ icon('plus', 'size-4') }} Log walk-in / phone</a>{% endif %}
+      <a href="/portal/appointments/calendar?view={{ a.view }}&date={{ a.selected }}" class="btn-dark !px-3.5 !py-1.5 text-sm">{{ icon('calendar', 'size-4') }} Full calendar</a>
+    </div>
+  </div>
+
+  {# Period: arrows, label, Today #}
+  <div class="mt-4 flex items-center gap-2">
+    {% call link(a.view, a.prev, '', '', 'grid size-9 place-items-center rounded-xl ring-1 ring-line hover:bg-surface') %}{{ icon('chevron-right', 'size-4 rotate-180') }}<span class="sr-only">Previous {{ a.view }}</span>{% endcall %}
+    <p class="min-w-0 flex-1 text-center font-display font-bold text-ink sm:flex-none sm:text-left">{{ a.label }}</p>
+    {% call link(a.view, a.next, '', '', 'grid size-9 place-items-center rounded-xl ring-1 ring-line hover:bg-surface') %}{{ icon('chevron-right', 'size-4') }}<span class="sr-only">Next {{ a.view }}</span>{% endcall %}
+    {% call link(a.view, a.today, a.today, '', 'ml-auto rounded-xl px-3 py-1.5 text-sm font-semibold ring-1 ring-line hover:bg-surface') %}Today{% endcall %}
+  </div>
+
+  <div class="mt-4 grid gap-5 {{ 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' if a.view == 'month' }}">
+    {# Days #}
+    {% if a.view == 'week' %}
+      <ol class="grid grid-cols-7 gap-1.5 self-start" aria-label="Days this week">
+        {% for c in a.cells %}
+          <li>
+            {% call link('week', a.date, c.date, '', 'flex flex-col items-center gap-1 rounded-2xl px-1 py-3 text-center ring-1 transition ' + ('bg-brand-700 text-white ring-brand-700' if c.isSelected else ('bg-brand-50 ring-brand-200' if c.isToday else 'ring-line hover:bg-surface')), 'aria-current="' + ('date' if c.isSelected else 'false') + '"') %}
+              <span class="text-xs font-semibold uppercase {{ 'text-brand-100' if c.isSelected else 'text-muted' }}">{{ c.dow }}</span>
+              <span class="font-display text-xl font-bold">{{ c.dayNum }}</span>
+              <span class="min-w-6 rounded-full px-1.5 text-xs font-bold {{ ('bg-white text-brand-800' if c.isSelected else 'bg-brand-100 text-brand-800') if c.count else ('text-brand-200' if c.isSelected else 'text-muted') }}">{{ c.count if c.count else '–' }}</span>
+              <span class="sr-only">{{ c.count }} {{ 'appointment' if c.count == 1 else 'appointments' }}</span>
+            {% endcall %}
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <div class="self-start">
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-muted uppercase" aria-hidden="true">
+          {% for w in a.weekdays %}<span class="py-1">{{ w }}</span>{% endfor %}
+        </div>
+        <ol class="grid grid-cols-7 gap-1" aria-label="Days in {{ a.label }}">
+          {% for c in a.cells %}
+            <li>
+              {% if c.inMonth %}
+                {% call link('month', a.date, c.date, '', 'relative flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-semibold ring-1 transition ' + ('bg-brand-700 text-white ring-brand-700' if c.isSelected else ('bg-brand-50 text-ink ring-brand-200' if c.isToday else 'text-ink ring-transparent hover:bg-surface hover:ring-line')), 'aria-current="' + ('date' if c.isSelected else 'false') + '"') %}
+                  {{ c.dayNum }}
+                  {% if c.count %}<span class="mt-0.5 min-w-5 rounded-full px-1 text-[11px] leading-4 font-bold {{ 'bg-white text-brand-800' if c.isSelected else 'bg-brand-100 text-brand-800' }}">{{ c.count }}</span>{% endif %}
+                  <span class="sr-only">{{ c.count }} {{ 'appointment' if c.count == 1 else 'appointments' }}</span>
+                {% endcall %}
+              {% else %}
+                <span class="flex aspect-square items-center justify-center text-sm text-muted/40" aria-hidden="true">{{ c.dayNum }}</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        <p class="mt-2 text-xs text-muted">{{ a.total }} booked in {{ a.label }}</p>
+      </div>
+    {% endif %}
+
+    {# The chosen day's appointments #}
+    <div class="min-w-0">
+      <h3 class="flex items-center justify-between gap-2 text-sm font-semibold text-ink">
+        <span>{{ a.selectedLabel }}{% if a.selected == a.today %} <span class="font-normal text-muted">· today</span>{% endif %}</span>
+        <span class="text-xs font-normal text-muted">{{ a.dayItems.length }} booked</span>
+      </h3>
+      {% if a.dayItems.length %}
+        <ul class="scroll-panel mt-2 max-h-80 space-y-1.5 overflow-y-auto pr-1" tabindex="0" aria-label="Appointments on {{ a.selectedLabel }} (scrolls)">
+          {% for i in a.dayItems %}
+            <li data-appt-item>
+              <a href="{{ i.href }}" aria-describedby="appt-tip-{{ i.id }}" class="flex items-center gap-3 rounded-xl px-3 py-2 ring-1 transition hover:bg-surface focus-visible:bg-surface {{ 'ring-line opacity-70' if i.past else 'ring-line' }}">
+                <span class="w-[4.75rem] shrink-0 text-sm font-semibold whitespace-nowrap text-ink tabular-nums">{{ i.from }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-[15px] font-semibold text-ink">{{ i.name }}</span>
+                  <span class="block truncate text-sm text-muted">{{ i.type }}{% if i.staff %} · {{ i.staff }}{% endif %}</span>
+                </span>
+                <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold {{ {'confirmed': 'bg-brand-50 text-brand-800 ring-1 ring-brand-100', 'completed': 'bg-surface text-muted ring-1 ring-line', 'no_show': 'bg-accent-50 text-accent-700 ring-1 ring-accent-100'}[i.status] }}">{{ i.statusLabel }}</span>
+              </a>
+              {# Details shown on hover or keyboard focus in a floating card (site.js); a tap simply opens the appointment. #}
+              <div id="appt-tip-{{ i.id }}" class="hidden" data-appt-tip>
+                <p class="font-semibold text-ink">{{ i.name }} · {{ i.from }}–{{ i.until }}</p>
+                <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+                  <dt>Type</dt><dd class="text-ink">{{ i.type }}</dd>
+                  <dt>With</dt><dd class="text-ink">{{ i.staff or 'Not assigned' }}</dd>
+                  {% if i.phone %}<dt>Phone</dt><dd class="text-ink">{{ i.phone }}</dd>{% endif %}
+                  {% if i.email %}<dt>Email</dt><dd class="truncate text-ink">{{ i.email }}</dd>{% endif %}
+                  <dt>Booked</dt><dd class="text-ink">{{ i.source }}</dd>
+                  {% if i.notes %}<dt>Notes</dt><dd class="line-clamp-2 text-ink">{{ i.notes }}</dd>{% endif %}
+                </dl>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-2 rounded-2xl bg-surface px-4 py-6 text-center text-[15px] text-muted">No appointments booked on this day.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>

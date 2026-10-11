@@ -190,3 +190,44 @@ describe('dashboard data (silent refresh)', () => {
     expect(res.headers.location).toContain('/portal/login');
   });
 });
+
+describe('appointments widget', () => {
+  it('shows this week with the number booked per day, and today’s appointments', async () => {
+    await db('appointments').insert([
+      { type_id: typeId, source: 'phone', status: 'confirmed', name: 'Today Person', phone: '4105550100', scheduled_at: marylandDateTime(today(), '10:00') },
+      { type_id: typeId, source: 'website', status: 'cancelled', name: 'Cancelled Person', email: 'c@example.com', scheduled_at: marylandDateTime(today(), '11:00') },
+      { type_id: typeId, source: 'website', status: 'requested', name: 'Waiting Person', email: 'w@example.com' },
+    ]);
+    const agent = await signIn(await makeUser('reception'));
+    const res = await agent.get('/portal');
+    expect(res.text).toContain('data-appt-widget');
+    expect(res.text).toContain('Today Person');
+    expect(res.text).not.toContain('Cancelled Person'); // only booked ones
+    expect(res.text).toContain('1 request to confirm');
+    expect(res.text).toContain('Log walk-in / phone');
+    expect(res.text).toContain(`/portal/appointments/calendar?view=week&date=${today()}`);
+  });
+
+  it('moves to another month and day without reloading the dashboard', async () => {
+    const day = addDaysIso(`${addDaysIso(`${today().slice(0, 7)}-01`, 40).slice(0, 7)}-01`, 2); // the 3rd of a later month
+    await db('appointments').insert({ type_id: typeId, source: 'walk_in', status: 'confirmed', name: 'Later Person', phone: '1', notes: 'Bring ID', scheduled_at: marylandDateTime(day, '14:30') });
+    const agent = await signIn(await makeUser('reception'));
+    const res = await agent.get(`/portal/dashboard/appointments?av=month&ad=${day}&aday=${day}`);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(res.text).not.toContain('<html');
+    expect(res.text).toContain('Later Person');
+    expect(res.text).toContain('2:30 PM');
+    expect(res.text).toContain('Bring ID');
+    expect(res.text).toContain('1 booked in');
+    // A day outside the month shown falls back to the month's first day.
+    const other = await agent.get(`/portal/dashboard/appointments?av=month&ad=${day}&aday=1999-01-01`);
+    expect(other.text).not.toContain('Later Person');
+  });
+
+  it('is only for roles that can see appointments', async () => {
+    const it = await signIn(await makeUser('it_admin'));
+    expect((await it.get('/portal')).text).not.toContain('data-appt-widget');
+    expect((await it.get('/portal/dashboard/appointments')).status).toBe(403);
+  });
+});

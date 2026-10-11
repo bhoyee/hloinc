@@ -157,7 +157,95 @@ const remove = (id) => db('appointments').where({ id }).del();
 /** Active staff, for the "assigned to" picker. */
 const staffOptions = () => db('users').select('id', 'name').where({ status: 'active' }).orderBy('name');
 
+/**
+ * The dashboard's appointments widget: a week strip or a compact month grid with
+ * the number of booked appointments per day, and the appointments of one chosen day.
+ * `date` picks the week/month shown; `day` the day listed (defaults to today, or the
+ * first day shown).
+ */
+async function widget({ view = 'week', date, day } = {}, now = new Date()) {
+  const { marylandParts, marylandDateTime, addDaysIso, weekStartIso, isIsoDate } = require('../lib/hours');
+  const today = marylandParts(now).date;
+  const anchor = isIsoDate(date) ? date : today;
+  const fmt = (d, opts) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
+  let first;
+  let count;
+  let prev;
+  let next;
+  let label;
+  let month = null;
+  if (view === 'month') {
+    month = anchor.slice(0, 7);
+    const monthStart = `${month}-01`;
+    const nextMonth = `${addDaysIso(monthStart, 32).slice(0, 7)}-01`;
+    first = weekStartIso(monthStart);
+    const lastShown = addDaysIso(weekStartIso(addDaysIso(nextMonth, -1)), 6);
+    count = Math.round((new Date(`${lastShown}T12:00:00Z`) - new Date(`${first}T12:00:00Z`)) / 86400000) + 1;
+    prev = `${addDaysIso(monthStart, -1).slice(0, 7)}-01`;
+    next = nextMonth;
+    label = fmt(monthStart, { month: 'long', year: 'numeric' });
+  } else {
+    view = 'week';
+    first = weekStartIso(anchor);
+    count = 7;
+    prev = addDaysIso(first, -7);
+    next = addDaysIso(first, 7);
+    label = `${fmt(first, { month: 'short', day: 'numeric' })} – ${fmt(addDaysIso(first, 6), { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
+  const dates = Array.from({ length: count }, (_, i) => addDaysIso(first, i));
+  const inRange = (d) => isIsoDate(d) && dates.includes(d) && (!month || d.startsWith(month));
+  const selected = inRange(day) ? day : inRange(today) ? today : month ? `${month}-01` : first;
+
+  const items = await between(marylandDateTime(first, '00:00'), marylandDateTime(addDaysIso(first, count), '00:00'));
+  const perDay = {};
+  for (const a of items) (perDay[marylandParts(a.scheduled_at).date] ||= []).push(a);
+  const time = (d) => new Date(d).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+
+  return {
+    view,
+    date: anchor,
+    today,
+    label,
+    prev,
+    next,
+    selected,
+    selectedLabel: fmt(selected, { weekday: 'long', month: 'long', day: 'numeric' }),
+    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    cells: dates.map((d) => ({
+      date: d,
+      dayNum: Number(d.slice(8)),
+      dow: fmt(d, { weekday: 'short' }),
+      inMonth: !month || d.startsWith(month),
+      isToday: d === today,
+      isSelected: d === selected,
+      count: (perDay[d] || []).length,
+    })),
+    total: items.filter((a) => !month || marylandParts(a.scheduled_at).date.startsWith(month)).length,
+    dayItems: (perDay[selected] || []).map((a) => {
+      const minutes = a.duration_minutes || a.type_duration || 30;
+      return {
+        id: a.id,
+        name: a.name,
+        type: a.type_name,
+        status: a.status,
+        statusLabel: STATUS_LABELS[a.status],
+        source: SOURCE_LABELS[a.source],
+        staff: a.assigned_name,
+        phone: a.phone,
+        email: a.email,
+        notes: a.notes ? String(a.notes).slice(0, 160) : '',
+        from: time(a.scheduled_at),
+        until: time(new Date(new Date(a.scheduled_at).getTime() + minutes * 60000)),
+        past: new Date(a.scheduled_at) < now,
+        href: `/portal/appointments/${a.id}`,
+      };
+    }),
+    waiting: Number((await db('appointments').where({ status: 'requested' }).count({ n: '*' }).first()).n),
+  };
+}
+
 module.exports = {
+  widget,
   STATUS_LABELS,
   SOURCE_LABELS,
   WINDOW_LABELS,

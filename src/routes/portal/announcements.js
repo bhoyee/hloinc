@@ -122,7 +122,7 @@ router.post('/:id', can('announcements.edit'), async (req, res) => {
   res.redirect(303, `/portal/announcements/${a.id}`);
 });
 
-router.post('/:id/end', can('announcements.edit'), async (req, res) => {
+router.post('/:id/end', can('announcements.end'), async (req, res) => {
   const here = `/portal/announcements/${req.ann.id}`;
   if (!['live', 'paused'].includes(req.ann.state)) {
     setFlash(req, 'error', 'Only a live or paused announcement can be ended.');
@@ -135,7 +135,7 @@ router.post('/:id/end', can('announcements.edit'), async (req, res) => {
 });
 
 // Pause hides it everywhere without touching its dates; resume brings it straight back.
-router.post('/:id/pause', can('announcements.edit'), async (req, res) => {
+router.post('/:id/pause', can('announcements.pause'), async (req, res) => {
   const here = `/portal/announcements/${req.ann.id}`;
   const pause = req.body.action !== 'resume';
   if (['archived', 'expired'].includes(req.ann.state) || Boolean(req.ann.paused_at) === pause) {

@@ -35,17 +35,22 @@
             {% if a.link_url %}<a href="{{ a.link_url }}" class="link mt-1.5 inline-block text-sm" {% if a.link_url.startsWith('https://') %}target="_blank" rel="noopener"{% endif %}>{{ a.link_label or 'Learn more' }}</a>{% endif %}
             <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
               <p class="text-xs text-muted">{{ a.author or 'HLO' }} · {{ a.starts_at | date({ month: 'short', day: 'numeric' }) }}{% if a.ends_at %} · until {{ a.ends_at | date({ month: 'short', day: 'numeric' }) }}{% endif %}</p>
-              {% if can('announcements.edit') or mayDelete %}
+              {% set mayEdit = can('announcements.edit') %}{% set mayPause = can('announcements.pause') %}{% set mayEnd = can('announcements.end') %}
+              {% if mayEdit or mayPause or mayEnd or mayDelete %}
                 {# Quick actions: shown on hover or keyboard focus, always on touch screens. #}
                 <div class="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover/post:opacity-100 group-focus-within/post:opacity-100 [@media(hover:none)]:opacity-100" role="group" aria-label="Actions for {{ a.title }}">
-                  {% if can('announcements.edit') %}
+                  {% if mayEdit %}
                     <a href="/portal/announcements/{{ a.id }}" class="grid size-8 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-white hover:text-brand-700" title="Edit">{{ icon('pencil', 'size-4') }}<span class="sr-only">Edit</span></a>
+                  {% endif %}
+                  {% if mayPause %}
                     <form method="post" action="/portal/announcements/{{ a.id }}/pause">
                       <input type="hidden" name="_csrf" value="{{ csrfToken() }}"><input type="hidden" name="back" value="/portal#staff-board">
                       <input type="hidden" name="action" value="{{ 'resume' if paused else 'pause' }}">
                       {% if paused %}<button type="submit" class="grid size-8 place-items-center rounded-lg bg-brand-700 text-white hover:bg-brand-800" title="Resume">{{ icon('play', 'size-4') }}<span class="sr-only">Resume</span></button>
                       {% else %}<button type="submit" class="grid size-8 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-white hover:text-amber-700" title="Pause">{{ icon('pause', 'size-4') }}<span class="sr-only">Pause</span></button>{% endif %}
                     </form>
+                  {% endif %}
+                  {% if mayEnd %}
                     <form method="post" action="/portal/announcements/{{ a.id }}/end" data-confirm-title="End this announcement?" data-confirm="“{{ a.title }}” stops showing everywhere. It stays on record under Ended.">
                       <input type="hidden" name="_csrf" value="{{ csrfToken() }}"><input type="hidden" name="back" value="/portal#staff-board">
                       <button type="submit" class="grid size-8 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-white hover:text-ink" title="End now">{{ icon('stop', 'size-4') }}<span class="sr-only">End now</span></button>

@@ -23,7 +23,7 @@ async function sections(req) {
   const data = {
     panels: await workday.panels(user),
     staffSecurity: await workday.staffSecurity(user),
-    board: await announcements.activeForStaff(20, { includePaused: can(user, 'announcements.edit') }),
+    board: await announcements.activeForStaff(20, { includePaused: can(user, 'announcements.edit') || can(user, 'announcements.pause') }),
     recentLeads: can(user, 'leads.view') ? await require('../../services/leads').recent(6) : null,
     stages: require('../../services/leads').STAGES,
     recentActivity: can(user, 'audit.view') ? await workday.recentActivity(30) : [],
@@ -42,6 +42,18 @@ async function sections(req) {
   const stamp = JSON.stringify({ ...data, panels: panelData, minute: Math.floor(Date.now() / 60000), twoStepOff: user.twoStepOff });
   return { ...data, version: crypto.createHash('sha1').update(stamp).digest('hex').slice(0, 12) };
 }
+
+/** Appointments widget state from the query string (view, date, day). */
+function widgetQuery(q) {
+  return { view: q.av === 'month' ? 'month' : 'week', date: q.ad, day: q.aday };
+}
+
+/** The appointments widget on its own: used when moving between weeks/months or days, and to refresh it. */
+router.get('/dashboard/appointments', async (req, res) => {
+  if (!can(req.user, 'appointments.view')) return res.status(403).end();
+  res.set('Cache-Control', 'no-store');
+  res.render('partials/dashboard-appointments.njk', { appts: await require('../../services/appointments').widget(widgetQuery(req.query)) });
+});
 
 /** Live cards and charts, plus the sections' fingerprint. Polled by the open dashboard. */
 router.get('/dashboard/data', async (req, res) => {
@@ -65,7 +77,9 @@ router.get('/', async (req, res) => {
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: 'numeric', hourCycle: 'h23' }).format(now));
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  const appts = can(user, 'appointments.view') ? await require('../../services/appointments').widget(widgetQuery(req.query)) : null;
   res.render('pages/portal/dashboard.njk', {
+    appts,
     title: 'Dashboard',
     heading: `${greeting}, ${user.name.split(' ')[0]}`,
     subheading: 'Here’s what’s happening at HLO.',

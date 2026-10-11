@@ -23,12 +23,56 @@ const POST = (over = {}) => ({
   ...over,
 });
 
+/** Give a role announcement permissions, as the Admin would under Roles & permissions. */
+async function grant(roleKey, permissions) {
+  const role = await db('roles').where({ key: roleKey }).first();
+  for (const permission of permissions) await db('role_permissions').insert({ role_id: role.id, permission }).onConflict().ignore();
+  require('../src/services/roles').clearCache();
+}
+
 beforeEach(async () => {
   await db('notifications').del();
   await db('audit_log').del();
   await db('announcements').del();
   await db('users').del();
   await resetRoles();
+  // Most tests post as a Program Coordinator whose role the Admin has allowed to manage announcements.
+  await grant('program_coordinator', ['announcements.edit', 'announcements.archive', 'announcements.pause', 'announcements.end']);
+});
+
+describe('announcements: who may manage them', () => {
+  it('lets only Admin manage announcements by default; everyone else can only view', async () => {
+    await resetRoles();
+    const admin = await signIn(app, await makeUser('admin'));
+    await post(admin, '/portal/announcements/new', '/portal/announcements', POST({ audience: 'internal' }));
+    const { id } = await db('announcements').first();
+    for (const role of ['program_director', 'program_coordinator', 'intake_specialist', 'reception']) {
+      const agent = await signIn(app, await makeUser(role));
+      expect((await agent.get('/portal/announcements/new')).status, role).toBe(403);
+      expect((await post(agent, '/portal', `/portal/announcements/${id}/pause`, { action: 'pause' })).status, role).toBe(403);
+      expect((await post(agent, '/portal', `/portal/announcements/${id}/end`)).status, role).toBe(403);
+      const board = (await agent.get('/portal')).text;
+      expect(board, role).toContain('Office closed Monday'); // still sees it
+      expect(board, role).not.toContain(`/portal/announcements/${id}/pause`);
+    }
+    expect((await db('announcements').first()).paused_at).toBeNull();
+  });
+
+  it('lets the Admin give each part separately (e.g. pause only)', async () => {
+    await resetRoles();
+    const admin = await signIn(app, await makeUser('admin'));
+    await post(admin, '/portal/announcements/new', '/portal/announcements', POST({ audience: 'internal' }));
+    const { id } = await db('announcements').first();
+    await grant('program_director', ['announcements.pause']);
+    const director = await signIn(app, await makeUser('program_director'));
+    expect((await director.get('/portal/announcements/new')).status).toBe(403);
+    expect((await post(director, '/portal', `/portal/announcements/${id}/end`)).status).toBe(403);
+    await post(director, '/portal', `/portal/announcements/${id}/pause`, { action: 'pause' });
+    expect((await db('announcements').first()).paused_at).toBeTruthy();
+    const board = (await director.get('/portal')).text;
+    expect(board).toContain(`action="/portal/announcements/${id}/pause"`);
+    expect(board).not.toContain(`action="/portal/announcements/${id}/end"`);
+  });
 });
 
 afterAll(() => db.destroy());

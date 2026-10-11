@@ -421,6 +421,77 @@ document.addEventListener('DOMContentLoaded', () => {
     showSelected();
   });
 
+  // Dashboard appointments widget: Week/Month, arrows and days swap the widget in place.
+  const apptWidget = () => document.querySelector('[data-appt-widget]');
+  async function loadAppointments(url, { focus } = {}) {
+    const current = apptWidget();
+    if (!current) return;
+    try {
+      const res = await fetch(url, { headers: { Accept: 'text/html' }, cache: 'no-store' });
+      if (!res.ok || res.redirected) return;
+      const fresh = new DOMParser().parseFromString(await res.text(), 'text/html').querySelector('[data-appt-widget]');
+      if (!fresh) return;
+      hideApptTip();
+      current.replaceWith(fresh);
+      if (focus) {
+        const again = [...fresh.querySelectorAll('[data-appt-nav]')].find((el) => el.getAttribute('data-appt-nav') === focus);
+        (again || fresh.querySelector('[aria-current="date"]') || fresh).focus({ preventScroll: true });
+      }
+    } catch {
+      // Network hiccup: keep what's shown.
+    }
+  }
+  // Appointment details in a floating card next to the hovered/focused appointment.
+  let apptTip;
+  const hideApptTip = () => apptTip?.classList.add('hidden');
+  function showApptTip(item) {
+    const source = item.querySelector('[data-appt-tip]');
+    if (!source) return;
+    if (!apptTip) {
+      apptTip = document.createElement('div');
+      apptTip.className = 'pointer-events-none fixed z-50 hidden w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-white p-4 text-sm shadow-lift';
+      apptTip.setAttribute('aria-hidden', 'true'); // the same text is linked to the appointment with aria-describedby
+      document.body.append(apptTip);
+    }
+    apptTip.innerHTML = source.innerHTML;
+    apptTip.classList.remove('hidden');
+    const box = item.getBoundingClientRect();
+    const tip = apptTip.getBoundingClientRect();
+    const left = Math.min(Math.max(16, box.left), window.innerWidth - tip.width - 16);
+    const above = box.top - tip.height - 8;
+    apptTip.style.left = `${left}px`;
+    apptTip.style.top = `${above >= 8 ? above : box.bottom + 8}px`;
+  }
+  if (window.matchMedia('(hover: hover)').matches) {
+    document.addEventListener('mouseover', (e) => {
+      const item = e.target.closest?.('[data-appt-item]');
+      if (item) showApptTip(item);
+      else hideApptTip();
+    });
+  }
+  document.addEventListener('focusin', (e) => {
+    const item = e.target.closest?.('[data-appt-item]');
+    if (item) showApptTip(item);
+    else hideApptTip();
+  });
+  document.addEventListener('scroll', hideApptTip, true);
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && hideApptTip());
+
+  document.addEventListener('click', (e) => {
+    const nav = e.target.closest('[data-appt-nav]');
+    if (!nav || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    loadAppointments(nav.getAttribute('data-appt-nav'), { focus: nav.getAttribute('data-appt-nav') });
+  });
+  if (apptWidget()) {
+    const refreshAppointments = () => {
+      const w = apptWidget();
+      if (w && document.visibilityState === 'visible' && !w.contains(document.activeElement)) loadAppointments(w.dataset.apptState);
+    };
+    setInterval(refreshAppointments, 60 * 1000);
+    document.addEventListener('hlo:dashboard-changed', refreshAppointments);
+  }
+
   // Light/dark switch in the header (public website; theme.js applies the theme).
   document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
     const label = () => {

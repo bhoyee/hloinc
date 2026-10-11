@@ -69,9 +69,10 @@ const MODULES = [
   {
     key: 'announcements',
     label: 'Announcements',
-    description: 'Public and internal announcements.',
+    description: 'Public and staff announcements. Only Admin can manage them unless given these permissions; everyone sees the staff ones.',
     actions: ['view', 'edit', 'archive', 'delete'],
-    labels: { edit: 'Create, edit, pause & end', archive: 'Delete own (an Admin can restore)', delete: 'Delete anyone’s, restore & delete permanently' },
+    extras: { pause: 'Pause & resume announcements', end: 'End announcements early' },
+    labels: { edit: 'Create & edit', archive: 'Delete own (an Admin can restore)', delete: 'Delete anyone’s, restore & delete permanently' },
   },
   {
     key: 'site_content',
@@ -139,7 +140,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && INBOX_PERMISSIONS.some((k) => set.has(k)) && !has('view'))) {
       set.add(`${m.key}.view`);
     }
@@ -176,7 +177,7 @@ const DEFAULT_ROLES = [
       'messages.inbox_program_director', 'messages.inbox_intake', 'messages.edit',
       'leads.view', 'leads.edit', 'leads.export',
       'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
-      'announcements.view', 'announcements.edit', 'announcements.archive',
+      'announcements.view',
       'site_content.edit_limited',
       'reports.view',
     ],
@@ -190,7 +191,7 @@ const DEFAULT_ROLES = [
       'schedule.view', 'schedule.edit',
       'messages.inbox_program_coordinator', 'messages.edit',
       'leads.view', 'leads.edit',
-      'announcements.view', 'announcements.edit', 'announcements.archive',
+      'announcements.view',
     ],
   },
   {
