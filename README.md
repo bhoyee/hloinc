@@ -69,6 +69,18 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 - **Roles & permissions**: per-area permissions, which inboxes each role sees, and the alerts grid.
 - **Security settings** (two-step sign-in on or off for everyone), **Audit log**, global search, notifications (bell) and menu counters.
 
+## Screenshots
+
+Taken from a local copy with demo data (`npm run screens:readme`).
+
+| | |
+|---|---|
+| ![Admin dashboard with live cards, quick actions and the staff announcement banner](docs/screens/admin-dashboard.webp) **Admin dashboard**: live cards, quick actions, staff banner | ![Reception's appointments widget: a week strip with the number booked per day and the chosen day's appointments](docs/screens/reception-appointments.webp) **Reception**: appointments widget, Week or Month |
+| ![Messages inbox with type, status and "Contact form" badges](docs/screens/messages.webp) **Messages**: inboxes, badges, filters | ![A service request with its details, status buttons and "Handled by"](docs/screens/message.webp) **Message page**: status, handled by, history |
+| ![Appointment calendar, month view](docs/screens/calendar.webp) **Appointments**: calendar, week and month | ![Role permissions grid with view, edit, archive, delete and other options](docs/screens/roles.webp) **Roles & permissions**: set per area by Admin |
+| ![Public home page in the light theme](docs/screens/website-light.webp) **Website**: light theme | ![Public home page in the dark theme](docs/screens/website-dark.webp) **Website**: dark theme |
+| ![Visual page editor showing the home page with Save draft, Preview and Publish](docs/screens/content-editor.webp) **Site content**: edit the website in place | |
+
 ## Local setup
 
 Requires **Node 20+** (production runs Node 24) and **MySQL 8** or MariaDB.
@@ -131,6 +143,7 @@ Team mailboxes (where each form is emailed) are set in the portal under **Site c
 | `npm test` / `test:watch` | Vitest + Supertest (~390 tests; needs local MySQL, uses `<DB_NAME>_test`) |
 | `npm run test:a11y` | WCAG 2.1 AA scan with axe (app must be running) |
 | `npm run screens -- <outDir> <paths…>` | Desktop and mobile screenshots (app must be running) |
+| `npm run screens:readme` | Retake the README screenshots in `docs/screens/` (local app with demo data only) |
 
 ## Testing and deployment
 
@@ -164,7 +177,7 @@ src/
 public/                 static files (built CSS, JS, images, fonts)
 storage/                private files: uploads, encrypted resumes, avatars (not in git)
 scripts/                CLI tools and deploy scripts
-docs/                   diagrams and photo sources
+docs/                   diagrams, README screenshots and photo sources
 tests/                  Vitest + Supertest; e2e/ for accessibility and screenshots
 ```
 

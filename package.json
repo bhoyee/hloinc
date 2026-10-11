@@ -17,7 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:a11y": "node tests/e2e/a11y.mjs",
-    "screens": "node tests/e2e/screens.mjs"
+    "screens": "node tests/e2e/screens.mjs",
+    "screens:readme": "node tests/e2e/readme-screens.mjs"
   },
   "license": "UNLICENSED",
   "type": "commonjs",
