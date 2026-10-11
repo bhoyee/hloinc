@@ -128,10 +128,18 @@
   </div>
 
   {% if live.tiles.length %}
-    <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5">
+    {# Up to 4 cards: one straight row on wide screens (no lonely card on a second row). #}
+    {% set n = live.tiles.length %}
+    {% if n == 1 %}{% set cols = 'grid-cols-1 sm:max-w-md' %}
+    {% elif n == 2 %}{% set cols = 'grid-cols-2' %}
+    {% elif n == 3 %}{% set cols = 'grid-cols-2 sm:grid-cols-3' %}
+    {% elif n == 4 %}{% set cols = 'grid-cols-2 lg:grid-cols-4' %}
+    {% else %}{% set cols = 'grid-cols-2 lg:grid-cols-3' %}{% endif %}
+    <ul data-glance class="grid gap-3 sm:gap-4 lg:gap-5 {{ cols }}">
       {% for t in live.tiles %}
         {% set red = loop.index is odd %}
-        <li>
+        {# 5 cards in 3 columns: the grouped card (e.g. Appointments) takes two, so both rows are full. #}
+        <li class="{{ 'lg:col-span-2' if n == 5 and t.parts }}">
           {% if t.parts %}{{ groupTile(t, red) }}
           {% elif t.href %}<a href="{{ t.href }}" class="{{ tileClass(red) }}" data-tile="{{ t.key }}">{{ tileBody(t, red) }}</a>
           {% else %}<div class="{{ tileClass(red) }}" data-tile="{{ t.key }}">{{ tileBody(t, red) }}</div>{% endif %}
