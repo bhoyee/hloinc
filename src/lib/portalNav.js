@@ -15,7 +15,7 @@ const NAV = [
   // Applications are reached from the Jobs page; the counter shows new ones (for roles that can see them).
   { label: 'Jobs', href: '/portal/jobs', icon: 'briefcase', permission: 'jobs.view', badge: 'applications', badgeLabel: 'new applications', also: ['/portal/applications'] },
   { label: 'Announcements', href: '/portal/announcements', icon: 'megaphone', permission: 'announcements.view' },
-  { label: 'Reports', href: '/portal/reports', icon: 'document', permission: 'reports.monthly' },
+  { label: 'Reports', href: '/portal/reports', icon: 'document', permission: 'monthly_report.view' },
   { label: 'Site content', href: '/portal/content', icon: 'document', permission: ['site_content.view', 'site_content.edit', 'site_content.edit_limited'] },
   { label: 'Staff accounts', href: '/portal/accounts', icon: 'users', permission: 'accounts.view', group: 'admin' },
   { label: 'Roles & permissions', href: '/portal/roles', icon: 'key', permission: 'roles.view', group: 'admin' },

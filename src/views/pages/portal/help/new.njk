@@ -1,5 +1,8 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
+{% import "partials/rich-editor.njk" as re %}
+
+{% block scripts %}<script src="/js/rich-editor.js" defer></script>{% endblock %}
 {% from "partials/help-status.njk" import pill %}
 
 {% block content %}
@@ -30,7 +33,7 @@
         </fieldset>
 
         <div class="mt-6">
-          {{ ui.textarea('message', 'What happened, or what do you need?', values, errors, required=true, rows=6, maxlength=3000, hint='What were you trying to do, and what did you see? If there was an error message, copy it here.') }}
+          {{ re.editor('message', 'What happened, or what do you need?', values, errors, html=(values.message_html or values.message) | editorHtml, maxlength=3000, minlength=10, hint='What were you trying to do, and what did you see? If there was an error message, copy it here.', placeholder='For example: I clicked “Log walk-in” and the page kept loading…', minHeight='min-h-44') }}
         </div>
 
         <div class="mt-6">

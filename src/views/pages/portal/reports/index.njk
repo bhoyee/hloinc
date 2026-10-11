@@ -5,10 +5,12 @@
 {% endmacro %}
 
 {% block actions %}
-  <div class="flex flex-wrap gap-2">
-    <a href="/portal/reports/{{ r.month }}.pdf" class="btn-green">{{ icon('document', 'size-4') }} Download PDF</a>
-    <a href="/portal/reports/{{ r.month }}.csv" class="btn-secondary">{{ icon('list-bullet', 'size-4') }} Download CSV</a>
-  </div>
+  {% if can('monthly_report.download') %}
+    <div class="flex flex-wrap gap-2">
+      <a href="/portal/reports/{{ r.month }}.pdf" class="btn-green">{{ icon('document', 'size-4') }} Download PDF</a>
+      <a href="/portal/reports/{{ r.month }}.csv" class="btn-secondary">{{ icon('list-bullet', 'size-4') }} Download CSV</a>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block content %}

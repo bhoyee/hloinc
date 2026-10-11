@@ -8,7 +8,8 @@
  * - The people chosen for "New help request" (Roles & permissions → Alerts; IT
  *   Administrator and Admin by default) get a bell alert and an email.
  * - "Something isn't working" reports are also emailed to the developer/support
- *   address, if one is set (Help requests → Settings). The screenshot stays in the portal.
+ *   address (DEVELOPER_EMAIL in .env) while forwarding is on (Help requests →
+ *   Settings), and IT can forward any request by hand. The screenshot stays in the portal.
  * - Status: Open → In progress → Fixed. The sender is told about every reply and
  *   when it's fixed; if they reply to a fixed request, it opens again.
  */
@@ -30,7 +31,7 @@ const CATEGORIES = {
 };
 const CATEGORY_KEYS = Object.keys(CATEGORIES);
 const STATUS_LABELS = { open: 'Open', in_progress: 'In progress', fixed: 'Fixed' };
-const FORWARD_SETTING = 'support.forward_email';
+const FORWARD_SETTING = 'support.forward';
 const PER_HOUR = 10;
 
 const DIR = path.join(config.paths.storage, 'support');
@@ -85,13 +86,16 @@ const screenshotFile = (name) => (FILE.test(String(name)) ? path.join(DIR, name)
 
 // --- Who is told ------------------------------------------------------------------------------
 
-async function forwardEmail() {
-  const value = await require('./content').getSetting(FORWARD_SETTING, '');
-  return typeof value === 'string' ? value : '';
+/** The developer/support address, from DEVELOPER_EMAIL in .env ('' if not set). */
+const developerEmail = () => config.support.developerEmail;
+
+/** Whether "Something isn't working" reports are forwarded automatically (on unless an Admin switched it off). */
+async function autoForward() {
+  return (await require('./content').getSetting(FORWARD_SETTING, true)) !== false;
 }
 
-async function setForwardEmail(email, user) {
-  await db('site_settings').insert({ key: FORWARD_SETTING, value: JSON.stringify(email), updated_by: user.id, updated_at: new Date() }).onConflict('key').merge();
+async function setAutoForward(on, user) {
+  await db('site_settings').insert({ key: FORWARD_SETTING, value: JSON.stringify(Boolean(on)), updated_by: user.id, updated_at: new Date() }).onConflict('key').merge();
   require('./content').clearCache();
 }
 
@@ -134,27 +138,33 @@ async function tellSupport(r, sender) {
   return people.length;
 }
 
-/** Problem reports also go to the developer/support address (no screenshot: it may show client details). */
-async function forwardToDeveloper(r, sender) {
-  const to = await forwardEmail();
-  if (!to || r.category !== 'broken') return false;
+/**
+ * Send a request to the developer/support address (no screenshot: it may show client
+ * details). Automatic for problem reports while forwarding is on; `by` is set when
+ * someone forwards it by hand.
+ */
+async function forwardToDeveloper(r, sender, { by = null } = {}) {
+  const to = developerEmail();
+  if (!to) return false;
+  if (!by && (r.category !== 'broken' || !(await autoForward()))) return false;
   const sent = await notify({
     to,
     replyTo: sender.email,
-    subject: `HLO portal problem report ${r.reference}`,
+    subject: `HLO portal ${r.category === 'broken' ? 'problem report' : 'help request'} ${r.reference}`,
     text: [
-      'A staff member reported a problem in the HLO staff portal.',
+      by ? `${by.name} forwarded this help request from the HLO staff portal.` : 'A staff member reported a problem in the HLO staff portal.',
       '',
       ...detailLines(r, sender.roleLabel),
       `Sent: ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' })} (Maryland time)`,
       '',
       'WHAT HAPPENED',
       r.message,
+      ...(by ? ['', `Status in the portal: ${STATUS_LABELS[r.status]}`] : []),
       ...(r.screenshot ? ['', 'A screenshot was attached; it can be seen in the portal by Admin and IT.'] : []),
       '',
       'Reply to this email to answer the staff member directly. Please also update the request in the portal (Help requests) so everyone can see where it stands.',
     ].join('\n'),
-    footnote: 'Sent by the HLO staff portal because this address receives problem reports (Help requests → Settings).',
+    footnote: 'Sent by the HLO staff portal because this address is set to receive problem reports (DEVELOPER_EMAIL).',
   });
   if (sent && sent.ok === false) return false;
   await db('support_requests').where({ id: r.id }).update({ forwarded_at: db.fn.now() });
@@ -238,7 +248,12 @@ function recentFor(user, limit = 5) {
 
 // --- Actions ---------------------------------------------------------------------------------
 
-async function create(user, data, { file, userAgent } = {}) {
+/** Forward one request by hand (any category). Returns true if the email went. */
+function forward(r, by) {
+  return forwardToDeveloper(r, { name: r.user_name, email: r.user_email }, { by });
+}
+
+async function create(user, data, { file, userAgent, html = null } = {}) {
   // Timestamps are compared and written by the database, so they share its clock and time zone.
   const recent = Number((await db('support_requests').where({ user_id: user.id }).where('created_at', '>', db.raw('NOW() - INTERVAL 1 HOUR')).count({ n: '*' }).first()).n);
   if (recent >= PER_HOUR) throw problem('You’ve sent a lot of requests in the last hour. Please wait a little, or call the office if it’s urgent.');
@@ -249,6 +264,7 @@ async function create(user, data, { file, userAgent } = {}) {
     user_name: user.name,
     category: data.category,
     message: data.message,
+    message_html: html,
     page_url: data.from || null,
     browser: browserOf(userAgent),
     screen: data.screen || null,
@@ -266,7 +282,7 @@ async function create(user, data, { file, userAgent } = {}) {
  * can change the status; when the sender replies to a fixed request it opens again.
  * The other side is told (bell and email).
  */
-async function reply(r, actor, { body = '', status = '' } = {}) {
+async function reply(r, actor, { body = '', status = '', html = null } = {}) {
   const support = can(actor, 'support.edit');
   const mine = r.user_id === actor.id;
   let next = r.status;
@@ -274,7 +290,7 @@ async function reply(r, actor, { body = '', status = '' } = {}) {
   else if (mine && r.status === 'fixed' && body) next = 'open';
   if (!body && next === r.status) return { changed: false };
 
-  await db('support_updates').insert({ request_id: r.id, user_id: actor.id, user_name: actor.name, body: body || null, status: next !== r.status ? next : null });
+  await db('support_updates').insert({ request_id: r.id, user_id: actor.id, user_name: actor.name, body: body || null, body_html: body ? html : null, status: next !== r.status ? next : null });
   await db('support_requests').where({ id: r.id }).update({
     status: next,
     handled_by: support && !mine && !r.handled_by ? actor.id : r.handled_by,
@@ -326,6 +342,6 @@ async function reply(r, actor, { body = '', status = '' } = {}) {
 
 module.exports = {
   CATEGORIES, CATEGORY_KEYS, STATUS_LABELS, TABS, MAX_BYTES,
-  browserOf, screenshotFile, forwardEmail, setForwardEmail,
+  browserOf, screenshotFile, developerEmail, autoForward, setAutoForward, forward,
   list, tabCounts, getFor, updates, openCount, recentFor, create, reply,
 };

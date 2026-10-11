@@ -69,7 +69,7 @@ router.get('/avatars/:id', async (req, res, next) => {
 });
 router.use('/applications', requirePermission('jobs.applications'), require('./applications'));
 router.use('/announcements', requirePermission('announcements.view'), require('./announcements'));
-router.use('/reports', requirePermission('reports.monthly'), require('./reports'));
+router.use('/reports', requirePermission('monthly_report.view'), require('./reports'));
 router.use('/help', require('./help')); // everyone can ask for help and see their own requests
 router.use('/content', requirePermission(['site_content.view', 'site_content.edit', 'site_content.edit_limited']), require('./content'));
 router.use('/messages', requirePermission(MESSAGE_ACCESS), require('./messages'));

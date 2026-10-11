@@ -102,8 +102,15 @@ const MODULES = [
     label: 'Dashboard analytics',
     description: 'Charts and trends on the dashboard (only for the areas the role can already see).',
     actions: ['view'],
-    extras: { monthly: 'Monthly report (PDF and CSV): counts for every area, no names' },
     labels: { view: 'See charts' },
+  },
+  {
+    key: 'monthly_report',
+    label: 'Reports',
+    description: 'The monthly report: referrals, requests, appointments, leads, messages, applications and hires. Counts only, no names.',
+    actions: ['view'],
+    extras: { download: 'Download as PDF and CSV' },
+    labels: { view: 'View the report' },
   },
   {
     key: 'security',
@@ -117,7 +124,7 @@ const MODULES = [
     label: 'Help requests',
     description: 'Problems and questions staff send with “Get help”. Everyone can send one and see their own; this is for the people who deal with them.',
     actions: ['view', 'edit'],
-    extras: { settings: 'Choose the developer/support email that problem reports are forwarded to' },
+    extras: { settings: 'Switch forwarding of problem reports to the developer on or off' },
     labels: { view: 'See everyone’s', edit: 'Reply & update status' },
   },
   {
@@ -149,7 +156,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end', 'settings', 'monthly'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end', 'settings', 'download'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && INBOX_PERMISSIONS.some((k) => set.has(k)) && !has('view'))) {
       set.add(`${m.key}.view`);
     }

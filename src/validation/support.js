@@ -19,8 +19,4 @@ const replySchema = z.object({
   status: z.string().optional().default(''),
 });
 
-const forwardSchema = z.object({
-  forward_email: z.string().trim().max(191).refine((v) => v === '' || z.email().safeParse(v).success, 'Enter a valid email address, or leave it empty.'),
-});
-
-module.exports = { helpSchema, replySchema, forwardSchema, portalPath };
+module.exports = { helpSchema, replySchema, portalPath };

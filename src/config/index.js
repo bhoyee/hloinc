@@ -58,6 +58,8 @@ const schema = z.object({
   // clamscan only: its virus database folder, and ClamAV's certificate folder (both found automatically if blank).
   CLAMAV_DATABASE: z.string().default(''),
   CLAMAV_CERTS_DIR: z.string().default(''),
+  // Where "Get help" problem reports are forwarded (your website developer or support company). Optional.
+  DEVELOPER_EMAIL: z.string().trim().default('').refine((v) => v === '' || z.email().safeParse(v).success, 'must be an email address'),
   // Test/preview copies: tell search engines not to index anything.
   NOINDEX: bool,
 });
@@ -132,6 +134,9 @@ module.exports = {
     resumeMaxBytes: Math.round(env.RESUME_MAX_MB * 1024 * 1024),
     database: env.CLAMAV_DATABASE,
     certsDir: env.CLAMAV_CERTS_DIR,
+  },
+  support: {
+    developerEmail: env.DEVELOPER_EMAIL.toLowerCase(),
   },
   turnstile: {
     enabled: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY),

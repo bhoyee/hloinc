@@ -6,7 +6,15 @@ const support = require('../../services/support');
 const { audit } = require('../../services/audit');
 const { can } = require('../../auth/permissions');
 const { fieldErrors, setFlash } = require('../../lib/forms');
-const { helpSchema, replySchema, forwardSchema } = require('../../validation/support');
+const { helpSchema, replySchema } = require('../../validation/support');
+const richText = require('../../lib/richText');
+
+/** Cleaned HTML from a formatted editor field (`<name>_html`), or null. */
+const editorHtml = (body, name) => {
+  const raw = body[`${name}_html`];
+  const html = typeof raw === 'string' && raw.length <= 50000 ? richText.clean(raw) : '';
+  return html && richText.toText(html) ? html : null;
+};
 
 const router = express.Router();
 const crumbs = [{ label: 'Dashboard', href: '/portal' }];
@@ -34,22 +42,19 @@ router.get('/', async (req, res) => {
     ...result,
     pager: pagerFor('/portal/help', { tab, q }, result, perPage),
     showSettings: can(req.user, 'support.settings'),
-    forwardEmail: can(req.user, 'support.settings') ? await support.forwardEmail() : '',
+    developerEmail: support.developerEmail(),
+    autoForward: await support.autoForward(),
     ...shared,
   });
 });
 
+/** Switch automatic forwarding of problem reports to the developer (DEVELOPER_EMAIL) on or off. */
 router.post('/settings', async (req, res) => {
   if (!can(req.user, 'support.settings')) return res.status(403).render('pages/portal/error.njk', { title: 'Not allowed', status: 403, message: 'You can’t change this setting.' });
-  const parsed = forwardSchema.safeParse(req.body);
-  if (!parsed.success) {
-    setFlash(req, 'error', fieldErrors(parsed.error).forward_email || 'Check the email address.');
-    return res.redirect(303, '/portal/help#settings');
-  }
-  const email = parsed.data.forward_email.toLowerCase();
-  await support.setForwardEmail(email, req.user);
-  await audit(req, { action: 'support.settings', entityType: 'setting', entityId: 'support.forward_email', summary: email ? `${req.user.name} set problem reports to be forwarded to ${email}` : `${req.user.name} stopped forwarding problem reports` });
-  setFlash(req, 'success', email ? `Problem reports will also be emailed to ${email}.` : 'Problem reports are no longer forwarded by email.');
+  const on = req.body.forward === 'on';
+  await support.setAutoForward(on, req.user);
+  await audit(req, { action: 'support.settings', entityType: 'setting', entityId: 'support.forward', summary: `${req.user.name} switched ${on ? 'on' : 'off'} forwarding problem reports to the developer` });
+  setFlash(req, 'success', on ? 'Problem reports will be forwarded to the developer.' : 'Problem reports will stay in the portal. You can still forward one by hand.');
   res.redirect(303, '/portal/help#settings');
 });
 
@@ -80,12 +85,14 @@ router.get('/new', (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const parsed = helpSchema.safeParse(req.body);
+  // From the formatted editor: cleaned HTML, and its plain text (for checks, search and emails).
+  const html = editorHtml(req.body, 'message');
+  const parsed = helpSchema.safeParse({ ...req.body, message: html ? richText.toText(html) : req.body.message });
   if (req.uploadError) return renderForm(req, res, { values: req.body, errors: { screenshot: req.uploadError, ...(parsed.success ? {} : fieldErrors(parsed.error)) }, status: 422 });
   if (!parsed.success) return renderForm(req, res, { values: req.body, errors: fieldErrors(parsed.error), status: 422 });
   let result;
   try {
-    result = await support.create(req.user, parsed.data, { file: req.file, userAgent: req.get('user-agent') });
+    result = await support.create(req.user, parsed.data, { file: req.file, userAgent: req.get('user-agent'), html });
   } catch (err) {
     if (err.status !== 422) throw err;
     const field = /screenshot|image/i.test(err.message) ? 'screenshot' : 'message';
@@ -120,6 +127,7 @@ async function renderShow(req, res, { errors = {}, values = {}, status = 200 } =
     mine,
     thread: await support.updates(r.id),
     mayUpdate: can(req.user, 'support.edit'),
+    developerSet: Boolean(support.developerEmail()),
     errors,
     values,
     ...shared,
@@ -141,9 +149,10 @@ router.post('/:id/reply', async (req, res) => {
     setFlash(req, 'error', 'You can’t reply to this request.');
     return res.redirect(303, `/portal/help/${r.id}`);
   }
-  const parsed = replySchema.safeParse(req.body);
+  const html = editorHtml(req.body, 'body');
+  const parsed = replySchema.safeParse({ ...req.body, body: html ? richText.toText(html) : req.body.body });
   if (!parsed.success) return renderShow(req, res, { errors: fieldErrors(parsed.error), values: req.body, status: 422 });
-  const result = await support.reply(r, req.user, parsed.data);
+  const result = await support.reply(r, req.user, { ...parsed.data, html });
   if (!result.changed) {
     setFlash(req, 'error', 'Write a reply or choose a new status.');
     return res.redirect(303, `/portal/help/${r.id}`);
@@ -153,6 +162,22 @@ router.post('/:id/reply', async (req, res) => {
   setFlash(req, 'success', r.user_id === req.user.id
     ? (result.status === 'open' && r.status === 'fixed' ? 'Sent, and the request is open again.' : 'Sent.')
     : `Saved. ${r.user_name.split(' ')[0]} has been told by notification and email.`);
+  res.redirect(303, `/portal/help/${r.id}`);
+});
+
+router.post('/:id/forward', async (req, res) => {
+  const r = req.help;
+  if (!can(req.user, 'support.edit')) {
+    setFlash(req, 'error', 'You can’t forward help requests.');
+    return res.redirect(303, `/portal/help/${r.id}`);
+  }
+  if (!support.developerEmail()) {
+    setFlash(req, 'error', 'No developer email is set up yet (DEVELOPER_EMAIL in the server’s .env file).');
+    return res.redirect(303, `/portal/help/${r.id}`);
+  }
+  const ok = await support.forward(r, req.user);
+  if (ok) await audit(req, { action: 'support.forward', entityType: 'support_request', entityId: r.id, summary: `${req.user.name} forwarded help request ${r.reference} to the developer` });
+  setFlash(req, ok ? 'success' : 'error', ok ? 'Forwarded to the developer.' : 'The email couldn’t be sent. Please try again later.');
   res.redirect(303, `/portal/help/${r.id}`);
 });
 

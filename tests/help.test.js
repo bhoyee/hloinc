@@ -8,6 +8,7 @@ const sharp = require('sharp');
 const fs = require('fs');
 const { _outbox: outbox } = require('../src/services/notify');
 const support = require('../src/services/support');
+const config = require('../src/config');
 
 const app = createApp();
 
@@ -25,7 +26,8 @@ beforeEach(async () => {
   await db('support_requests').del();
   await db('notifications').del();
   await db('audit_log').del();
-  await db('site_settings').whereIn('key', ['support.forward_email', 'alerts.routing']).del();
+  await db('site_settings').whereIn('key', ['support.forward', 'alerts.routing']).del();
+  config.support.developerEmail = 'dev@example.com'; // DEVELOPER_EMAIL in .env
   await db('users').del();
   await resetRoles();
   require('../src/services/content').clearCache();
@@ -71,13 +73,7 @@ describe('Get help', () => {
     expect(mail.text).toContain('Log walk-in button does nothing');
   });
 
-  it('forwards "Something isn’t working" to the developer email when set, and nothing else', async () => {
-    const admin = await makeUser('admin');
-    const adminAgent = await signIn(app, admin);
-    const saved = await post(adminAgent, '/portal/help', '/portal/help/settings', { forward_email: 'Dev@Example.com' });
-    expect(saved.status).toBe(303);
-    expect(await support.forwardEmail()).toBe('dev@example.com');
-
+  it('forwards "Something isn’t working" to DEVELOPER_EMAIL, and nothing else', async () => {
     const agent = await signIn(app, await makeUser('reception'));
     await send(agent, { ...ask, error_ref: 'ERR-ABC234' });
     await send(agent, { ...ask, category: 'howto', message: 'How do I change my profile photo please?' });
@@ -86,6 +82,65 @@ describe('Get help', () => {
     expect(toDev[0].text).toContain('Error reference: ERR-ABC234');
     expect(toDev[0].text).not.toContain('profile photo');
     expect((await db('support_requests').where({ category: 'broken' }).first()).forwarded_at).not.toBeNull();
+  });
+
+  it('lets Admin switch forwarding off and on, and see the developer email', async () => {
+    const adminAgent = await signIn(app, await makeUser('admin'));
+    const page = await adminAgent.get('/portal/help');
+    expect(page.text).toContain('Forwarding on');
+    expect(page.text).toContain('Show developer email');
+    expect(page.text).toContain('dev@example.com');
+    expect((await post(adminAgent, '/portal/help', '/portal/help/settings', { forward: 'off' })).status).toBe(303);
+    expect(await support.autoForward()).toBe(false);
+
+    const agent = await signIn(app, await makeUser('reception'));
+    await send(agent, ask);
+    expect(outbox.filter((m) => m.to === 'dev@example.com')).toHaveLength(0);
+    await post(adminAgent, '/portal/help', '/portal/help/settings', { forward: 'on' });
+    expect(await support.autoForward()).toBe(true);
+  });
+
+  it('lets IT forward any request by hand', async () => {
+    const itUser = await makeUser('it_admin', 'Ian IT');
+    const agent = await signIn(app, await makeUser('reception', 'Riley Reception'));
+    await send(agent, { ...ask, category: 'howto', message: 'How do I export the leads list to Excel?' });
+    const r = await db('support_requests').first();
+    expect(outbox.filter((m) => m.to === 'dev@example.com')).toHaveLength(0);
+    const it = await signIn(app, itUser);
+    expect((await it.get(`/portal/help/${r.id}`)).text).toContain('Forward to developer');
+    await post(it, `/portal/help/${r.id}`, `/portal/help/${r.id}/forward`);
+    const mail = outbox.find((m) => m.to === 'dev@example.com');
+    expect(mail.text).toContain('Ian IT forwarded this help request');
+    expect(mail.text).toContain('export the leads list');
+    expect(mail.replyTo).toContain('reception-');
+    // The sender can't forward their own request.
+    await post(agent, `/portal/help/${r.id}`, `/portal/help/${r.id}/forward`);
+    expect(outbox.filter((m) => m.to === 'dev@example.com')).toHaveLength(1);
+  });
+
+  it('says so when no developer email is set', async () => {
+    config.support.developerEmail = '';
+    const adminAgent = await signIn(app, await makeUser('admin'));
+    expect((await adminAgent.get('/portal/help')).text).toContain('No developer email is set up yet');
+    const agent = await signIn(app, await makeUser('reception'));
+    await send(agent, ask);
+    expect(outbox.filter((m) => /problem report/.test(m.subject))).toHaveLength(0);
+  });
+
+  it('keeps the formatting from the editor, cleaned', async () => {
+    await makeUser('it_admin');
+    const agent = await signIn(app, await makeUser('reception'));
+    await send(agent, { ...ask, message: '', message_html: '<p>Steps:</p><ol><li><strong>Open</strong> Appointments</li><li>Click Log walk-in</li></ol><script>alert(1)</script>' });
+    const r = await db('support_requests').first();
+    expect(r.message_html).toContain('<ol><li><strong>Open</strong> Appointments</li>');
+    expect(r.message_html).not.toContain('script');
+    expect(r.message).toContain('1. Open Appointments');
+    const page = await agent.get(`/portal/help/${r.id}`);
+    expect(page.text).toContain('<li><strong>Open</strong> Appointments</li>');
+    await post(agent, `/portal/help/${r.id}`, `/portal/help/${r.id}/reply`, { body: '', body_html: '<p>It also happens on <em>Schedule</em>.</p>' });
+    const u = await db('support_updates').where({ request_id: r.id }).first();
+    expect(u.body).toBe('It also happens on Schedule.');
+    expect(u.body_html).toBe('<p>It also happens on <em>Schedule</em>.</p>');
   });
 
   it('keeps a screenshot, re-encoded, for the sender and the team only', async () => {
@@ -160,10 +215,10 @@ describe('Get help', () => {
     const list = await b.get('/portal/help?tab=all');
     expect(list.text).toContain('You haven’t asked for help yet');
     expect(list.text).not.toContain('Riley Reception');
-    expect((await post(b, '/portal/help', '/portal/help/settings', { forward_email: 'x@example.com' })).status).toBe(403);
+    expect((await post(b, '/portal/help', '/portal/help/settings', { forward: 'off' })).status).toBe(403);
     const it = await signIn(app, await makeUser('it_admin'));
     const itList = await it.get('/portal/help');
-    expect(itList.text).not.toContain('forward problem reports'); // IT deals with requests; Admin sets the forwarding address
+    expect(itList.text).not.toContain('Forward problem reports to the developer'); // IT deals with requests; Admin switches forwarding
   });
 
   it('limits how many requests one person can send in an hour', async () => {

@@ -140,9 +140,19 @@ describe('reports page', () => {
     expect((await director.get('/portal/reports/2026-09.pdf')).status).toBe(403);
     expect((await director.get('/portal')).text).not.toContain('href="/portal/reports"');
     const role = await db('roles').where({ key: 'program_director' }).first();
-    await db('role_permissions').insert({ role_id: role.id, permission: 'reports.monthly' });
+    // View only: the report on screen, but no downloads.
+    await db('role_permissions').insert({ role_id: role.id, permission: 'monthly_report.view' });
     require('../src/services/roles').clearCache();
-    expect((await director.get('/portal/reports')).status).toBe(200);
+    const page = await director.get('/portal/reports');
+    expect(page.status).toBe(200);
+    expect(page.text).not.toContain('Download PDF');
+    expect((await director.get('/portal/reports/2026-09.pdf')).status).toBe(403);
+    expect((await director.get('/portal/reports/2026-09.csv')).status).toBe(403);
+    // With downloads too.
+    await db('role_permissions').insert({ role_id: role.id, permission: 'monthly_report.download' });
+    require('../src/services/roles').clearCache();
+    expect((await director.get('/portal/reports')).text).toContain('Download PDF');
+    expect((await director.get('/portal/reports/2026-09.csv')).status).toBe(200);
   });
 
   it('falls back to last month for a bad month', async () => {

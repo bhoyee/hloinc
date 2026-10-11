@@ -4,7 +4,7 @@ const multer = require('multer');
 const { MAX_BYTES } = require('../services/support');
 
 /* Reads a "Get help" form with its optional screenshot (kept in memory until checked), before the CSRF check reads its fields. */
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_BYTES, files: 1, fields: 10, parts: 12, fieldSize: 20000 } }).single('screenshot');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_BYTES, files: 1, fields: 10, parts: 12, fieldSize: 60000 } }).single('screenshot');
 
 module.exports = function helpUpload(req, res, next) {
   if (!String(req.get('content-type') || '').startsWith('multipart/form-data')) return next();

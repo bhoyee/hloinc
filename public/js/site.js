@@ -427,6 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
     select.addEventListener('change', () => select.form.requestSubmit());
   }
 
+  // Conversation panels open at the newest message (the bottom).
+  for (const panel of document.querySelectorAll('[data-scroll-end]')) panel.scrollTop = panel.scrollHeight;
+
   // Get help: send the window size along, to help reproduce layout problems.
   for (const input of document.querySelectorAll('[data-help-screen]')) input.value = `${window.innerWidth}×${window.innerHeight}`;
 

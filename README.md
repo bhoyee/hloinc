@@ -127,6 +127,7 @@ All settings come from `.env` (see [.env.example](.env.example)); they're checke
 | `FORMS_MAX_PER_EMAIL_PER_DAY` | Submissions allowed per email address per day |
 | `VIRUS_SCAN`, `CLOUDMERSIVE_API_KEY`, `RESUME_MAX_MB` | Resume scanning (`auto` uses Cloudmersive when a key is set) and the size limit (2.5 on Cloudmersive's free plan) |
 | `CLAMD_SOCKET`, `CLAMD_HOST`, `CLAMD_PORT`, `CLAMSCAN_PATH`, `CLAMAV_DATABASE`, `CLAMAV_CERTS_DIR` | ClamAV, where the server can run it |
+| `DEVELOPER_EMAIL` | Optional: where "Get help" problem reports are forwarded (Admin can switch forwarding off under Help requests) |
 | `NOINDEX` | `true` on preview copies: keeps search engines out |
 | `DEMO_DATA`, `DEMO_PASSWORD` | Demo data on a production preview (see above) |
 
