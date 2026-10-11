@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 840" width="1240" height="840" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>HLO Inc. website and staff portal: system architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475950"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c41a22"/>
+    </marker>
+    <style>
+      .t { font-size: 15px; font-weight: 700; fill: #0f1c16; }
+      .s { font-size: 12.5px; fill: #475950; }
+      .w { font-size: 15px; font-weight: 700; fill: #ffffff; }
+      .ws { font-size: 12.5px; fill: #d3efe2; }
+      .lbl { font-size: 11px; font-weight: 700; fill: #475950; letter-spacing: 0.6px; }
+      .h { font-size: 12px; font-weight: 800; fill: #0f6b4a; letter-spacing: 1.2px; }
+      .hr { font-size: 12px; font-weight: 800; fill: #c41a22; letter-spacing: 1.2px; }
+      .box { fill: #ffffff; stroke: #dfe8e3; stroke-width: 1.5; }
+      .line { stroke: #475950; stroke-width: 1.6; fill: none; }
+      .end { marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1240" height="840" fill="#fbf8f3"/>
+
+  <!-- Title -->
+  <text x="40" y="52" font-size="26" font-weight="800" fill="#0f1c16">HLO Inc. — system architecture</text>
+  <text x="40" y="78" class="s" font-size="14">Public website and role-based staff portal · one Node.js app on shared cPanel hosting · server-rendered, no build step on the server</text>
+
+  <!-- ============ People ============ -->
+  <text x="40" y="128" class="h">PEOPLE</text>
+  <rect x="40" y="142" width="220" height="92" rx="16" class="box"/>
+  <text x="60" y="172" class="t">Visitors &amp; families</text>
+  <text x="60" y="194" class="s">Learn about services, contact</text>
+  <text x="60" y="212" class="s">HLO, request services or a visit</text>
+
+  <rect x="40" y="250" width="220" height="92" rx="16" class="box"/>
+  <text x="60" y="280" class="t">Referrers &amp; applicants</text>
+  <text x="60" y="302" class="s">Coordinators send referrals;</text>
+  <text x="60" y="320" class="s">job seekers apply with a resume</text>
+
+  <rect x="40" y="358" width="220" height="92" rx="16" fill="#0b4532"/>
+  <text x="60" y="388" class="w">HLO staff</text>
+  <text x="60" y="410" class="ws">Built-in and custom roles; each</text>
+  <text x="60" y="428" class="ws">sees only what its role allows</text>
+
+  <text x="294" y="170" class="lbl" text-anchor="end">HTTPS</text>
+  <path class="line end" d="M260 188 C 290 188, 290 205, 322 205"/>
+  <path class="line end" d="M260 296 C 292 296, 292 220, 322 218"/>
+  <path class="line end" d="M260 404 C 296 404, 296 232, 322 232"/>
+
+  <!-- ============ Hosting ============ -->
+  <rect x="300" y="108" width="620" height="700" rx="22" fill="#edf8f3" stroke="#a8dec6" stroke-width="1.5"/>
+  <text x="324" y="138" class="h">cPANEL SHARED HOSTING · NODE.JS 24 · PASSENGER</text>
+  <text x="324" y="158" class="s">HTTPS (AutoSSL) · app.js · .env and storage/ stay on the server, never in git</text>
+
+  <rect x="324" y="176" width="572" height="70" rx="14" fill="#0b4532"/>
+  <text x="344" y="204" class="w">Security layer (every request)</text>
+  <text x="344" y="226" class="ws">Helmet strict CSP · CSRF tokens · rate limits · MySQL sessions · bot checks · permissions</text>
+
+  <rect x="324" y="262" width="278" height="150" rx="14" class="box"/>
+  <text x="344" y="290" class="t">Public website</text>
+  <text x="344" y="312" class="s">Home · About · Services · Resources</text>
+  <text x="344" y="331" class="s">Careers + apply (resume upload)</text>
+  <text x="344" y="350" class="s">Contact · Request services</text>
+  <text x="344" y="369" class="s">Referrals · Appointment requests</text>
+  <text x="344" y="394" class="lbl">LIGHT / DARK THEME · PAGE EDITOR</text>
+
+  <rect x="618" y="262" width="278" height="150" rx="14" class="box"/>
+  <text x="638" y="290" class="t">Staff portal (/portal)</text>
+  <text x="638" y="312" class="s">Live dashboard · Messages · Leads</text>
+  <text x="638" y="331" class="s">Appointments · Schedule &amp; time off</text>
+  <text x="638" y="350" class="s">Jobs &amp; applications · Announcements</text>
+  <text x="638" y="369" class="s">Site content · Accounts · Roles · Audit</text>
+  <text x="638" y="394" class="lbl">TWO-STEP SIGN-IN · SEARCH · ALERTS</text>
+
+  <rect x="324" y="428" width="572" height="56" rx="14" class="box"/>
+  <text x="344" y="452" class="t">Views</text>
+  <text x="344" y="472" class="s">Nunjucks templates · Tailwind CSS v4 (built locally, committed) · small vanilla JS</text>
+
+  <rect x="324" y="500" width="572" height="124" rx="14" class="box"/>
+  <text x="344" y="528" class="t">Services (business rules)</text>
+  <text x="344" y="551" class="s">Forms &amp; references · messages and inbox rules · alerts &amp; notifications · leads</text>
+  <text x="344" y="570" class="s">Appointments · schedule · time off · jobs · announcements · page editor (CMS)</text>
+  <text x="344" y="589" class="s">Applications: file checks, virus scan, AES-256 encryption · users, roles, two-step</text>
+  <text x="344" y="608" class="s">Audit log · rich-text cleaning · background checks every 15 min (overdue, rescans)</text>
+
+  <path class="line end" d="M460 624 L460 654"/>
+  <path class="line end" d="M757 624 L757 658"/>
+
+  <path d="M344 670 a116 16 0 0 0 232 0 v86 a116 16 0 0 1 -232 0 z" fill="#ffffff" stroke="#2a78d6" stroke-width="1.5"/>
+  <ellipse cx="460" cy="670" rx="116" ry="16" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.5"/>
+  <text x="460" y="712" class="t" text-anchor="middle">MySQL 8 (Knex)</text>
+  <text x="460" y="733" class="s" text-anchor="middle">Users, roles, messages, leads,</text>
+  <text x="460" y="751" class="s" text-anchor="middle">jobs, audit log, sessions…</text>
+
+  <rect x="618" y="660" width="278" height="116" rx="14" fill="#ffffff" stroke="#b45309" stroke-width="1.5"/>
+  <text x="638" y="688" class="t">Private file storage</text>
+  <text x="638" y="710" class="s">Resumes (encrypted) · profile photos</text>
+  <text x="638" y="729" class="s">editor images · scanner scratch files</text>
+  <text x="638" y="756" class="lbl">NEVER SERVED DIRECTLY</text>
+
+  <!-- ============ External ============ -->
+  <text x="960" y="128" class="hr">EXTERNAL SERVICES</text>
+
+  <rect x="960" y="142" width="240" height="84" rx="16" class="box"/>
+  <text x="980" y="172" class="t">Email (sendmail / SMTP)</text>
+  <text x="980" y="194" class="s">Branded HTML + plain text,</text>
+  <text x="980" y="212" class="s">sent by the notify() service</text>
+
+  <path d="M1080 226 L1080 250" stroke="#c41a22" stroke-width="1.6" stroke-dasharray="5 4" fill="none" marker-end="url(#arrowRed)"/>
+  <rect x="960" y="254" width="240" height="64" rx="16" fill="#fef2f2" stroke="#f9c3c6" stroke-width="1.5"/>
+  <text x="980" y="280" class="t">Email inboxes</text>
+  <text x="980" y="300" class="s">People, team mailboxes, staff</text>
+
+  <rect x="960" y="338" width="240" height="78" rx="16" class="box"/>
+  <text x="980" y="366" class="t">Cloudmersive</text>
+  <text x="980" y="388" class="s">Virus scan for resumes</text>
+  <text x="980" y="405" class="s">(ClamAV when available)</text>
+
+  <rect x="960" y="432" width="240" height="78" rx="16" class="box"/>
+  <text x="980" y="460" class="t">Cloudflare Turnstile</text>
+  <text x="980" y="482" class="s">Optional human check</text>
+  <text x="980" y="499" class="s">on public forms</text>
+
+  <rect x="960" y="526" width="240" height="78" rx="16" class="box"/>
+  <text x="980" y="554" class="t">Google Maps</text>
+  <text x="980" y="576" class="s">Office map, loaded only</text>
+  <text x="980" y="593" class="s">when a visitor asks</text>
+
+  <!-- One connector from the services to every external service -->
+  <path class="line" d="M896 560 L932 560"/>
+  <path class="line" d="M932 184 L932 565"/>
+  <path class="line end" d="M932 184 L958 184"/>
+  <path class="line end" d="M932 377 L958 377"/>
+  <path class="line end" d="M932 471 L958 471"/>
+  <path class="line end" d="M932 565 L958 565"/>
+
+  <rect x="960" y="636" width="240" height="114" rx="16" fill="#1e293b"/>
+  <text x="980" y="666" class="w">GitHub</text>
+  <text x="980" y="688" fill="#cbd5e1" font-size="12.5">Code (public repo) and CI tests.</text>
+  <text x="980" y="707" fill="#cbd5e1" font-size="12.5">The server pulls each commit that</text>
+  <text x="980" y="726" fill="#cbd5e1" font-size="12.5">passed (see the deployment diagram).</text>
+  <path class="line end" d="M958 693 L922 693"/>
+
+  <!-- Legend -->
+  <rect x="40" y="716" width="220" height="92" rx="14" class="box"/>
+  <text x="58" y="740" class="lbl">KEY</text>
+  <line x1="58" y1="760" x2="98" y2="760" stroke="#475950" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="108" y="764" class="s">request / data flow</text>
+  <line x1="58" y1="786" x2="98" y2="786" stroke="#c41a22" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowRed)"/>
+  <text x="108" y="790" class="s">email delivered</text>
+</svg>

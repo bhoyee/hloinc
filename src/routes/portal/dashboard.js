@@ -27,6 +27,8 @@ async function sections(req) {
     recentLeads: can(user, 'leads.view') ? await require('../../services/leads').recent(6) : null,
     stages: require('../../services/leads').STAGES,
     recentActivity: can(user, 'audit.view') ? await workday.recentActivity(30) : [],
+    // Everyone without the audit log: what's assigned to them, and their time off.
+    myWork: can(user, 'audit.view') ? null : await workday.myWork(user),
     // Everyone: their own upcoming shifts (staff always see their own schedule).
     myShifts: await workday.myShifts(user),
     previousLogin: req.session.previousLoginAt,

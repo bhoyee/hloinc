@@ -231,4 +231,63 @@ async function panels(user, now = new Date()) {
   return { ...data, version: crypto.createHash('sha1').update(stamp).digest('hex').slice(0, 12) };
 }
 
-module.exports = { attention, today, quickActions, panels, staffSecurity, myShifts, recentActivity, businessDaysBefore, WAIT };
+/**
+ * "My work" on the dashboard (for people without the audit log's Recent activity):
+ * what's assigned to this person, in the areas their role can use, plus their own time off.
+ * Each list is capped; `more` says how many weren't shown.
+ */
+async function myWork(user, now = new Date()) {
+  const LIMIT = 15;
+  const out = { messages: null, leads: null, appointments: null, timeOff: null };
+  const { MESSAGE_ACCESS } = require('../auth/permissions');
+
+  if (MESSAGE_ACCESS.some((p) => can(user, p))) {
+    const { TYPE_LABELS, STATUS_LABELS } = require('./messages');
+    const q = db('contact_messages').where({ assigned_to: user.id }).whereNull('archived_at').whereIn('status', ['new', 'in_progress']);
+    const total = await count(q.clone());
+    const rows = await q.select('id', 'reference', 'type', 'name', 'status', 'created_at').orderBy('created_at', 'asc').limit(LIMIT);
+    out.messages = {
+      total,
+      more: Math.max(0, total - rows.length),
+      items: rows.map((m) => ({ ...m, typeLabel: TYPE_LABELS[m.type], statusLabel: STATUS_LABELS[m.status], ago: ago(m.created_at, now), href: `/portal/messages/${m.id}` })),
+    };
+  }
+
+  if (can(user, 'leads.view')) {
+    const leads = require('./leads');
+    const q = db('leads').where({ owner_id: user.id }).whereIn('stage', ['new', 'contacted', 'intake']);
+    const total = await count(q.clone());
+    const rows = await q.select('id', 'name', 'stage', 'county', 'updated_at').orderBy('updated_at', 'asc').limit(LIMIT);
+    out.leads = {
+      total,
+      more: Math.max(0, total - rows.length),
+      items: rows.map((l) => ({ ...l, stageLabel: (leads.STAGES[l.stage] || {}).label || l.stage, ago: ago(l.updated_at, now), href: `/portal/leads/${l.id}` })),
+    };
+  }
+
+  if (can(user, 'appointments.view')) {
+    const week = new Date(now.getTime() + 7 * 86400000);
+    const rows = await db('appointments as a')
+      .leftJoin('appointment_types as t', 't.id', 'a.type_id')
+      .where('a.assigned_to', user.id)
+      .where('a.status', 'confirmed')
+      .where('a.scheduled_at', '>=', new Date(now.getTime() - 60 * 60000))
+      .where('a.scheduled_at', '<', week)
+      .select('a.id', 'a.name', 'a.scheduled_at', 't.name as type_name')
+      .orderBy('a.scheduled_at', 'asc')
+      .limit(LIMIT);
+    const fmt = (d) => new Date(d).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    out.appointments = { total: rows.length, items: rows.map((a) => ({ ...a, when: fmt(a.scheduled_at), href: `/portal/appointments/${a.id}` })) };
+  }
+
+  // Everyone has their own time off.
+  const timeOff = require('./timeOff');
+  const pending = await count(db('time_off_requests').where({ user_id: user.id, status: 'pending' }));
+  const next = await db('time_off_requests').where({ user_id: user.id, status: 'approved' }).where('end_at', '>', now).orderBy('start_at', 'asc').first();
+  out.timeOff = { pending, next: next ? { ...next, when: timeOff.describe(next), reason: timeOff.REASONS[next.reason], href: `/portal/schedule/time-off/${next.id}` } : null };
+
+  out.total = (out.messages ? out.messages.total : 0) + (out.leads ? out.leads.total : 0) + (out.appointments ? out.appointments.total : 0);
+  return out;
+}
+
+module.exports = { attention, today, quickActions, panels, staffSecurity, myShifts, recentActivity, myWork, businessDaysBefore, WAIT };

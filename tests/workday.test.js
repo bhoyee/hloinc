@@ -180,6 +180,39 @@ describe('my shifts and recent activity', () => {
     expect(admin).toContain('Casey moved lead J.E. to Intake in progress');
     const reception = (await (await signIn(app, await makeUser('reception'))).get('/portal')).text;
     expect(reception).not.toContain('Casey moved lead J.E.');
-    expect(reception).toContain('Welcome to the staff portal');
+    expect(reception).toContain('aria-labelledby="work-h"'); // "My work" instead
+  });
+});
+
+describe('My work (dashboard, for roles without the audit log)', () => {
+  it('lists what is assigned to me, in the areas my role can use, and my time off', async () => {
+    const director = await staff('program_director');
+    const other = await staff('program_coordinator');
+    await message({ name: 'Mine New', assigned_to: director.id, status: 'new' });
+    await message({ name: 'Mine Done', assigned_to: director.id, status: 'resolved' });
+    await message({ name: 'Theirs', assigned_to: other.id });
+    await db('leads').insert({ origin: 'manual', name: 'My Lead', stage: 'contacted', owner_id: director.id });
+    await db('appointments').insert({ type_id: typeId, source: 'phone', status: 'confirmed', name: 'Appt Person', scheduled_at: new Date(Date.now() + DAY), duration_minutes: 60, assigned_to: director.id });
+    await db('time_off_requests').insert({ user_id: director.id, reason: 'vacation', start_at: new Date(Date.now() + 10 * DAY), end_at: new Date(Date.now() + 12 * DAY), all_day: true, status: 'approved' });
+    await db('time_off_requests').insert({ user_id: director.id, reason: 'personal', start_at: new Date(Date.now() + 20 * DAY), end_at: new Date(Date.now() + 21 * DAY), all_day: true, status: 'pending' });
+
+    const w = await workday.myWork(director);
+    expect(w.messages.items.map((m) => m.name)).toEqual(['Mine New']);
+    expect(w.leads.items.map((l) => l.name)).toEqual(['My Lead']);
+    expect(w.appointments.items.map((a) => a.name)).toEqual(['Appt Person']);
+    expect(w.timeOff).toMatchObject({ pending: 1 });
+    expect(w.timeOff.next.reason).toBe('Vacation / annual leave');
+    expect(w.total).toBe(3);
+
+    // Reception: no leads area.
+    expect((await workday.myWork(await staff('reception'))).leads).toBeNull();
+
+    const page = (await (await signIn(app, director)).get('/portal')).text;
+    expect(page).toContain('My work');
+    expect(page).toContain('Mine New');
+    expect(page).not.toContain('Theirs');
+    expect(page).toContain('Request time off');
+    await db('time_off_requests').del();
+    await db('leads').del();
   });
 });

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 400" width="1240" height="400" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>HLO Inc.: how a change reaches the server</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475950"/>
+    </marker>
+    <style>
+      .t { font-size: 15px; font-weight: 700; fill: #0f1c16; }
+      .s { font-size: 12.5px; fill: #475950; }
+      .w { font-size: 15px; font-weight: 700; fill: #ffffff; }
+      .ws { font-size: 12.5px; fill: #d3efe2; }
+      .n { font-size: 13px; font-weight: 800; fill: #ffffff; }
+      .box { fill: #ffffff; stroke: #dfe8e3; stroke-width: 1.5; }
+      .line { stroke: #475950; stroke-width: 1.6; fill: none; marker-end: url(#a); }
+    </style>
+  </defs>
+  <rect width="1240" height="400" fill="#fbf8f3"/>
+  <text x="40" y="50" font-size="24" font-weight="800" fill="#0f1c16">How a change reaches the server</text>
+  <text x="40" y="76" class="s" font-size="14">The server pulls; GitHub never needs access to it. Only commits whose “Test” check passed are installed.</text>
+
+  <!-- 1 -->
+  <rect x="40" y="110" width="200" height="120" rx="16" class="box"/>
+  <circle cx="64" cy="136" r="13" fill="#0f6b4a"/><text x="64" y="141" class="n" text-anchor="middle">1</text>
+  <text x="86" y="141" class="t">Developer</text>
+  <text x="58" y="170" class="s">Commit to main.</text>
+  <text x="58" y="189" class="s">CSS is built locally</text>
+  <text x="58" y="208" class="s">(npm run css:build).</text>
+
+  <!-- 2 -->
+  <rect x="280" y="110" width="220" height="120" rx="16" fill="#1e293b"/>
+  <circle cx="304" cy="136" r="13" fill="#2a78d6"/><text x="304" y="141" class="n" text-anchor="middle">2</text>
+  <text x="326" y="141" class="w">GitHub Actions</text>
+  <text x="298" y="170" fill="#cbd5e1" font-size="12.5">Job “Test”: MySQL 8.4 service,</text>
+  <text x="298" y="189" fill="#cbd5e1" font-size="12.5">npm ci, the full Vitest suite</text>
+  <text x="298" y="208" fill="#cbd5e1" font-size="12.5">(~390 tests).</text>
+
+  <!-- 3 -->
+  <rect x="540" y="110" width="240" height="120" rx="16" class="box"/>
+  <circle cx="564" cy="136" r="13" fill="#b45309"/><text x="564" y="141" class="n" text-anchor="middle">3</text>
+  <text x="586" y="141" class="t">Cron on the server</text>
+  <text x="558" y="170" class="s">Every 5 minutes, pull.sh fetches</text>
+  <text x="558" y="189" class="s">main and asks GitHub whether</text>
+  <text x="558" y="208" class="s">“Test” passed for the new commit.</text>
+
+  <!-- 4 -->
+  <rect x="820" y="110" width="380" height="120" rx="16" fill="#0b4532"/>
+  <circle cx="844" cy="136" r="13" fill="#3fae82"/><text x="844" y="141" class="n" text-anchor="middle">4</text>
+  <text x="866" y="141" class="w">remote.sh installs it</text>
+  <text x="838" y="170" class="ws">npm install → database backup → migrations →</text>
+  <text x="838" y="189" class="ws">base seeds → restart (Passenger). .env, storage/,</text>
+  <text x="838" y="208" class="ws">backups and logs are kept between versions.</text>
+
+  <path class="line" d="M240 170 L278 170"/>
+  <path class="line" d="M500 170 L538 170"/>
+  <path class="line" d="M780 170 L818 170"/>
+
+  <!-- outcomes -->
+  <rect x="540" y="262" width="240" height="92" rx="16" fill="#fef2f2" stroke="#f9c3c6" stroke-width="1.5"/>
+  <text x="560" y="292" class="t">Tests failed</text>
+  <text x="560" y="314" class="s">The commit is skipped and</text>
+  <text x="560" y="333" class="s">never installed.</text>
+  <path class="line" d="M660 230 L660 260"/>
+
+  <rect x="820" y="262" width="180" height="92" rx="16" fill="#fef2f2" stroke="#f9c3c6" stroke-width="1.5"/>
+  <text x="840" y="292" class="t">A step fails</text>
+  <text x="840" y="314" class="s">Rolls back to the</text>
+  <text x="840" y="333" class="s">previous version.</text>
+  <path class="line" d="M910 230 L910 260"/>
+
+  <rect x="1020" y="262" width="180" height="92" rx="16" fill="#edf8f3" stroke="#a8dec6" stroke-width="1.5"/>
+  <text x="1040" y="292" class="t">Live</text>
+  <text x="1040" y="314" class="s">Log: ~/logs/</text>
+  <text x="1040" y="333" class="s">hloinc-preview-deploy.log</text>
+  <path class="line" d="M1110 230 L1110 260"/>
+</svg>

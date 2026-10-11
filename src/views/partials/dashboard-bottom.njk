@@ -16,10 +16,84 @@
           {% endfor %}
         </ol>
       </section>
-    {% else %}
-      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft lg:h-[30rem]">
-        <h2 class="text-lg font-bold">Welcome to the staff portal</h2>
-        <p class="mt-2 text-muted">Use the menu on the left to reach the areas your role can use, or search from the bar at the top.</p>
+    {% elif myWork %}
+      {# My work: what's assigned to me (only the areas my role can use), then my time off. Scrolls. #}
+      {% set w = myWork %}
+      {% macro workRow(href, iconName, tone, title, sub, side) %}
+        <li>
+          <a href="{{ href }}" class="flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-surface">
+            <span class="grid size-8 shrink-0 place-items-center rounded-lg ring-1 {{ {'red': 'bg-accent-50 text-accent-600 ring-accent-100', 'blue': 'bg-[#eaf2fc] text-[#1f5fae] ring-[#c4dbf6]', 'green': 'bg-brand-50 text-brand-700 ring-brand-100', 'amber': 'bg-amber-50 text-amber-900 ring-amber-200'}[tone] }}" aria-hidden="true">{{ icon(iconName, 'size-4') }}</span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[15px] font-semibold text-ink">{{ title }}</span>
+              <span class="block truncate text-sm text-muted">{{ sub }}</span>
+            </span>
+            <span class="shrink-0 text-right text-xs text-muted">{{ side }}</span>
+          </a>
+        </li>
+      {% endmacro %}
+      <section class="flex flex-col rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6 lg:h-[30rem]" aria-labelledby="work-h">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="work-h" class="flex items-center gap-2.5 text-lg font-bold">
+            My work
+            {% if w.total %}<span class="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-line">{{ w.total }}</span>{% endif %}
+          </h2>
+          <a href="/portal/schedule/time-off/new" class="btn-blue !px-3.5 !py-1.5 text-sm">{{ icon('calendar', 'size-4') }} Request time off</a>
+        </div>
+
+        <div class="scroll-panel -mx-1 mt-3 max-h-[26rem] min-h-0 flex-1 overflow-y-auto px-1 lg:max-h-none" tabindex="0" aria-label="My work (scrolls)">
+          {% if not w.total %}
+            <p class="mt-1 flex items-center gap-3 rounded-2xl bg-brand-50/70 p-3 text-[15px] text-ink ring-1 ring-brand-100">
+              <span class="grid size-8 shrink-0 place-items-center rounded-full bg-brand-700 text-white">{{ icon('check', 'size-4') }}</span>
+              Nothing is assigned to you right now.
+            </p>
+          {% endif %}
+
+          {% if w.messages and w.messages.total %}
+            <h3 class="sticky top-0 z-[1] flex items-center justify-between bg-white pt-2 pb-1.5 text-xs font-bold tracking-wide text-muted uppercase">
+              <span>Messages assigned to me · {{ w.messages.total }}</span>
+              <a href="/portal/messages?tab=all&mine=1" class="font-semibold tracking-normal text-brand-700 normal-case hover:underline">All</a>
+            </h3>
+            <ul class="pb-2">
+              {% for m in w.messages.items %}
+                {{ workRow(m.href, 'document' if m.type == 'referral' else ('heart' if m.type == 'request' else 'mail'), 'amber' if m.status == 'new' else 'blue', m.name, m.typeLabel + ' · ' + m.statusLabel, m.ago) }}
+              {% endfor %}
+              {% if w.messages.more %}<li class="px-2 py-1 text-sm text-muted">and {{ w.messages.more }} more</li>{% endif %}
+            </ul>
+          {% endif %}
+
+          {% if w.appointments and w.appointments.total %}
+            <h3 class="sticky top-0 z-[1] flex items-center justify-between bg-white pt-2 pb-1.5 text-xs font-bold tracking-wide text-muted uppercase">
+              <span>My appointments this week · {{ w.appointments.total }}</span>
+              <a href="/portal/appointments/calendar" class="font-semibold tracking-normal text-brand-700 normal-case hover:underline">Calendar</a>
+            </h3>
+            <ul class="pb-2">
+              {% for a in w.appointments.items %}
+                {{ workRow(a.href, 'calendar', 'green', a.name, a.type_name or 'Appointment', a.when) }}
+              {% endfor %}
+            </ul>
+          {% endif %}
+
+          {% if w.leads and w.leads.total %}
+            <h3 class="sticky top-0 z-[1] flex items-center justify-between bg-white pt-2 pb-1.5 text-xs font-bold tracking-wide text-muted uppercase">
+              <span>My leads in progress · {{ w.leads.total }}</span>
+              <a href="/portal/leads?owner=me" class="font-semibold tracking-normal text-brand-700 normal-case hover:underline">All</a>
+            </h3>
+            <ul class="pb-2">
+              {% for l in w.leads.items %}
+                {{ workRow(l.href, 'heart', 'red' if l.stage == 'new' else 'green', l.name, l.stageLabel + (' · ' + l.county if l.county else ''), 'updated ' + l.ago) }}
+              {% endfor %}
+              {% if w.leads.more %}<li class="px-2 py-1 text-sm text-muted">and {{ w.leads.more }} more</li>{% endif %}
+            </ul>
+          {% endif %}
+        </div>
+
+        {# My time off: always shown, at the bottom. #}
+        {% set t = w.timeOff %}
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl bg-amber-50 px-4 py-2.5 text-sm text-ink ring-1 ring-amber-200">
+          <span class="flex items-center gap-1.5 font-semibold">{{ icon('calendar', 'size-4 text-amber-900') }} My time off</span>
+          {% if t.next %}<a href="{{ t.next.href }}" class="hover:underline">Next: <span class="font-semibold">{{ t.next.when }}</span> ({{ t.next.reason | lower }})</a>{% else %}<span class="text-muted">No time off booked</span>{% endif %}
+          {% if t.pending %}<a href="/portal/schedule/time-off?tab=mine" class="font-semibold text-amber-900 hover:underline">{{ t.pending }} {{ 'request' if t.pending == 1 else 'requests' }} waiting</a>{% endif %}
+        </div>
       </section>
     {% endif %}
 
