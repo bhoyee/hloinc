@@ -128,6 +128,14 @@ const MODULES = [
     labels: { view: 'See everyone’s', edit: 'Reply & update status' },
   },
   {
+    key: 'system',
+    label: 'System health',
+    description: 'Whether email, the virus scanner, backups, storage and deploys are working. No client information.',
+    actions: ['view'],
+    extras: { maintain: 'Run a backup, send a test email and test the virus scanner' },
+    labels: { view: 'See system health' },
+  },
+  {
     key: 'audit',
     label: 'Audit log',
     description: 'The record of sign-ins and important changes.',
@@ -156,7 +164,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end', 'settings', 'download'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end', 'settings', 'download', 'maintain'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && INBOX_PERMISSIONS.some((k) => set.has(k)) && !has('view'))) {
       set.add(`${m.key}.view`);
     }
@@ -180,7 +188,7 @@ const DEFAULT_ROLES = [
     name: 'IT Administrator',
     description: 'Keeps staff able to sign in: invites, password and two-step resets, deactivation. No access to client information.',
     require_mfa: true,
-    permissions: ['accounts.view', 'accounts.edit', 'accounts.archive', 'accounts.manage_all', 'roles.view', 'support.view', 'support.edit', 'audit.view'],
+    permissions: ['accounts.view', 'accounts.edit', 'accounts.archive', 'accounts.manage_all', 'roles.view', 'support.view', 'support.edit', 'system.view', 'system.maintain', 'audit.view'],
   },
   {
     key: 'program_director',

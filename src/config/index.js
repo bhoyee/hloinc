@@ -51,6 +51,12 @@ const schema = z.object({
   CLOUDMERSIVE_API_KEY: z.string().default(''),
   // Largest resume accepted, in MB (Cloudmersive's free plan scans files up to 2.5 MB).
   RESUME_MAX_MB: z.coerce.number().positive().max(20).default(5),
+  // Resumes are deleted automatically after this many days (the application itself is kept).
+  RESUME_KEEP_DAYS: z.coerce.number().int().min(7).max(3650).default(90),
+  // Email visitors a reminder the day before a confirmed appointment (from 10 a.m. Maryland time).
+  APPOINTMENT_REMINDERS: z.enum(['true', 'false']).default('true'),
+  // Scans a month on your Cloudmersive plan (the free plan allows 800); System health warns at 80%.
+  CLOUDMERSIVE_MONTHLY_LIMIT: z.coerce.number().int().positive().default(800),
   CLAMD_SOCKET: z.string().default(''),
   CLAMD_HOST: z.string().default(''),
   CLAMD_PORT: z.coerce.number().int().positive().default(3310),
@@ -131,9 +137,14 @@ module.exports = {
     clamdPort: env.CLAMD_PORT,
     clamscanPath: env.CLAMSCAN_PATH,
     cloudmersiveKey: env.CLOUDMERSIVE_API_KEY,
+    cloudmersiveLimit: env.CLOUDMERSIVE_MONTHLY_LIMIT,
     resumeMaxBytes: Math.round(env.RESUME_MAX_MB * 1024 * 1024),
+    resumeKeepDays: env.RESUME_KEEP_DAYS,
     database: env.CLAMAV_DATABASE,
     certsDir: env.CLAMAV_CERTS_DIR,
+  },
+  appointments: {
+    reminders: env.APPOINTMENT_REMINDERS === 'true',
   },
   support: {
     developerEmail: env.DEVELOPER_EMAIL.toLowerCase(),

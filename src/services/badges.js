@@ -11,6 +11,7 @@
  *   Schedule      time-off requests waiting for this person to decide on.
  *   Applications  job applications nobody has opened yet.
  *   Help requests help requests nobody has picked up yet (people who deal with them).
+ *   System health problems found by the last check (IT and Admin).
  * Refreshed with each page and every 30 seconds by the notification poll.
  */
 const db = require('../db/knex');
@@ -40,7 +41,8 @@ async function forUser(user) {
   const [m, a, t, j, s] = await Promise.all([
     unreadMessages(user), waitingRequests(user), require('./timeOff').pendingFor(user), require('./applications').newCount(user), require('./support').openCount(user),
   ]);
-  return { messages: m, appointments: a, timeOff: t, applications: j, support: s };
+  const system = can(user, 'system.view') ? require('./health').problemCount() : null;
+  return { messages: m, appointments: a, timeOff: t, applications: j, support: s, system };
 }
 
 /** Record that this person has opened a message. */

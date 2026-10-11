@@ -44,7 +44,9 @@ describe('menu counters', () => {
     const html = (await admin.get('/portal')).text;
     expect(badge(html, 'messages')).toBe('2');
     expect(badge(html, 'appointments')).toBe('1');
-    expect(await summary(admin)).toEqual({ messages: 2, appointments: 1, timeOff: 0, applications: 0, support: 0 });
+    // `system` is the problem count from the last System health check (null before one has run).
+    expect(await summary(admin)).toMatchObject({ messages: 2, appointments: 1, timeOff: 0, applications: 0, support: 0 });
+    expect(await summary(admin)).toHaveProperty('system');
   });
 
   it('counts messages per person: opening one lowers only your own count', async () => {
@@ -84,7 +86,7 @@ describe('menu counters', () => {
 
     const it_ = await signIn(app, await makeUser('it_admin'));
     // IT deals with help requests, so it has that counter only.
-    expect(await summary(it_)).toEqual({ messages: null, appointments: null, timeOff: null, applications: null, support: 0 });
+    expect(await summary(it_)).toMatchObject({ messages: null, appointments: null, timeOff: null, applications: null, support: 0 });
     expect((await it_.get('/portal/accounts')).text).not.toContain('data-nav-badge="messages"');
   });
 

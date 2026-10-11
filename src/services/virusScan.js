@@ -189,6 +189,15 @@ async function engine() {
 }
 
 async function scan(buffer) {
+  const result = await scanWith(buffer);
+  // For System health: scans used against the Cloudmersive allowance, and scanner errors.
+  const health = require('./health');
+  if (result.engine === 'Cloudmersive (cloud)') await health.count('cloudmersive');
+  await health.count(result.status === 'error' ? 'scan_error' : 'scan_ok', result.status === 'error' ? result.detail : result.engine);
+  return result;
+}
+
+async function scanWith(buffer) {
   if (buffer.includes(EICAR)) return { status: 'infected', engine: 'built-in check', detail: 'Eicar-Test-Signature' };
   const e = await engine();
   if (!e) return { status: 'error', engine: null, detail: 'No virus scanner is installed on the server' };

@@ -348,7 +348,8 @@ async function renderShow(req, res, { scheduleValues, scheduleErrors = {}, probl
     title: `${a.name}`,
     subheading: `${a.type_name} · ${appts.STATUS_LABELS[a.status]}`,
     crumbs: apptCrumbs,
-    a,
+    // reminder_matches: the reminder was about the current time (not one before a reschedule).
+    a: { ...a, reminder_matches: Boolean(a.reminder_for && a.scheduled_at && new Date(a.reminder_for).getTime() === new Date(a.scheduled_at).getTime()) },
     staff: await appts.staffOptions(),
     statusLabels: appts.STATUS_LABELS,
     sourceLabels: appts.SOURCE_LABELS,

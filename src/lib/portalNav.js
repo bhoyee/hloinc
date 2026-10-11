@@ -20,6 +20,7 @@ const NAV = [
   { label: 'Staff accounts', href: '/portal/accounts', icon: 'users', permission: 'accounts.view', group: 'admin' },
   { label: 'Roles & permissions', href: '/portal/roles', icon: 'key', permission: 'roles.view', group: 'admin' },
   { label: 'Help requests', href: '/portal/help', icon: 'question', permission: 'support.view', group: 'admin', badge: 'support', badgeLabel: 'new help requests' },
+  { label: 'System health', href: '/portal/system', icon: 'server', permission: 'system.view', group: 'admin', badge: 'system', badgeLabel: 'problems' },
   { label: 'Security settings', href: '/portal/settings/security', icon: 'lock', permission: 'security.edit', group: 'admin' },
   { label: 'Audit log', href: '/portal/audit', icon: 'shield', permission: 'audit.view', group: 'admin' },
 ];

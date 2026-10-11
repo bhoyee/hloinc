@@ -1,0 +1,167 @@
+{% extends "layouts/portal.njk" %}
+
+{% macro bytes(n) -%}
+  {%- if n >= 1073741824 %}{{ (n / 1073741824) | round(2) }} GB{% elif n >= 1048576 %}{{ (n / 1048576) | round(1) }} MB{% elif n >= 1024 %}{{ (n / 1024) | round(0) }} KB{% else %}{{ n }} bytes{% endif -%}
+{%- endmacro %}
+
+{% macro state(tone, label) %}
+  <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ {
+    ok: 'bg-brand-50 text-brand-800 ring-brand-200',
+    warn: 'bg-amber-50 text-amber-900 ring-amber-200',
+    bad: 'bg-accent-50 text-accent-700 ring-accent-200',
+    na: 'bg-surface text-muted ring-line'
+  }[tone] }}"><span class="size-2 rounded-full {{ { ok: 'bg-brand-500', warn: 'bg-amber-500', bad: 'bg-accent-600', na: 'bg-muted' }[tone] }}" aria-hidden="true"></span>{{ label }}</span>
+{% endmacro %}
+
+{% macro card(id, iconName, title, tone, label) %}
+  <section id="{{ id }}" class="scroll-mt-24 rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="{{ id }}-h">
+    <div class="flex items-start justify-between gap-3">
+      <h2 id="{{ id }}-h" class="flex items-center gap-2.5 text-lg font-bold"><span class="icon-tile !size-9">{{ icon(iconName, 'size-5') }}</span>{{ title }}</h2>
+      {{ state(tone, label) }}
+    </div>
+    {{ caller() }}
+  </section>
+{% endmacro %}
+
+{% macro row(label, value) %}
+  <div class="flex items-baseline justify-between gap-4 py-2"><dt class="text-muted">{{ label }}</dt><dd class="text-right font-medium text-ink">{{ value }}</dd></div>
+{% endmacro %}
+
+{% macro has(prefix) %}{% for p in s.problems %}{% if p.key.startsWith(prefix) %}{{ p.severity }} {% endif %}{% endfor %}{% endmacro %}
+{% macro toneFor(prefix) %}{% set h = has(prefix) %}{{ 'bad' if 'bad' in h else ('warn' if 'warn' in h else 'ok') }}{% endmacro %}
+
+{% block actions %}
+  <a href="/portal/system" class="btn-secondary whitespace-nowrap">{{ icon('refresh', 'size-4') }} Check again</a>
+{% endblock %}
+
+{% block content %}
+  {# Overall #}
+  {% if s.problems.length %}
+    {% set worst = s.problems[0].severity %}
+    <section class="mb-6 rounded-3xl border p-6 {{ 'border-accent-200 bg-accent-50' if worst == 'bad' else 'border-amber-200 bg-amber-50' }}" aria-labelledby="problems-h">
+      <h2 id="problems-h" class="flex items-center gap-2 text-lg font-bold {{ 'text-accent-800' if worst == 'bad' else 'text-amber-900' }}">{{ icon('exclamation', 'size-6') }} {{ s.problems.length }} {{ 'thing needs' if s.problems.length == 1 else 'things need' }} attention</h2>
+      <ul class="mt-3 space-y-2">
+        {% for p in s.problems %}
+          <li class="flex gap-3 rounded-2xl bg-white/70 p-3 text-[15px]">
+            {{ state(p.severity, 'Broken' if p.severity == 'bad' else 'Check') }}
+            <span><strong class="text-ink">{{ p.title }}.</strong> <span class="text-muted">{{ p.detail }}</span></span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% else %}
+    <section class="mb-6 flex items-center gap-4 rounded-3xl border border-brand-200 bg-brand-50 p-6">
+      <span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-700 text-white">{{ icon('check', 'size-6') }}</span>
+      <div>
+        <h2 class="text-lg font-bold text-brand-900">Everything is working</h2>
+        <p class="text-[15px] text-brand-800">Checked {{ s.checkedAt | dateTime }} · IT is told straight away if something stops working</p>
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="grid items-start gap-6 lg:grid-cols-2">
+    {# Email #}
+    {% set et = toneFor('email') | trim %}
+    {% call card('email', 'mail', 'Email', et, 'Failing' if et == 'bad' else ('Some failures' if et == 'warn' else 'Working')) %}
+      <dl class="mt-4 divide-y divide-line text-[15px]">
+        {{ row('Sending through', s.email.transport) }}
+        {{ row('Last email delivered', (s.email.lastOkAt | dateTime) if s.email.lastOkAt else 'None yet') }}
+        {{ row('Last 24 hours', s.email.day.sent ~ ' sent · ' ~ s.email.day.failed ~ ' failed') }}
+        {{ row('Last 7 days', s.email.week.sent ~ ' sent · ' ~ s.email.week.failed ~ ' failed') }}
+      </dl>
+      {% if s.email.failures.length %}
+        <details class="mt-4 rounded-2xl bg-surface p-4 text-sm">
+          <summary class="cursor-pointer font-semibold text-ink">Recent failures ({{ s.email.failures.length }})</summary>
+          <ul class="scroll-panel mt-3 max-h-60 space-y-2 overflow-y-auto pr-1" tabindex="0" aria-label="Recent email failures (scrolls)">
+            {% for f in s.email.failures %}
+              <li class="rounded-xl bg-white p-3 ring-1 ring-line">
+                <p class="font-medium text-ink">{{ f.subject }}</p>
+                <p class="text-muted">{{ f.created_at | dateTime }} · to {{ f.recipient }}</p>
+                <p class="mt-1 text-accent-700">{{ f.error }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endif %}
+      {% if mayMaintain %}
+        <form method="post" action="/portal/system/test-email" class="mt-4" data-once>
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <button type="submit" class="btn-primary">{{ icon('mail', 'size-4') }} Send a test email to me</button>
+        </form>
+      {% endif %}
+    {% endcall %}
+
+    {# Virus scanner #}
+    {% set vt = (toneFor('scanner') | trim) if (toneFor('scanner') | trim) != 'ok' else (toneFor('cloudmersive') | trim) %}
+    {% call card('scanner', 'shield', 'Virus scanner', vt, 'Not working' if vt == 'bad' else ('Check' if vt == 'warn' else 'Working')) %}
+      <dl class="mt-4 divide-y divide-line text-[15px]">
+        {{ row('Scanner', s.scanner.engine.label) }}
+        {{ row('Last successful scan', (s.scanner.lastOkAt | dateTime) if s.scanner.lastOkAt else 'None this month') }}
+        {% if s.scanner.lastError %}{{ row('Last error', (s.scanner.lastError.at | dateTime) ~ ': ' ~ s.scanner.lastError.detail) }}{% endif %}
+        {{ row('Resumes waiting for a scan', s.scanner.waiting.count) }}
+      </dl>
+      {% if s.scanner.cloudmersive %}
+        {% set c = s.scanner.cloudmersive %}
+        <div class="mt-4">
+          <p class="flex justify-between text-sm"><span class="font-semibold text-ink">Cloudmersive scans this month</span><span class="text-muted tabular-nums">{{ c.used }} of {{ c.limit }}</span></p>
+          <progress value="{{ c.used if c.used <= c.limit else c.limit }}" max="{{ c.limit }}" class="mt-2 h-2.5 w-full appearance-none overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:rounded-full {{ '[&::-webkit-progress-value]:bg-accent-600 [&::-moz-progress-bar]:bg-accent-600' if c.pct >= 100 else ('[&::-webkit-progress-value]:bg-amber-500 [&::-moz-progress-bar]:bg-amber-500' if c.pct >= 80 else '[&::-webkit-progress-value]:bg-brand-600 [&::-moz-progress-bar]:bg-brand-600') }}" aria-label="Cloudmersive scans used: {{ c.pct }}%">{{ c.pct }}%</progress>
+          <p class="mt-1 text-xs text-muted">Counted by the portal. Change the plan size with <span class="font-mono">CLOUDMERSIVE_MONTHLY_LIMIT</span> in .env.</p>
+        </div>
+      {% endif %}
+      {% if mayMaintain %}
+        <form method="post" action="/portal/system/test-scanner" class="mt-4" data-once>
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <button type="submit" class="btn-primary">{{ icon('shield', 'size-4') }} Test the scanner</button>
+          {% if s.scanner.cloudmersive %}<span class="ml-2 text-xs text-muted">Uses one scan.</span>{% endif %}
+        </form>
+      {% endif %}
+    {% endcall %}
+
+    {# Backups #}
+    {% set bt = toneFor('backup') | trim %}
+    {% call card('backups', 'archive', 'Database backups', bt if s.backups.latest or bt != 'ok' else 'na', ('Missing' if bt == 'bad' else ('Overdue' if bt == 'warn' else ('Up to date' if s.backups.latest else 'None here'))) ) %}
+      <dl class="mt-4 divide-y divide-line text-[15px]">
+        {{ row('Newest backup', (s.backups.latest.at | dateTime) if s.backups.latest else 'None') }}
+        {% if s.backups.latest %}{{ row('Size', bytes(s.backups.latest.bytes)) }}{% endif %}
+        {{ row('Backups kept', s.backups.count ~ ' (the newest 14)') }}
+        {% if s.backups.failed %}{{ row('Last attempt failed', (s.backups.failed.at | dateTime) ~ ': ' ~ s.backups.failed.detail) }}{% endif %}
+      </dl>
+      <p class="mt-3 text-sm text-muted">Taken before every update, and once a day automatically. Stored on the server in the private <span class="font-mono">backups</span> folder.</p>
+      {% if mayMaintain %}
+        <form method="post" action="/portal/system/backup" class="mt-4" data-once>
+          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+          <button type="submit" class="btn-primary">{{ icon('archive', 'size-4') }} Back up now</button>
+        </form>
+      {% endif %}
+    {% endcall %}
+
+    {# Version #}
+    {% set dt = toneFor('deploy') | trim %}
+    {% call card('version', 'refresh', 'Version', dt, 'Update held back' if dt == 'warn' else 'Up to date') %}
+      <dl class="mt-4 divide-y divide-line text-[15px]">
+        {{ row('Version', (s.version.commit or 'Unknown') ~ ((' · ' ~ s.version.subject | truncate(48)) if s.version.subject else '')) }}
+        {{ row('Installed', (s.version.deployedAt | dateTime) if s.version.deployedAt else ((s.version.committedAt | dateTime) if s.version.committedAt else 'Unknown')) }}
+        {% if s.version.refused %}{{ row('Not installed', s.version.refused.commit ~ ' (' ~ (s.version.refused.at | dateTime) ~ ')') }}{% endif %}
+        {{ row('App running since', s.version.startedAt | dateTime) }}
+        {{ row('Node.js', s.version.node ~ ' · ' ~ s.version.env) }}
+      </dl>
+    {% endcall %}
+
+    {# Storage #}
+    {% set st = toneFor('disk') | trim %}
+    {% call card('storage', 'archive', 'Storage', st, 'Low on space' if st != 'ok' else bytes(s.storage.total) ~ ' used') %}
+      <dl class="mt-4 divide-y divide-line text-[15px]">
+        {% for f in s.storage.folders %}{{ row(f.label, bytes(f.bytes) ~ ' · ' ~ f.files ~ (' file' if f.files == 1 else ' files')) }}{% endfor %}
+        {% if s.storage.disk %}{{ row('Free space on the server', bytes(s.storage.disk.free)) }}{% endif %}
+      </dl>
+    {% endcall %}
+
+    {# Database #}
+    {% call card('database', 'list-bullet', 'Database', 'ok', 'Connected') %}
+      <dl class="mt-4 divide-y divide-line text-[15px]">
+        {{ row('Size', bytes(s.database.bytes)) }}
+        {{ row('Tables', s.database.tables) }}
+      </dl>
+    {% endcall %}
+  </div>
+{% endblock %}

@@ -13,6 +13,10 @@ app.listen(config.port, () => {
   require('./src/services/alerts').startOverdueChecks();
   // Scan resumes the virus scanner couldn't check when they arrived.
   require('./src/services/applications').startRescans();
+  // Email visitors a reminder the day before their appointment.
+  require('./src/services/appointments').startReminders();
+  // System health: daily backup, and tell IT when email, the virus scanner or storage has a problem.
+  require('./src/services/health').startChecks();
 });
 
 module.exports = app;

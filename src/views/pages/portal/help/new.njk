@@ -6,7 +6,7 @@
 {% from "partials/help-status.njk" import pill %}
 
 {% block content %}
-  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+  <div class="grid items-start gap-6 {{ 'xl:grid-cols-[minmax(0,1fr)_22rem]' if recent.length else 'max-w-4xl' }}">
     <form method="post" action="/portal/help" enctype="multipart/form-data" class="space-y-6" novalidate data-once>
       {{ ui.errorSummary(errors) }}
       <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
@@ -54,19 +54,8 @@
       </section>
     </form>
 
-    <aside class="space-y-4" aria-label="About your request">
-      <section class="rounded-3xl border border-line bg-white p-6 text-[15px] shadow-soft">
-        <h2 class="font-semibold text-ink">Sent along automatically</h2>
-        <ul class="mt-3 space-y-2 text-muted">
-          <li class="flex gap-2">{{ icon('users', 'mt-0.5 size-4 shrink-0 text-brand-700') }} Your name and role</li>
-          <li class="flex gap-2">{{ icon('link', 'mt-0.5 size-4 shrink-0 text-brand-700') }} <span>The page you were on{% if values.from %}<span class="block font-mono text-sm break-all text-ink">{{ values.from }}</span>{% endif %}</span></li>
-          <li class="flex gap-2">{{ icon('device', 'mt-0.5 size-4 shrink-0 text-brand-700') }} Your browser and screen size</li>
-          {% if values.error_ref %}<li class="flex gap-2">{{ icon('exclamation', 'mt-0.5 size-4 shrink-0 text-accent-600') }} Error reference <span class="font-mono text-sm font-semibold text-ink">{{ values.error_ref }}</span></li>{% endif %}
-        </ul>
-        <p class="mt-4 text-sm text-muted">IT and the Admin team get a notification and an email. You’ll hear back here and by email.</p>
-      </section>
-
-      {% if recent.length %}
+    {% if recent.length %}
+    <aside class="space-y-4" aria-label="Your recent requests">
         <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="recent-h">
           <h2 id="recent-h" class="font-semibold text-ink">Your recent requests</h2>
           <ul class="mt-3 space-y-2">
@@ -84,7 +73,7 @@
           </ul>
           <a href="/portal/help?tab=mine" class="link mt-3 inline-block text-sm">All my requests</a>
         </section>
-      {% endif %}
     </aside>
+    {% endif %}
   </div>
 {% endblock %}

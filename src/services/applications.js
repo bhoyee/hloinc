@@ -229,9 +229,37 @@ async function rescanPending() {
   return done;
 }
 
+/**
+ * Delete resumes older than RESUME_KEEP_DAYS (90 by default). The application stays,
+ * marked with the date its resume was removed. Returns how many were deleted.
+ */
+async function purgeOldResumes() {
+  const days = config.virusScan.resumeKeepDays;
+  const old = await db('job_applications').whereNotNull('resume_file')
+    .where('created_at', '<', db.raw(`NOW() - INTERVAL ${Number(days)} DAY`)).select('id', 'resume_file').limit(200);
+  for (const a of old) {
+    await removeStored(a.resume_file);
+    await db('job_applications').where({ id: a.id }).update({ resume_file: null, resume_deleted_at: db.fn.now() });
+  }
+  if (old.length) {
+    await require('./audit').audit(null, {
+      action: 'application.resume_expired',
+      entityType: 'application',
+      summary: `Automatically deleted ${old.length} ${old.length === 1 ? 'resume' : 'resumes'} older than ${days} days (the applications are kept)`,
+    });
+  }
+  return old.length;
+}
+
+/** When this application's resume will be deleted automatically. */
+const resumeExpiresAt = (a) => new Date(new Date(a.created_at).getTime() + config.virusScan.resumeKeepDays * 86400000);
+
 function startRescans() {
   if (config.env === 'test') return;
-  const run = () => rescanPending().catch((err) => console.error('Resume rescan failed:', err.message));
+  const run = () => {
+    rescanPending().catch((err) => console.error('Resume rescan failed:', err.message));
+    purgeOldResumes().catch((err) => console.error('Resume clean-up failed:', err.message));
+  };
   setTimeout(run, 90 * 1000).unref();
   setInterval(run, 15 * 60 * 1000).unref();
 }
@@ -309,6 +337,6 @@ async function remove(a) {
 
 module.exports = {
   STATUS_LABELS, TABS, TYPES, MAX_BYTES, MAX_LABEL,
-  checkFile, tidyName, submit, rescanPending, startRescans,
+  checkFile, tidyName, submit, rescanPending, purgeOldResumes, resumeExpiresAt, startRescans,
   tabCounts, list, jobsWithApplications, get, newCount, countsByJob, setStatus, resume, remove,
 };

@@ -117,6 +117,18 @@
           <p class="mt-4 font-display text-2xl font-extrabold text-ink">{{ a.scheduled_at | date({ weekday: 'long', month: 'long', day: 'numeric' }) }}</p>
           <p class="text-lg text-ink">{{ a.scheduled_at | time }} · {{ a.duration_minutes or a.type_duration }} minutes</p>
           {% if a.assigned_name %}<p class="mt-2 text-[15px] text-muted">With {{ a.assigned_name }}</p>{% endif %}
+          {% if a.status == 'confirmed' or a.reminder_at %}
+            <p class="mt-3 flex items-start gap-2 text-sm {{ 'text-accent-700' if a.reminder_status == 'failed' else 'text-muted' }}">
+              {{ icon('mail', 'mt-0.5 size-4 shrink-0') }}
+              <span>
+                {%- if a.reminder_status == 'sent' and a.reminder_matches %}Reminder emailed {{ a.reminder_at | dateTime }}
+                {%- elif a.reminder_status == 'failed' and a.reminder_matches %}The reminder email couldn’t be sent{% if a.reminder_attempts < 3 %}; it will be tried again{% else %}. Please call {{ a.phone or 'them' }} instead{% endif %}
+                {%- elif not a.email %}No email address, so no reminder. Call {{ a.phone or 'them' }} the day before if needed
+                {%- elif a.status == 'confirmed' %}A reminder is emailed the day before, from 10 a.m.
+                {%- endif %}
+              </span>
+            </p>
+          {% endif %}
         {% elif a.status == 'requested' %}
           <p class="mt-4 text-[15px] text-muted">Not scheduled yet.{% if canEdit %} Choose a time to confirm it.{% endif %}</p>
         {% endif %}

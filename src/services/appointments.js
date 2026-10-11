@@ -244,7 +244,61 @@ async function widget({ view = 'week', date, day } = {}, now = new Date()) {
   };
 }
 
+// --- Reminders the day before -----------------------------------------------------------------
+
+const REMINDER_FROM_HOUR = 10; // Maryland time, the day before
+const REMINDER_TRIES = 3;
+
+/**
+ * Email a reminder for each confirmed appointment tomorrow (Maryland time), from
+ * 10 a.m. today. Once per appointment time: if it's moved to another day, a new
+ * reminder goes for the new time. Failed sends are tried again, up to 3 times.
+ * Returns { sent, failed }.
+ */
+async function sendReminders(now = new Date()) {
+  if (!require('../config').appointments.reminders) return { sent: 0, failed: 0 };
+  const { marylandParts, marylandDateTime, addDaysIso } = require('../lib/hours');
+  const today = marylandParts(now);
+  if (today.hour < REMINDER_FROM_HOUR) return { sent: 0, failed: 0 };
+  const tomorrow = addDaysIso(today.date, 1);
+  const due = await base()
+    .where('a.status', 'confirmed')
+    .whereNotNull('a.email').whereNot('a.email', '')
+    .where('a.scheduled_at', '>=', marylandDateTime(tomorrow, '00:00'))
+    .where('a.scheduled_at', '<', marylandDateTime(addDaysIso(tomorrow, 1), '00:00'))
+    .where((w) => w.whereNull('a.reminder_for')
+      .orWhereRaw('a.reminder_for <> a.scheduled_at')
+      .orWhere((f) => f.where('a.reminder_status', 'failed').where('a.reminder_attempts', '<', REMINDER_TRIES)))
+    .limit(100);
+  const emails = require('./appointmentEmails');
+  let sent = 0;
+  let failed = 0;
+  for (const a of due) {
+    const result = await emails.reminder(a);
+    const sameTime = a.reminder_for && new Date(a.reminder_for).getTime() === new Date(a.scheduled_at).getTime();
+    await db('appointments').where({ id: a.id }).update({
+      reminder_for: db.ref('scheduled_at'), // copied in SQL, so it compares exactly
+      reminder_at: db.fn.now(),
+      reminder_status: result.ok ? 'sent' : 'failed',
+      reminder_attempts: (sameTime ? a.reminder_attempts : 0) + 1,
+    });
+    if (result.ok) sent += 1;
+    else failed += 1;
+  }
+  return { sent, failed };
+}
+
+/** Check every 15 minutes while the app runs (not in tests). */
+function startReminders() {
+  if (require('../config').isTest) return;
+  const run = () => sendReminders().catch((err) => console.error('Appointment reminders failed:', err.message));
+  setTimeout(run, 3 * 60 * 1000).unref();
+  setInterval(run, 15 * 60 * 1000).unref();
+}
+
 module.exports = {
+  sendReminders,
+  startReminders,
   widget,
   STATUS_LABELS,
   SOURCE_LABELS,

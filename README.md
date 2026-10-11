@@ -57,11 +57,11 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
   - Formatted email replies.
   - Overdue alerts, and email to the person a message is assigned to.
 - **Leads**: everyone who reached out, with stage, owner, timeline and CSV export.
-- **Appointments**: list, calendar, appointment types, walk-in/phone logging and confirmation emails.
+- **Appointments**: list, calendar, appointment types, walk-in/phone logging, confirmation emails, and a **reminder email the day before** (from 10 a.m., with Add to Google Calendar and directions).
 - **Schedule**: team and personal views, shifts, and time-off requests with approval (in-app and email).
 - **Jobs & applications**:
   - Posting with a formatted editor and Maryland pay-transparency checks.
-  - Applications with status tracking and logged resume downloads.
+  - Applications with status tracking and logged resume downloads. Resumes are **deleted automatically after 3 months** (the application is kept).
 - **Announcements**: a banner across the portal. **Important** (red, stays, bell alert to all staff) or **Normal** (green, can be closed).
 - **Accounts**:
   - Invites, password and two-step resets, sign out everywhere.
@@ -70,6 +70,7 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 - **Roles & permissions**: per-area permissions, which inboxes each role sees, and the alerts grid.
 - **Monthly report** (Reports): referrals, service requests, appointments, leads, contact messages, applications and hires for any month against the month before, on screen or as a branded **PDF** (drawn with `pdfkit`, no browser needed on the server) and **CSV**. Counts only, no names, so it can go to the board.
 - **Get help** (every page): staff report a problem or ask a question, with an optional screenshot. The page, browser and any error reference are sent along. IT and Admin are told by bell and email; "Something isn't working" reports can also be emailed to a developer/support address. Replies, and Open → In progress → Fixed, in **Help requests**.
+- **System health** (IT and Admin): email delivery and recent failures, the virus scanner and Cloudmersive scans used this month, database backups (daily, plus **Back up now**), the installed version, storage and database size. Checked every 15 minutes; IT and Admin are alerted by bell and email when something breaks.
 - **Security settings** (two-step sign-in on or off for everyone), **Audit log**, global search, notifications (bell) and menu counters.
 
 ## Screenshots
@@ -125,6 +126,9 @@ All settings come from `.env` (see [.env.example](.env.example)); they're checke
 | `MAIL_TRANSPORT` (`smtp` or `sendmail`), `SENDMAIL_PATH`, `SMTP_*`, `MAIL_FROM` | Outgoing email |
 | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional Cloudflare Turnstile on public forms |
 | `FORMS_MAX_PER_EMAIL_PER_DAY` | Submissions allowed per email address per day |
+| `RESUME_KEEP_DAYS` | Days to keep resumes before they're deleted automatically (default 90) |
+| `APPOINTMENT_REMINDERS` | `false` to stop the day-before reminder emails (default `true`) |
+| `CLOUDMERSIVE_MONTHLY_LIMIT` | Scans a month on your Cloudmersive plan (default 800, the free plan); System health warns at 80% |
 | `VIRUS_SCAN`, `CLOUDMERSIVE_API_KEY`, `RESUME_MAX_MB` | Resume scanning (`auto` uses Cloudmersive when a key is set) and the size limit (2.5 on Cloudmersive's free plan) |
 | `CLAMD_SOCKET`, `CLAMD_HOST`, `CLAMD_PORT`, `CLAMSCAN_PATH`, `CLAMAV_DATABASE`, `CLAMAV_CERTS_DIR` | ClamAV, where the server can run it |
 | `DEVELOPER_EMAIL` | Optional: where "Get help" problem reports are forwarded (Admin can switch forwarding off under Help requests) |

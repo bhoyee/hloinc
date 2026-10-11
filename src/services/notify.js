@@ -61,9 +61,11 @@ async function notify({ channel = 'email', ...message }) {
   if (!send) return { ok: false, error: `Notification channel "${channel}" is not configured.` };
   try {
     await send(message);
+    if (channel === 'email') await require('./health').recordEmail(message, null);
     return { ok: true };
   } catch (err) {
     console.error(`Notification via ${channel} failed:`, err.message);
+    if (channel === 'email') await require('./health').recordEmail(message, err);
     return { ok: false, error: err.message };
   }
 }

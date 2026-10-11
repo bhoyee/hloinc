@@ -64,6 +64,8 @@ router.get('/:id', async (req, res) => {
     a,
     statusLabels: applications.STATUS_LABELS,
     types: applications.TYPES,
+    keepDays: require('../../config').virusScan.resumeKeepDays,
+    expiresAt: applications.resumeExpiresAt(a),
   });
 });
 
