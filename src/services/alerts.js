@@ -37,6 +37,7 @@ const EVENTS = [
     defaults: { general: ['reception'], program_coordinator: ['program_coordinator'], program_director: ['program_director'], executive: [ADMIN_ROLE], intake: ['intake_specialist'] }[r.key] || [ADMIN_ROLE],
   })),
   { key: 'application', label: 'New job application', help: 'Apply form on each job (careers page)', sees: (r) => r.permissions.has('jobs.applications'), defaults: [ADMIN_ROLE] },
+  { key: 'support', label: 'New help request', help: 'Get help, from staff in the portal. Also emailed.', sees: (r) => r.permissions.has('support.view'), defaults: [ADMIN_ROLE, 'it_admin'] },
   {
     key: 'overdue',
     label: 'Waiting too long',

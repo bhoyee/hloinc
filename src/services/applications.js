@@ -289,7 +289,12 @@ async function countsByJob(ids) {
   return Object.fromEntries(rows.map((r) => [r.job_id, { total: Number(r.n), fresh: Number(r.fresh) }]));
 }
 
-const setStatus = (a, status) => db('job_applications').where({ id: a.id }).update({ status, updated_at: db.fn.now() });
+// hired_at: when it was (last) marked Hired, for the monthly report.
+const setStatus = (a, status) => db('job_applications').where({ id: a.id }).update({
+  status,
+  updated_at: db.fn.now(),
+  hired_at: status === 'hired' ? (a.status === 'hired' && a.hired_at ? a.hired_at : db.fn.now()) : null,
+});
 
 /** The resume's bytes, only if its scan passed. */
 async function resume(a) {

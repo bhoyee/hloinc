@@ -1,0 +1,100 @@
+{% extends "layouts/portal.njk" %}
+
+{% macro changeLine(ch) %}
+  {% if ch %}<p class="mt-1 text-sm font-medium {{ 'text-brand-700' if ch.tone == 'up' else ('text-accent-700' if ch.tone == 'down' else 'text-muted') }}">{{ ch.text }}</p>{% endif %}
+{% endmacro %}
+
+{% block actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="/portal/reports/{{ r.month }}.pdf" class="btn-green">{{ icon('document', 'size-4') }} Download PDF</a>
+    <a href="/portal/reports/{{ r.month }}.csv" class="btn-secondary">{{ icon('list-bullet', 'size-4') }} Download CSV</a>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <form method="get" action="/portal/reports" class="mb-6 flex flex-wrap items-end gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft" aria-label="Choose a month">
+    <div>
+      <label for="month" class="form-label">Month</label>
+      <select id="month" name="month" class="form-control mt-1 min-w-56" data-auto-submit>
+        {% for m in months %}<option value="{{ m.value }}" {% if m.value == r.month %}selected{% endif %}>{{ m.label }}</option>{% endfor %}
+        {% if not monthListed %}<option value="{{ r.month }}" selected>{{ r.label }}</option>{% endif %}
+      </select>
+    </div>
+    <button type="submit" class="btn-dark" data-auto-submit-hide>Show</button>
+    <p class="text-sm text-muted sm:ml-auto">{{ r.label }}{% if r.partial %} so far{% endif %}, compared with {{ r.prevLabel }}.</p>
+  </form>
+
+  {% if r.partial %}
+    <p class="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900">{{ icon('info', 'mt-0.5 size-5 shrink-0') }} This month isn’t over yet, so these are the figures so far.</p>
+  {% endif %}
+
+  <section aria-labelledby="hl-h">
+    <h2 id="hl-h" class="mb-3 text-lg font-bold">Highlights</h2>
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {% for k in r.kpis %}
+        <li class="rounded-3xl border border-line bg-white p-5 shadow-soft">
+          <span class="block h-1 w-6 rounded-full bg-brand-600" aria-hidden="true"></span>
+          <p class="mt-3 text-sm font-medium text-muted">{{ k.label }}</p>
+          <p class="mt-1 font-display text-4xl font-bold text-ink tabular-nums">{{ k.value }}</p>
+          {{ changeLine(k.change) }}
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% for s in r.sections %}
+    <section class="mt-8 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="sec-{{ s.key }}">
+      <h2 id="sec-{{ s.key }}" class="flex items-center gap-3 text-lg font-bold"><span class="h-5 w-1 rounded-full bg-brand-700" aria-hidden="true"></span>{{ s.title }}</h2>
+      <p class="mt-1 text-[15px] text-muted">{{ s.intro }}</p>
+
+      <div class="mt-5 overflow-x-auto">
+        <table class="w-full min-w-[28rem] text-left text-[15px]">
+          <thead>
+            <tr class="text-xs font-semibold tracking-wide text-muted uppercase">
+              <th scope="col" class="px-3 py-2">Measure</th>
+              <th scope="col" class="px-3 py-2 text-right">{{ r.label }}</th>
+              <th scope="col" class="px-3 py-2 text-right">{{ r.prevLabel }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in s.metrics %}
+              <tr class="{{ 'bg-surface' if loop.index0 % 2 == 0 }}">
+                <th scope="row" class="px-3 py-2.5 font-normal text-ink">{{ m.label }}{% if m.note %}<span class="block text-xs text-muted">{{ m.note }}</span>{% endif %}</th>
+                <td class="px-3 py-2.5 text-right font-semibold text-ink tabular-nums">{{ m.value }}</td>
+                <td class="px-3 py-2.5 text-right text-muted tabular-nums">{{ m.prev }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if s.breakdowns.length %}
+        <div class="mt-6 grid gap-6 {{ 'lg:grid-cols-2' if s.breakdowns.length > 1 }}">
+          {% for b in s.breakdowns %}
+            <div>
+              <h3 class="text-sm font-semibold text-ink">{{ b.title }}</h3>
+              {% if b.rows.length %}
+                <ul class="mt-3 space-y-2">
+                  {% for row in b.rows %}
+                    <li class="grid grid-cols-[minmax(0,10rem)_1fr_2rem] items-center gap-3 text-sm">
+                      <span class="text-ink">{{ row.label }}</span>
+                      <progress value="{{ row.value }}" max="{{ b.max }}" class="h-2.5 w-full appearance-none overflow-hidden rounded-full [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-brand-600 [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-brand-600" aria-label="{{ row.label }}: {{ row.value }}">{{ row.value }}</progress>
+                      <span class="text-right font-semibold text-ink tabular-nums">{{ row.value }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="mt-2 text-sm text-muted">Nothing this month.</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <section class="mt-8 rounded-3xl bg-brand-50 p-6 text-[15px] ring-1 ring-brand-100" aria-labelledby="notes-h">
+    <h2 id="notes-h" class="font-semibold text-brand-900">How these numbers are counted</h2>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-ink">{% for n in r.notes %}<li>{{ n }}</li>{% endfor %}</ul>
+  </section>
+{% endblock %}

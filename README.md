@@ -26,6 +26,7 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 | Server-rendered, no SPA, no build on the server | Shared hosting, fast pages, fewer moving parts |
 | Permissions per role, edited in the portal (`src/auth/permissions.js`) | HLO can create roles and adjust access without code changes; Admin always has everything |
 | Message inboxes per contact-form choice, plus "assigned to me" | Staff see only what was sent to their role, while Admin sees all |
+| Error pages show a reference (`ERR-…`) that is also in the server log, and offer "Report this problem" | Staff can quote it, and it is attached to their help request |
 | Alerts chosen per role (Roles & permissions → Alerts) | Who is *told* about new items is separate from who can *see* them |
 | Live dashboard by polling (10 s) a fingerprint, then fetching changed HTML | Real-time feel without websockets on shared hosting |
 | Formatted text (replies, job descriptions) cleaned with `sanitize-html` (`src/lib/richText.js`) | Staff get a proper editor; only safe tags, links and four text sizes are ever stored or sent |
@@ -67,6 +68,8 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
   - **Suspend** or deactivate.
   - Profile photos (initials when there is no photo).
 - **Roles & permissions**: per-area permissions, which inboxes each role sees, and the alerts grid.
+- **Monthly report** (Reports): referrals, service requests, appointments, leads, contact messages, applications and hires for any month against the month before, on screen or as a branded **PDF** (drawn with `pdfkit`, no browser needed on the server) and **CSV**. Counts only, no names, so it can go to the board.
+- **Get help** (every page): staff report a problem or ask a question, with an optional screenshot. The page, browser and any error reference are sent along. IT and Admin are told by bell and email; "Something isn't working" reports can also be emailed to a developer/support address. Replies, and Open → In progress → Fixed, in **Help requests**.
 - **Security settings** (two-step sign-in on or off for everyone), **Audit log**, global search, notifications (bell) and menu counters.
 
 ## Screenshots

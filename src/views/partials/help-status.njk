@@ -1,0 +1,8 @@
+{# Status pill for a help request. #}
+{% macro pill(status, labels) %}
+  <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 {{ {
+    open: 'bg-amber-50 text-amber-900 ring-amber-200',
+    in_progress: 'bg-[#eaf2fc] text-[#1f5fae] ring-[#c4dbf6]',
+    fixed: 'bg-brand-50 text-brand-800 ring-brand-200'
+  }[status] }}">{{ labels[status] }}</span>
+{% endmacro %}

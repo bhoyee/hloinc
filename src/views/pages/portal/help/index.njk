@@ -1,0 +1,82 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% from "partials/help-status.njk" import pill %}
+{% from "partials/avatar.njk" import avatar %}
+
+{% block actions %}<a href="/portal/help/new" class="btn-green">{{ icon('question', 'size-4') }} Get help</a>{% endblock %}
+
+{% block content %}
+  <nav aria-label="Help request lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
+    {% for t in tabs %}
+      <a href="/portal/help?tab={{ t.key }}" {% if t.key == tab %}aria-current="page"{% endif %}
+         class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
+        {{ t.label }}
+        <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == tab else ('bg-accent-600 text-white' if t.key == 'open' and counts.open else 'bg-surface ring-1 ring-line') }}">{{ counts[t.key] }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if team and tab != 'mine' %}
+    <form method="get" action="/portal/help" role="search" aria-label="Search help requests" data-live-filter="#help-results"
+          class="mb-5 flex gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <div class="relative flex-1">
+        <label for="h-q" class="sr-only">Search by person, words, reference or error reference</label>
+        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
+        <input id="h-q" type="search" name="q" value="{{ q }}" placeholder="Person, words, HLO-HLP-… or ERR-…" class="form-control !pl-12" maxlength="100">
+      </div>
+      <button type="submit" class="btn-green" data-live-hide>Search</button>
+    </form>
+  {% endif %}
+
+  <div id="help-results" data-live-results>
+    {{ ui.listBar(pager, 'requests') }}
+    {% if items.length %}
+      <ul class="divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+        {% for r in items %}
+          <li class="group relative transition-colors hover:bg-surface focus-within:bg-surface {{ 'bg-amber-50/40' if r.status == 'open' }}">
+            <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+              <span class="hidden sm:block">{{ avatar({ id: r.user_id, name: r.user_name, avatar: r.user_avatar }, 'size-11') }}</span>
+              <div class="min-w-0 flex-1">
+                <p class="flex flex-wrap items-center gap-2">
+                  <a href="/portal/help/{{ r.id }}" class="font-semibold text-ink after:absolute after:inset-0 after:content-[''] group-hover:text-brand-700 focus-visible:outline-none">{{ 'You' if r.user_id == user.id else r.user_name }}</a>
+                  <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 {{ 'bg-accent-50 text-accent-700 ring-accent-100' if r.category == 'broken' else 'bg-surface text-ink ring-line' }}">{{ icon(categories[r.category].icon, 'size-3.5') }} {{ categories[r.category].label }}</span>
+                  {{ pill(r.status, statusLabels) }}
+                  {% if r.screenshot %}<span class="text-muted" title="Has a screenshot">{{ icon('photo', 'size-4') }}<span class="sr-only">Has a screenshot</span></span>{% endif %}
+                </p>
+                <p class="mt-0.5 truncate text-sm text-muted">{{ r.message }}</p>
+              </div>
+              <div class="shrink-0 text-sm sm:text-right">
+                <p class="font-mono text-xs text-muted">{{ r.reference }}</p>
+                <p class="text-muted">{{ r.created_at | date({ month: 'short', day: 'numeric' }) }}{% if r.handled_by_name %} · {{ r.handled_by_name }}{% endif %}</p>
+              </div>
+            </div>
+            <span class="pointer-events-none absolute inset-0 ring-accent-500 ring-inset group-has-[a:focus-visible]:ring-3" aria-hidden="true"></span>
+          </li>
+        {% endfor %}
+      </ul>
+      {{ ui.pager(pager, 'requests') }}
+    {% else %}
+      <div class="rounded-3xl border-2 border-dashed border-line p-10 text-center">
+        <span class="icon-tile mx-auto">{{ icon('question', 'size-6') }}</span>
+        <p class="mt-4 text-lg font-semibold text-ink">{% if q %}Nothing matches “{{ q }}”{% elif tab == 'open' %}No open help requests{% elif tab == 'mine' %}You haven’t asked for help yet{% else %}No help requests yet{% endif %}</p>
+        <p class="mt-1 text-muted">{% if tab == 'mine' %}Use <a href="/portal/help/new" class="link">Get help</a> whenever something isn’t working or you’re not sure how to do something.{% else %}Requests staff send with “Get help” appear here.{% endif %}</p>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if showSettings %}
+    <section id="settings" class="mt-8 scroll-mt-24 rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="fwd-h">
+      <h2 id="fwd-h" class="text-lg font-bold">Settings: forward problem reports</h2>
+      <p class="mt-1 max-w-2xl text-[15px] text-muted">“Something isn’t working” reports are also emailed here, for example to your website developer or support company. They get the description, page, browser and error reference, but not the screenshot. Leave it empty to keep reports inside the portal.</p>
+      <form method="post" action="/portal/help/settings" class="mt-5 flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end" novalidate data-once>
+        <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+        <div class="flex-1">
+          <label for="forward_email" class="form-label">Developer / support email</label>
+          <input id="forward_email" type="email" name="forward_email" value="{{ forwardEmail }}" maxlength="191" autocomplete="off" placeholder="support@example.com" class="form-control mt-1">
+        </div>
+        <button type="submit" class="btn-green">Save</button>
+      </form>
+    </section>
+  {% endif %}
+{% endblock %}

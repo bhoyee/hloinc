@@ -68,7 +68,10 @@
       {% endif %}
     </nav>
 
-    <div class="border-t border-white/10 p-3">
+    <div class="space-y-0.5 border-t border-white/10 p-3">
+      <a href="/portal/help/new{% if helpFrom %}?from={{ helpFrom | urlencode }}{% endif %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/5 hover:text-white">
+        {{ icon('question', 'size-5 text-brand-300') }} Get help
+      </a>
       <a href="/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/5 hover:text-white">
         {{ icon('external', 'size-5 text-brand-300') }} View the website
       </a>
@@ -147,6 +150,7 @@
               <a href="/portal/account" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('users', 'size-5 text-muted') }} My account</a>
               <a href="/portal/account/two-step" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('device', 'size-5 text-muted') }} Two-step sign-in</a>
               <a href="/portal/notifications" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('megaphone', 'size-5 text-muted') }} Notifications</a>
+              <a href="/portal/help/new{% if helpFrom %}?from={{ helpFrom | urlencode }}{% endif %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink hover:bg-surface">{{ icon('question', 'size-5 text-muted') }} Get help</a>
               <form method="post" action="/portal/logout" class="mt-1 border-t border-line pt-1">
                 <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
                 <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-accent-700 hover:bg-accent-50">{{ icon('logout', 'size-5') }} Sign out</button>

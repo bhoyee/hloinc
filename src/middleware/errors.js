@@ -9,7 +9,9 @@ function notFound(req, res) {
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;
-  if (status >= 500) console.error(err);
+  // A reference staff can quote (and that "Report this problem" attaches), to find the error in the server log.
+  const errorRef = status >= 500 ? `ERR-${require('../lib/reference').make('help').slice(-6)}` : null;
+  if (status >= 500) console.error(`[${errorRef}] ${req.method} ${req.originalUrl}`, err);
 
   if (res.headersSent) return;
   res.status(status);
@@ -24,6 +26,8 @@ function errorHandler(err, req, res, next) {
     title: titles[status] || 'Something went wrong',
     status,
     message,
+    errorRef,
+    from: req.originalUrl.slice(0, 300),
     stack: config.isProd ? null : err.stack,
   });
 }

@@ -105,6 +105,7 @@ function createApp() {
   app.post('/careers/:slug/apply', limiters.applications, require('./routes/applicationUpload'));
   // Profile photos are multipart too.
   app.post('/portal/account/avatar', require('./routes/avatarUpload'));
+  app.post('/portal/help', require('./routes/helpUpload'));
   app.use(csrf());
   app.use(flashMiddleware);
   // Page content for the templates (published, or drafts in the visual editor).

@@ -1,0 +1,89 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% from "partials/help-status.njk" import pill %}
+{% from "partials/avatar.njk" import avatar %}
+
+{% block actions %}{{ pill(r.status, statusLabels) }}{% endblock %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="min-w-0 space-y-6">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="req-h">
+        <div class="flex items-start gap-4">
+          {{ avatar({ id: r.user_id, name: r.user_name, avatar: r.user_avatar }, 'size-12', 'text-base') }}
+          <div class="min-w-0">
+            <h2 id="req-h" class="text-lg font-bold">{{ 'You' if mine else r.user_name }} · {{ categories[r.category].label }}</h2>
+            <p class="text-sm text-muted">{{ r.created_at | dateTime }}</p>
+          </div>
+        </div>
+        <p class="mt-5 text-[16px] whitespace-pre-line text-ink">{{ r.message }}</p>
+        {% if r.screenshot %}
+          <a href="/portal/help/{{ r.id }}/screenshot" target="_blank" rel="noopener" class="mt-5 block overflow-hidden rounded-2xl ring-1 ring-line hover:ring-brand-300">
+            <img src="/portal/help/{{ r.id }}/screenshot" alt="Screenshot attached to the request" class="max-h-[28rem] w-full bg-surface object-contain object-left-top">
+          </a>
+          <p class="mt-1 text-xs text-muted">Click to open it full size.</p>
+        {% endif %}
+      </section>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="thread-h">
+        <h2 id="thread-h" class="text-lg font-bold">Replies</h2>
+        {% if thread.length %}
+          <ol class="mt-4 space-y-4">
+            {% for u in thread %}
+              <li class="flex gap-3">
+                {{ avatar({ id: u.user_id, name: u.user_name, avatar: u.user_avatar }, 'size-9') }}
+                <div class="min-w-0 flex-1 rounded-2xl p-4 {{ 'bg-surface' if u.user_id == r.user_id else 'bg-brand-50/60 ring-1 ring-brand-100' }}">
+                  <p class="flex flex-wrap items-center gap-x-2 text-sm">
+                    <span class="font-semibold text-ink">{{ 'You' if u.user_id == user.id else u.user_name }}</span>
+                    <span class="text-muted">{{ u.created_at | dateTime }}</span>
+                  </p>
+                  {% if u.status %}<p class="mt-1 text-sm text-muted">Changed the status to {{ pill(u.status, statusLabels) }}</p>{% endif %}
+                  {% if u.body %}<p class="mt-1.5 text-[15px] whitespace-pre-line text-ink">{{ u.body }}</p>{% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="mt-3 text-[15px] text-muted">{{ 'No replies yet. You’ll get a notification and an email when someone answers.' if mine else 'No replies yet.' }}</p>
+        {% endif %}
+
+        {% if mine or mayUpdate %}
+          <form method="post" action="/portal/help/{{ r.id }}/reply" class="mt-6 space-y-4 border-t border-line pt-6" novalidate data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            {{ ui.textarea('body', ('Reply to ' ~ r.user_name.split(' ')[0]) if not mine else ('Add something' if r.status != 'fixed' else 'Still not right? Tell us and it opens again'), values, errors, required=false, rows=4, maxlength=2000, hint=('They get it by notification and email.' if not mine else '')) }}
+            {% if mayUpdate %}
+              <fieldset>
+                <legend class="form-label">Status</legend>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  {% for key, label in statusLabels %}
+                    {% set tone = { open: 'has-[:checked]:bg-amber-500 has-[:checked]:text-white has-[:checked]:ring-amber-500 bg-amber-50 text-amber-900 ring-amber-200', in_progress: 'has-[:checked]:bg-[#2a78d6] has-[:checked]:text-white has-[:checked]:ring-[#2a78d6] bg-[#eaf2fc] text-[#1f5fae] ring-[#c4dbf6]', fixed: 'has-[:checked]:bg-brand-700 has-[:checked]:text-white has-[:checked]:ring-brand-700 bg-brand-50 text-brand-800 ring-brand-100' }[key] %}
+                    <label class="cursor-pointer rounded-xl px-4 py-2 text-sm font-semibold ring-1 transition {{ tone }} has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-accent-500">
+                      <input type="radio" name="status" value="{{ key }}" class="sr-only" {% if (values.status or r.status) == key %}checked{% endif %}> {{ label }}
+                    </label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+            {% endif %}
+            <button type="submit" class="btn-green">{{ icon('reply', 'size-4') }} {{ 'Save & send' if mayUpdate else 'Send' }}</button>
+          </form>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="space-y-4" aria-label="Details">
+      <section class="rounded-3xl border border-line bg-white p-6 text-[15px] shadow-soft" aria-labelledby="det-h">
+        <h2 id="det-h" class="font-semibold text-ink">Details</h2>
+        <dl class="mt-3 space-y-3">
+          <div><dt class="text-sm text-muted">Reference</dt><dd class="font-mono text-sm font-semibold text-ink">{{ r.reference }}</dd></div>
+          <div><dt class="text-sm text-muted">Status</dt><dd class="mt-0.5">{{ pill(r.status, statusLabels) }}{% if r.fixed_at %} <span class="text-sm text-muted">{{ r.fixed_at | dateTime }}</span>{% endif %}</dd></div>
+          <div><dt class="text-sm text-muted">Handled by</dt><dd class="text-ink">{{ r.handled_by_name or 'Nobody yet' }}</dd></div>
+          {% if r.page_url %}<div><dt class="text-sm text-muted">Page</dt><dd><a href="{{ r.page_url }}" class="link font-mono text-sm break-all">{{ r.page_url }}</a></dd></div>{% endif %}
+          <div><dt class="text-sm text-muted">Browser</dt><dd class="text-ink">{{ r.browser or 'Unknown' }}{% if r.screen %} · {{ r.screen }}{% endif %}</dd></div>
+          {% if r.error_ref %}<div><dt class="text-sm text-muted">Error reference</dt><dd class="font-mono text-sm font-semibold text-accent-700">{{ r.error_ref }}</dd></div>{% endif %}
+          {% if r.forwarded_at %}<div><dt class="text-sm text-muted">Forwarded to support</dt><dd class="text-ink">{{ r.forwarded_at | dateTime }}</dd></div>{% endif %}
+        </dl>
+      </section>
+      <a href="/portal/help{{ '?tab=mine' if mine }}" class="btn-secondary w-full">&larr; All {{ 'my ' if mine }}requests</a>
+    </aside>
+  </div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "layouts/portal.njk" %}
+{% import "partials/ui.njk" as ui %}
+{% from "partials/help-status.njk" import pill %}
+
+{% block content %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <form method="post" action="/portal/help" enctype="multipart/form-data" class="space-y-6" novalidate data-once>
+      {{ ui.errorSummary(errors) }}
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <input type="hidden" name="from" value="{{ values.from }}">
+      <input type="hidden" name="error_ref" value="{{ values.error_ref }}">
+      <input type="hidden" name="screen" value="" data-help-screen>
+
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="what-h">
+        <fieldset>
+          <legend id="what-h" class="text-lg font-bold">What’s it about?</legend>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            {% for key, c in categories %}
+              <label class="relative flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-white p-4 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:ring-1 has-[:checked]:ring-brand-600">
+                <input type="radio" name="category" value="{{ key }}" class="sr-only" {% if values.category == key %}checked{% endif %} {% if errors.category %}aria-invalid="true" aria-describedby="category-error"{% endif %}>
+                <span class="grid size-10 shrink-0 place-items-center rounded-xl {{ 'bg-accent-50 text-accent-700' if key == 'broken' else 'bg-brand-50 text-brand-700' }}" aria-hidden="true">{{ icon(c.icon, 'size-5') }}</span>
+                <span>
+                  <span class="block font-semibold text-ink">{{ c.label }}</span>
+                  <span class="mt-0.5 block text-sm text-muted">{{ c.hint }}</span>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          {{ ui.fieldError('category', errors) }}
+        </fieldset>
+
+        <div class="mt-6">
+          {{ ui.textarea('message', 'What happened, or what do you need?', values, errors, required=true, rows=6, maxlength=3000, hint='What were you trying to do, and what did you see? If there was an error message, copy it here.') }}
+        </div>
+
+        <div class="mt-6">
+          <label for="screenshot" class="form-label">Screenshot <span class="font-normal text-muted">(optional)</span></label>
+          <p id="screenshot-hint" class="form-hint">A picture of the screen often explains it best. PNG, JPG, WebP or GIF, up to 5 MB.</p>
+          <input id="screenshot" type="file" name="screenshot" accept="image/png,image/jpeg,image/webp,image/gif"
+                 class="mt-2 block w-full text-sm text-muted file:mr-4 file:rounded-xl file:border-0 file:bg-brand-50 file:px-4 file:py-2.5 file:font-semibold file:text-brand-800 hover:file:bg-brand-100"
+                 aria-describedby="screenshot-hint{% if errors.screenshot %} screenshot-error{% endif %}" {% if errors.screenshot %}aria-invalid="true"{% endif %}>
+          {{ ui.fieldError('screenshot', errors) }}
+        </div>
+
+        <p class="mt-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900">
+          {{ icon('lock', 'mt-0.5 size-5 shrink-0') }}
+          <span>Please <strong>don’t include client names or personal details</strong>. Problem reports may be sent on to our website developer.</span>
+        </p>
+
+        <button type="submit" class="btn-green mt-6">{{ icon('check', 'size-4') }} Send</button>
+      </section>
+    </form>
+
+    <aside class="space-y-4" aria-label="About your request">
+      <section class="rounded-3xl border border-line bg-white p-6 text-[15px] shadow-soft">
+        <h2 class="font-semibold text-ink">Sent along automatically</h2>
+        <ul class="mt-3 space-y-2 text-muted">
+          <li class="flex gap-2">{{ icon('users', 'mt-0.5 size-4 shrink-0 text-brand-700') }} Your name and role</li>
+          <li class="flex gap-2">{{ icon('link', 'mt-0.5 size-4 shrink-0 text-brand-700') }} <span>The page you were on{% if values.from %}<span class="block font-mono text-sm break-all text-ink">{{ values.from }}</span>{% endif %}</span></li>
+          <li class="flex gap-2">{{ icon('device', 'mt-0.5 size-4 shrink-0 text-brand-700') }} Your browser and screen size</li>
+          {% if values.error_ref %}<li class="flex gap-2">{{ icon('exclamation', 'mt-0.5 size-4 shrink-0 text-accent-600') }} Error reference <span class="font-mono text-sm font-semibold text-ink">{{ values.error_ref }}</span></li>{% endif %}
+        </ul>
+        <p class="mt-4 text-sm text-muted">IT and the Admin team get a notification and an email. You’ll hear back here and by email.</p>
+      </section>
+
+      {% if recent.length %}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="recent-h">
+          <h2 id="recent-h" class="font-semibold text-ink">Your recent requests</h2>
+          <ul class="mt-3 space-y-2">
+            {% for r in recent %}
+              <li>
+                <a href="/portal/help/{{ r.id }}" class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ring-1 ring-line hover:bg-surface">
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-semibold text-ink">{{ categories[r.category].label }}</span>
+                    <span class="block text-xs text-muted">{{ r.created_at | date({ month: 'short', day: 'numeric' }) }} · {{ r.reference }}</span>
+                  </span>
+                  {{ pill(r.status, statusLabels) }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+          <a href="/portal/help?tab=mine" class="link mt-3 inline-block text-sm">All my requests</a>
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

@@ -421,6 +421,15 @@ document.addEventListener('DOMContentLoaded', () => {
     showSelected();
   });
 
+  // Selects that apply as soon as they change (e.g. the report month); their Show button is then not needed.
+  for (const select of document.querySelectorAll('select[data-auto-submit]')) {
+    select.form?.querySelector('[data-auto-submit-hide]')?.classList.add('hidden');
+    select.addEventListener('change', () => select.form.requestSubmit());
+  }
+
+  // Get help: send the window size along, to help reproduce layout problems.
+  for (const input of document.querySelectorAll('[data-help-screen]')) input.value = `${window.innerWidth}×${window.innerHeight}`;
+
   // Dashboard appointments widget: Week/Month, arrows and days swap the widget in place.
   const apptWidget = () => document.querySelector('[data-appt-widget]');
   async function loadAppointments(url, { focus } = {}) {

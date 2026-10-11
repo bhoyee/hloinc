@@ -10,6 +10,7 @@
  *                 team). Goes down when someone confirms or cancels one.
  *   Schedule      time-off requests waiting for this person to decide on.
  *   Applications  job applications nobody has opened yet.
+ *   Help requests help requests nobody has picked up yet (people who deal with them).
  * Refreshed with each page and every 30 seconds by the notification poll.
  */
 const db = require('../db/knex');
@@ -34,10 +35,12 @@ async function waitingRequests(user) {
   return Number(row.n);
 }
 
-/** { messages, appointments, timeOff, applications } for this person (null where their role has no access). */
+/** { messages, appointments, timeOff, applications, support } for this person (null where their role has no access). */
 async function forUser(user) {
-  const [m, a, t, j] = await Promise.all([unreadMessages(user), waitingRequests(user), require('./timeOff').pendingFor(user), require('./applications').newCount(user)]);
-  return { messages: m, appointments: a, timeOff: t, applications: j };
+  const [m, a, t, j, s] = await Promise.all([
+    unreadMessages(user), waitingRequests(user), require('./timeOff').pendingFor(user), require('./applications').newCount(user), require('./support').openCount(user),
+  ]);
+  return { messages: m, appointments: a, timeOff: t, applications: j, support: s };
 }
 
 /** Record that this person has opened a message. */

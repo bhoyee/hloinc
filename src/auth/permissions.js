@@ -102,6 +102,7 @@ const MODULES = [
     label: 'Dashboard analytics',
     description: 'Charts and trends on the dashboard (only for the areas the role can already see).',
     actions: ['view'],
+    extras: { monthly: 'Monthly report (PDF and CSV): counts for every area, no names' },
     labels: { view: 'See charts' },
   },
   {
@@ -110,6 +111,14 @@ const MODULES = [
     description: 'Portal-wide security, such as switching two-step sign-in on or off for everyone.',
     actions: ['edit'],
     labels: { edit: 'Change' },
+  },
+  {
+    key: 'support',
+    label: 'Help requests',
+    description: 'Problems and questions staff send with “Get help”. Everyone can send one and see their own; this is for the people who deal with them.',
+    actions: ['view', 'edit'],
+    extras: { settings: 'Choose the developer/support email that problem reports are forwarded to' },
+    labels: { view: 'See everyone’s', edit: 'Reply & update status' },
   },
   {
     key: 'audit',
@@ -140,7 +149,7 @@ function normalize(keys) {
   const set = new Set([].concat(keys || []).filter((k) => VALID.has(k)));
   for (const m of MODULES) {
     const has = (a) => set.has(`${m.key}.${a}`);
-    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end'].some(has);
+    const needsView = m.actions.filter((a) => a !== 'view').some(has) || ['log', 'edit_limited', 'manage_types', 'export', 'approve_time_off', 'applications', 'pause', 'end', 'settings', 'monthly'].some(has);
     if (needsView && m.actions.includes('view') && !(m.key === 'messages' && INBOX_PERMISSIONS.some((k) => set.has(k)) && !has('view'))) {
       set.add(`${m.key}.view`);
     }
@@ -164,7 +173,7 @@ const DEFAULT_ROLES = [
     name: 'IT Administrator',
     description: 'Keeps staff able to sign in: invites, password and two-step resets, deactivation. No access to client information.',
     require_mfa: true,
-    permissions: ['accounts.view', 'accounts.edit', 'accounts.archive', 'accounts.manage_all', 'roles.view', 'audit.view'],
+    permissions: ['accounts.view', 'accounts.edit', 'accounts.archive', 'accounts.manage_all', 'roles.view', 'support.view', 'support.edit', 'audit.view'],
   },
   {
     key: 'program_director',
