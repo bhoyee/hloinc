@@ -1,0 +1,8 @@
+{# A person's profile photo, or their initials in their own colour. p needs id, name and avatar. #}
+{% macro avatar(p, size='size-9', text='text-sm') %}
+  {% if p.avatar %}
+    <img src="/portal/avatars/{{ p.id }}?v={{ p.avatar }}" alt="" width="256" height="256" loading="lazy" class="{{ size }} shrink-0 rounded-full object-cover ring-1 ring-line">
+  {% else %}
+    <span class="grid {{ size }} shrink-0 place-items-center rounded-full {{ text }} font-bold text-white {{ p.name | avatarColor }}" aria-hidden="true">{{ p.name | initials }}</span>
+  {% endif %}
+{% endmacro %}

@@ -37,7 +37,7 @@ const can = (perm) => requirePermission(perm);
 router.get('/', async (req, res) => {
   const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
   const roleLabels = await roles.labels();
-  const filters = { q: str(req.query.q), role: roleLabels[req.query.role] ? req.query.role : '', status: ['active', 'deactivated'].includes(req.query.status) ? req.query.status : '' };
+  const filters = { q: str(req.query.q), role: roleLabels[req.query.role] ? req.query.role : '', status: ['active', 'suspended', 'deactivated'].includes(req.query.status) ? req.query.status : '' };
   const perPage = await perPageFor(req);
   const result = await users.list({ ...filters, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/accounts?${new URLSearchParams(Object.entries({ ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
@@ -137,7 +137,7 @@ const manage = (perm) => [
 /** Refuse changes that would leave HLO without an active Admin. */
 async function wouldRemoveLastAdmin(account, { newRole, newStatus } = {}) {
   if (account.role !== ADMIN_ROLE || account.status !== 'active') return false;
-  const losesAdmin = (newRole && newRole !== ADMIN_ROLE) || newStatus === 'deactivated' || newStatus === 'deleted';
+  const losesAdmin = (newRole && newRole !== ADMIN_ROLE) || ['deactivated', 'suspended', 'deleted'].includes(newStatus);
   return losesAdmin && (await users.countActiveAdmins()) <= 1;
 }
 
@@ -155,10 +155,10 @@ async function renderShow(req, res, { values, errors = {}, status = 200 } = {}) 
     .select('action', 'user_name', 'summary', 'created_at')
     .where((q) => q.where({ entity_type: 'user', entity_id: String(account.id) }).orWhere({ user_id: account.id }))
     .orderBy('id', 'desc')
-    .limit(10);
+    .limit(50);
   res.status(status).render('pages/portal/accounts/show.njk', {
     title: account.name,
-    subheading: `${roleLabels[account.role]} · ${account.status === 'active' ? 'Active' : 'Deactivated'}`,
+    subheading: `${roleLabels[account.role]} · ${{ active: 'Active', suspended: 'Suspended', deactivated: 'Deactivated' }[account.status]}`,
     crumbs,
     account,
     isSelf: req.isSelf,
@@ -247,9 +247,27 @@ router.post('/:id/sign-out', manage('accounts.edit'), async (req, res) => {
   back(req, res, 'success', `${req.account.name} has been signed out on every device.`);
 });
 
+router.post('/:id/suspend', manage('accounts.archive'), async (req, res) => {
+  if (req.isSelf) return back(req, res, 'error', 'You can’t suspend your own account.');
+  if (req.account.status !== 'active') return back(req, res, 'error', 'Only an active account can be suspended.');
+  if (await wouldRemoveLastAdmin(req.account, { newStatus: 'suspended' })) return back(req, res, 'error', 'This is the only active Admin. Make someone else an Admin first.');
+  const reason = String(req.body.reason || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+  await users.setStatus(req.account.id, 'suspended', { reason, by: req.user.name });
+  await tokens.revokeAll(req.account.id);
+  await audit(req, { action: 'account.suspend', entityType: 'user', entityId: req.account.id, summary: `${req.user.name} suspended ${req.account.name}’s account${reason ? ` (${reason})` : ''}`, metadata: { reason } });
+  back(req, res, 'success', `${req.account.name} is suspended: signed out and unable to sign in until you lift the suspension.`);
+});
+
+router.post('/:id/unsuspend', manage('accounts.archive'), async (req, res) => {
+  if (req.account.status !== 'suspended') return back(req, res, 'error', 'This account isn’t suspended.');
+  await users.setStatus(req.account.id, 'active');
+  await audit(req, { action: 'account.unsuspend', entityType: 'user', entityId: req.account.id, summary: `${req.user.name} lifted the suspension on ${req.account.name}’s account` });
+  back(req, res, 'success', `Suspension lifted. ${req.account.name} can sign in again.`);
+});
+
 router.post('/:id/deactivate', manage('accounts.archive'), async (req, res) => {
   if (req.isSelf) return back(req, res, 'error', 'You can’t deactivate your own account.');
-  if (req.account.status !== 'active') return back(req, res, 'error', 'This account is already deactivated.');
+  if (req.account.status === 'deactivated') return back(req, res, 'error', 'This account is already deactivated.');
   if (await wouldRemoveLastAdmin(req.account, { newStatus: 'deactivated' })) return back(req, res, 'error', 'This is the only active Admin. Make someone else an Admin first.');
   await users.setStatus(req.account.id, 'deactivated');
   await tokens.revokeAll(req.account.id);

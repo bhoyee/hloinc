@@ -1,5 +1,6 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
+{% import "partials/avatar.njk" as av %}
 
 {# Macros can't see the page's variables, so the account id and CSRF token are passed in. #}
 {% macro action(id, csrf, path, label, iconName, style='btn-secondary', note='') %}
@@ -11,7 +12,13 @@
 {% endmacro %}
 
 {% block content %}
-  {% if account.status != 'active' %}
+  {% if account.status == 'suspended' %}
+    <div class="mb-6 flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-950" role="status">
+      {{ icon('lock', 'mt-0.5 size-5 shrink-0') }}
+      <p><strong>This account is suspended</strong>{% if account.suspended_at %} since {{ account.suspended_at | date({ month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) }}{% endif %}{% if account.suspended_by_name %} by {{ account.suspended_by_name }}{% endif %}. The person can’t sign in until the suspension is lifted. Everything else is kept.
+      {% if account.suspended_reason %}<span class="mt-1 block"><span class="font-semibold">Reason:</span> {{ account.suspended_reason }}</span>{% endif %}</p>
+    </div>
+  {% elif account.status != 'active' %}
     <p class="mb-6 flex gap-3 rounded-2xl border border-line bg-white p-4 text-[15px] text-ink shadow-soft" role="status">
       {{ icon('lock', 'mt-0.5 size-5 shrink-0 text-muted') }} This account is deactivated{% if account.deactivated_at %} (since {{ account.deactivated_at | date }}){% endif %}. The person can’t sign in, and their history is kept.
     </p>
@@ -23,7 +30,13 @@
 
   <div class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
     <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="details-h">
-      <h2 id="details-h" class="text-lg font-bold">Details and role</h2>
+      <div class="flex items-center gap-4">
+        {{ av.avatar(account, 'size-14', 'text-lg') }}
+        <div class="min-w-0">
+          <h2 id="details-h" class="text-lg font-bold">Details and role</h2>
+          <p class="text-sm text-muted">{{ 'Profile photo set by ' + ('you' if isSelf else account.name) if account.avatar else 'No profile photo yet. Each person adds their own under My account.' }}</p>
+        </div>
+      </div>
       {% set editable = can('accounts.edit') and canManage %}
       {% if not editable %}
         <p class="mt-4 flex gap-3 rounded-2xl bg-surface p-4 text-[15px] text-muted ring-1 ring-line">{{ icon('lock', 'mt-0.5 size-5 shrink-0') }}
@@ -66,22 +79,35 @@
             {% if invitePending %}
               {{ action(account.id, csrfToken(), 'resend-invite', 'Resend invitation', 'mail') }}
             {% else %}
-              {{ action(account.id, csrfToken(), 'send-reset', 'Send password reset link', 'key', note='Signs them out everywhere and emails a one-time link.') }}
+              {{ action(account.id, csrfToken(), 'send-reset', 'Send password reset link', 'key', 'btn-primary', note='Signs them out everywhere and emails a one-time link.') }}
             {% endif %}
             {% if account.mfa_enabled %}
-              {{ action(account.id, csrfToken(), 'reset-two-step', 'Reset two-step sign-in', 'device', note='For a lost or replaced phone.') }}
+              {{ action(account.id, csrfToken(), 'reset-two-step', 'Reset two-step sign-in', 'device', 'btn-primary', note='For a lost or replaced phone.') }}
             {% endif %}
-            {{ action(account.id, csrfToken(), 'sign-out', 'Sign out everywhere', 'logout') }}
+            {{ action(account.id, csrfToken(), 'sign-out', 'Sign out everywhere', 'logout', 'btn-primary') }}
           </div>
         {% endif %}
       </section>
 
       {% if not isSelf and canManage and (can('accounts.archive') or can('accounts.delete')) %}
         <section class="rounded-3xl border border-accent-200 bg-white p-6 shadow-soft" aria-labelledby="danger-h">
-          <h2 id="danger-h" class="text-lg font-bold text-accent-700">Deactivate or delete</h2>
+          <h2 id="danger-h" class="text-lg font-bold text-accent-700">Suspend, deactivate or delete</h2>
           {% if account.status == 'active' and can('accounts.archive') %}
-            <p class="mt-2 text-[15px] text-muted">Deactivating stops sign-in straight away and keeps all history. You can reactivate later.</p>
-            <div class="mt-4">{{ action(account.id, csrfToken(), 'deactivate', 'Deactivate account', 'lock', 'btn-secondary !text-accent-700 !ring-accent-200') }}</div>
+            <form method="post" action="/portal/accounts/{{ account.id }}/suspend" class="mt-3" data-confirm="{{ account.name }} will be signed out and can’t sign in until you lift the suspension." data-confirm-title="Suspend this account?" data-confirm-button="Suspend">
+              <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+              <p class="text-[15px] text-muted"><strong class="text-ink">Suspend</strong> blocks sign-in for now (for example during a review) and keeps everything. Lift it any time.</p>
+              <label for="f-reason" class="form-label mt-3">Reason <span class="font-normal text-muted">(optional, staff only)</span></label>
+              <input id="f-reason" name="reason" class="form-control" maxlength="300" autocomplete="off">
+              <button type="submit" class="btn mt-3 w-full justify-start !rounded-2xl !px-4 bg-amber-100 text-amber-950 ring-1 ring-amber-300 ring-inset hover:bg-amber-200">{{ icon('pause', 'size-4') }} Suspend account</button>
+            </form>
+            <p class="mt-5 border-t border-line pt-4 text-[15px] text-muted"><strong class="text-ink">Deactivate</strong> is for someone who has left: it stops sign-in and keeps all history. You can reactivate later.</p>
+            <div class="mt-3">{{ action(account.id, csrfToken(), 'deactivate', 'Deactivate account', 'lock', 'btn-secondary !text-accent-700 !ring-accent-200') }}</div>
+          {% elif account.status == 'suspended' %}
+            {% if can('accounts.archive') %}
+              <div class="mt-4">{{ action(account.id, csrfToken(), 'unsuspend', 'Lift suspension', 'play', 'btn-green') }}</div>
+              <p class="mt-5 border-t border-line pt-4 text-[15px] text-muted">If they’ve left, deactivate the account instead.</p>
+              <div class="mt-3">{{ action(account.id, csrfToken(), 'deactivate', 'Deactivate account', 'lock', 'btn-secondary !text-accent-700 !ring-accent-200') }}</div>
+            {% endif %}
           {% elif account.status != 'active' %}
             {% if can('accounts.archive') %}<div class="mt-4">{{ action(account.id, csrfToken(), 'reactivate', 'Reactivate account', 'refresh', 'btn-green') }}</div>{% endif %}
             {% if can('accounts.delete') %}
@@ -100,9 +126,12 @@
   </div>
 
   <section class="mt-6 rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="activity-h">
-    <h2 id="activity-h" class="text-lg font-bold">Recent activity</h2>
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 id="activity-h" class="text-lg font-bold">Recent activity</h2>
+      {% if activity.length %}<p class="text-sm text-muted">Latest {{ activity.length }}{% if can('audit.view') %} · <a href="/portal/audit?q={{ account.name | urlencode }}" class="font-semibold text-brand-700 hover:underline">Full audit log</a>{% endif %}</p>{% endif %}
+    </div>
     {% if activity.length %}
-      <ul class="mt-4 divide-y divide-line">
+      <ul class="scroll-panel mt-4 max-h-[26rem] divide-y divide-line overflow-y-auto pr-2" tabindex="0" aria-label="Recent activity (scrolls)">
         {% for e in activity %}
           <li class="flex flex-col gap-1 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <p class="text-[15px] text-ink">{{ e.summary or e.action }}</p>

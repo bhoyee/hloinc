@@ -1,5 +1,6 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
+{% import "partials/avatar.njk" as av %}
 
 {% block actions %}
   <div class="flex flex-wrap gap-2">
@@ -27,6 +28,7 @@
       <select id="f-status" name="status" class="form-control">
         <option value="">Any status</option>
         <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="suspended" {% if filters.status == 'suspended' %}selected{% endif %}>Suspended</option>
         <option value="deactivated" {% if filters.status == 'deactivated' %}selected{% endif %}>Deactivated</option>
       </select>
     </div>
@@ -55,13 +57,19 @@
           {% for u in users %}
             <tr class="transition-colors hover:bg-surface">
               <th scope="row" class="px-5 py-4 font-normal">
-                <a href="/portal/accounts/{{ u.id }}" class="font-semibold text-ink hover:text-brand-700">{{ u.name }}</a>
-                {% if u.id == user.id %}<span class="ml-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800">You</span>{% endif %}
-                <span class="block text-sm text-muted">{{ u.email }}</span>
+                <div class="flex items-center gap-3">
+                  {{ av.avatar(u, 'size-10') }}
+                  <div class="min-w-0">
+                    <a href="/portal/accounts/{{ u.id }}" class="font-semibold text-ink hover:text-brand-700">{{ u.name }}</a>
+                    {% if u.id == user.id %}<span class="ml-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800">You</span>{% endif %}
+                    <span class="block text-sm text-muted">{{ u.email }}</span>
+                  </div>
+                </div>
               </th>
               <td class="px-5 py-4">{{ roleLabels[u.role] }}</td>
               <td class="px-5 py-4">
-                {% if u.status != 'active' %}<span class="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted ring-1 ring-line">Deactivated</span>
+                {% if u.status == 'suspended' %}<span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">Suspended</span>
+                {% elif u.status != 'active' %}<span class="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted ring-1 ring-line">Deactivated</span>
                 {% elif u.must_change_password %}<span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">Invited</span>
                 {% else %}<span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 ring-brand-100">Active</span>{% endif %}
               </td>

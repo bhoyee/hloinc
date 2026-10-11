@@ -130,7 +130,8 @@
           {# Profile menu #}
           <div class="relative" data-dropdown>
             <button type="button" class="flex items-center gap-2.5 rounded-xl p-1 pr-1.5 hover:bg-surface sm:pr-3" aria-haspopup="true" aria-expanded="false" aria-controls="user-panel" data-dropdown-button>
-              <span class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white" aria-hidden="true">{{ user.name | first | upper }}</span>
+              {% if user.avatar %}<img src="/portal/avatars/{{ user.id }}?v={{ user.avatar }}" alt="" width="256" height="256" class="size-9 shrink-0 rounded-full object-cover ring-1 ring-line">
+              {% else %}<span class="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white {{ user.name | avatarColor }}" aria-hidden="true">{{ user.name | initials }}</span>{% endif %}
               <span class="hidden min-w-0 text-left sm:block">
                 <span class="block max-w-[10rem] truncate text-sm font-semibold text-ink">{{ user.name }}</span>
                 <span class="block max-w-[10rem] truncate text-xs text-muted">{{ user.roleLabel }}</span>

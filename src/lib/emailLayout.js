@@ -94,7 +94,7 @@ function bodyToHtml(text) {
 function render({ subject, text, business, cta, footnote }) {
   const b = business;
   const siteUrl = config.appUrl;
-  const logo = `${siteUrl}/img/logo.png`;
+  const logo = `${siteUrl}/img/logo.png?v=3`;
   const address = [b.address && b.address.street, b.address && [b.address.city, b.address.state].filter(Boolean).join(', ') + (b.address.zip ? ` ${b.address.zip}` : '')]
     .filter(Boolean)
     .join(', ');

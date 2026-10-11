@@ -30,6 +30,8 @@ function createApp() {
   env.addGlobal('currentYear', new Date().getFullYear());
   env.addGlobal('cms', cms.helpers);
   env.addGlobal('icon', (name, className) => new nunjucks.runtime.SafeString(icon(name, className)));
+  env.addFilter('initials', (name) => require('./lib/avatar').initials(name));
+  env.addFilter('avatarColor', (name) => require('./lib/avatar').color(name));
   env.addFilter('telHref', (phone) => `tel:+1${String(phone).replace(/\D/g, '').replace(/^1/, '')}`);
   env.addFilter('richText', (text) => new nunjucks.runtime.SafeString(richText(text)));
   env.addFilter('highlight', (text, query) => new nunjucks.runtime.SafeString(highlight(text, query)));
@@ -98,6 +100,8 @@ function createApp() {
   app.use(sessionMiddleware());
   // Job applications are multipart (with a resume), so read them here for the CSRF check below.
   app.post('/careers/:slug/apply', limiters.applications, require('./routes/applicationUpload'));
+  // Profile photos are multipart too.
+  app.post('/portal/account/avatar', require('./routes/avatarUpload'));
   app.use(csrf());
   app.use(flashMiddleware);
   // Page content for the templates (published, or drafts in the visual editor).

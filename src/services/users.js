@@ -19,6 +19,10 @@ const PUBLIC_COLUMNS = [
   'page_size',
   'password_changed_at',
   'deactivated_at',
+  'suspended_at',
+  'suspended_reason',
+  'suspended_by_name',
+  'avatar',
   'created_at',
   'updated_at',
 ];
@@ -131,12 +135,16 @@ async function update(id, changes) {
   return findById(id);
 }
 
-async function setStatus(id, status) {
+/** Active, deactivated (left) or suspended (a temporary block, with who and why). Signs them out. */
+async function setStatus(id, status, { reason = null, by = null } = {}) {
   await db('users')
     .where({ id })
     .update({
       status,
       deactivated_at: status === 'deactivated' ? db.fn.now() : null,
+      suspended_at: status === 'suspended' ? db.fn.now() : null,
+      suspended_reason: status === 'suspended' ? reason || null : null,
+      suspended_by_name: status === 'suspended' ? by || null : null,
       session_version: db.raw('session_version + 1'),
     });
   return findById(id);

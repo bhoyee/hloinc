@@ -47,6 +47,15 @@ router.use('/appointments', requirePermission(['appointments.view', 'appointment
 router.use('/schedule/time-off', require('./timeOff')); // everyone can ask for time off
 router.use('/schedule', require('./schedule')); // everyone sees their own shifts
 router.use('/jobs', requirePermission('jobs.view'), require('./jobs'));
+
+// Profile photos: only for signed-in staff. ?v=<file> changes with each new photo, so it can be cached.
+router.get('/avatars/:id', async (req, res, next) => {
+  const row = /^\d+$/.test(req.params.id) ? await require('../../db/knex')('users').where({ id: Number(req.params.id) }).first('avatar') : null;
+  const file = row && require('../../services/avatars').fileFor(row.avatar);
+  if (!file) return next();
+  res.set('Cache-Control', 'private, max-age=86400');
+  res.sendFile(file, { headers: { 'Content-Type': 'image/webp', 'X-Content-Type-Options': 'nosniff' } }, (err) => err && next());
+});
 router.use('/applications', requirePermission('jobs.applications'), require('./applications'));
 router.use('/announcements', requirePermission('announcements.view'), require('./announcements'));
 router.use('/content', requirePermission(['site_content.view', 'site_content.edit', 'site_content.edit_limited']), require('./content'));

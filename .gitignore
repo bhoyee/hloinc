@@ -14,3 +14,4 @@ coverage/
 # Job application resumes (encrypted) and scanner scratch files: never in git.
 storage/applications/
 storage/tmp/
+storage/avatars/

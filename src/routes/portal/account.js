@@ -14,6 +14,30 @@ const { profileSchema, changePasswordSchema, mfaCodeSchema } = require('../../va
 const router = express.Router();
 const crumbs = [{ label: 'Dashboard', href: '/portal' }];
 
+// --- Profile photo ------------------------------------------------------------------
+
+router.post('/avatar', async (req, res) => {
+  const avatars = require('../../services/avatars');
+  try {
+    if (req.uploadError) throw Object.assign(new Error(req.uploadError), { status: 422 });
+    await avatars.save(req.user.id, req.file);
+  } catch (err) {
+    if (err.status !== 422) throw err;
+    setFlash(req, 'error', err.message);
+    return res.redirect(303, '/portal/account');
+  }
+  await audit(req, { action: 'profile.photo', entityType: 'user', entityId: req.user.id, summary: `${req.user.name} changed their profile photo` });
+  setFlash(req, 'success', 'Your profile photo has been updated.');
+  res.redirect(303, '/portal/account');
+});
+
+router.post('/avatar/remove', async (req, res) => {
+  await require('../../services/avatars').remove(req.user.id);
+  await audit(req, { action: 'profile.photo', entityType: 'user', entityId: req.user.id, summary: `${req.user.name} removed their profile photo` });
+  setFlash(req, 'success', 'Your profile photo has been removed.');
+  res.redirect(303, '/portal/account');
+});
+
 // --- Overview, profile and password -------------------------------------------
 
 async function renderAccount(req, res, { values, errors = {}, passwordErrors = {}, status = 200 } = {}) {
