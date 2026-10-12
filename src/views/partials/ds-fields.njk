@@ -1,0 +1,56 @@
+{# Form fields in the design's style, with the server's error messages. #}
+{% import "partials/ds.njk" as ds %}
+
+{% macro invalid(name, errors) %}{% if errors[name] %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
+
+{% macro text(id, name, label, values, errors, required=false, type='text', autocomplete='', maxlength=120, hint='') %}
+  <div class="d-field"><label for="{{ id }}">{{ label }}{% if required %} <span class="d-req">*</span>{% endif %}</label>
+    <input name="{{ name }}" type="{{ type }}" id="{{ id }}" value="{{ values[name] }}" maxlength="{{ 20 if type == 'tel' else maxlength }}"{% if type == 'tel' %} inputmode="tel"{% endif %}{% if required %} required{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{{ invalid(name, errors) }}>
+    {% if hint %}<div class="d-hint">{{ hint }}</div>{% endif %}{{ ds.err(name, errors) }}</div>
+{% endmacro %}
+
+{# options: { value: 'Label' } or a list of strings (value = label). #}
+{% macro select(id, name, label, values, errors, options, required=false, hint='') %}
+  <div class="d-field"><label for="{{ id }}">{{ label }}{% if required %} <span class="d-req">*</span>{% endif %}</label>
+    <select id="{{ id }}" name="{{ name }}"{% if required %} required{% endif %}{{ invalid(name, errors) }}>
+      <option value="">Select…</option>
+      {% if options.length is defined %}
+        {% for o in options %}<option value="{{ o }}"{% if values[name] == o %} selected{% endif %}>{{ o }}</option>{% endfor %}
+      {% else %}
+        {% for v, l in options %}<option value="{{ v }}"{% if values[name] == v %} selected{% endif %}>{{ l }}</option>{% endfor %}
+      {% endif %}
+    </select>
+    {% if hint %}<div class="d-hint">{{ hint }}</div>{% endif %}{{ ds.err(name, errors) }}</div>
+{% endmacro %}
+
+{# The services checkboxes, plus "Not sure yet" (sent as no service chosen). #}
+{% macro services(groupId, label, values, errors, list) %}
+  <div class="d-field" role="group" aria-labelledby="{{ groupId }}"><span class="d-lbl" id="{{ groupId }}">{{ label }}</span>
+    <div class="d-choice">
+      {% for s in list %}<label><input type="checkbox" name="services" value="{{ s.slug }}"{% if s.slug in values.services %} checked{% endif %}> {{ s.name }}</label>{% endfor %}
+      <label><input type="checkbox" name="services_not_sure" value="yes"{% if values.services_not_sure %} checked{% endif %}> Not sure yet</label>
+    </div>{{ ds.err('services', errors) }}</div>
+{% endmacro %}
+
+{# Progress, buttons and the review step shared by both three-step forms. #}
+{% macro progress(labels) %}
+  <ol class="d-wiz-progress" aria-label="Form progress">{% for l in labels %}<li><span class="d-dot">{{ loop.index }}</span><span class="d-lbl">{{ l }}</span></li>{% endfor %}</ol>
+{% endmacro %}
+
+{% macro actions(submitLabel) %}
+  <div class="d-form-actions d-wiz-actions">
+    <button class="d-btn d-btn-ghost d-wiz-back" type="button" hidden>Back</button>
+    <button class="d-btn d-btn-primary d-wiz-next" type="button">Continue</button>
+    <button class="d-btn d-btn-primary d-wiz-submit" type="submit">{{ submitLabel }}</button>
+  </div>
+{% endmacro %}
+
+{% macro success(flash, again) %}
+  <div class="d-success">
+    <svg class="d-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg>
+    <h2 class="d-s-title">Thank you. We have it.</h2>
+    <p class="d-s-text">{{ flash.message }}</p>
+    <p class="d-s-text">A member of our team will follow up during office hours, Monday to Friday, 9am to 5pm.</p>
+    <div class="d-s-actions"><a class="d-btn d-btn-dark" href="/">Back to home</a><a class="d-btn d-btn-ghost" href="{{ again }}">Start another</a></div>
+  </div>
+{% endmacro %}

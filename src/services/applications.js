@@ -128,6 +128,7 @@ async function submit(job, data, file, { ip }) {
     last_name: data.last_name,
     email: data.email,
     phone: data.phone,
+    cell: data.cell || null,
     cover_note: data.cover_note || null,
     resume_name: tidyName(file.originalname, type),
     resume_type: type,

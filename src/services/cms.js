@@ -55,6 +55,8 @@ const PAGES = [
   { key: 'data-protection', label: 'Data Protection', path: '/data-protection', group: 'Legal' },
   { key: 'cookies', label: 'Cookie Policy', path: '/cookies', group: 'Legal' },
 ];
+// Pages not in HLO's current design: kept (and their saved text), but not offered in the editor.
+const HIDDEN_PAGES = new Set(['service-areas', 'getting-started', 'appointment-request', ...services.map((s) => `service-${s.slug}`)]);
 const SITE_DOC = 'site'; // header, footer and shared sections
 const DOC_KEYS = new Set([...PAGES.map((p) => p.key), SITE_DOC]);
 
@@ -69,7 +71,7 @@ function canEditDoc(user, docKey) {
 
 /** Pages this person can open in the editor (viewing needs site_content.view). */
 function pagesFor(user) {
-  return PAGES.map((p) => ({ ...p, editable: canEditDoc(user, p.key) })).filter((p) => p.editable || can(user, 'site_content.view'));
+  return PAGES.filter((p) => !HIDDEN_PAGES.has(p.key)).map((p) => ({ ...p, editable: canEditDoc(user, p.key) })).filter((p) => p.editable || can(user, 'site_content.view'));
 }
 
 // --- Loading documents -----------------------------------------------------------------------

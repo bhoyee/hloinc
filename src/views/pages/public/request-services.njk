@@ -1,87 +1,58 @@
 {% extends "layouts/public.njk" %}
+{% import "partials/ds.njk" as ds %}
+{% import "partials/ds-fields.njk" as f %}
 {% import "partials/ui.njk" as ui %}
-{% import "partials/sections.njk" as shared %}
+
+{% block mainClass %}ds{% endblock %}
 
 {% block content %}
-  {% set apptLink = cms.link('request-services.hero.appointment', 'Request an appointment', '/appointments/request') %}
-  {% call ui.pageHero(cms.text('request-services.hero.eyebrow', 'For individuals and families'), cms.text('request-services.hero.title', 'Request services'), cms.text('request-services.hero.intro', 'We would love to help as much as we can. Reach out and set a day for a consultation with one of our representatives. We can address your questions and concerns before you decide on our services.'), [{ label: 'Request services' }], cms.image('request-services.hero.image', 'personal-support-smile', 'Woman smiling up at her support person')) %}
-    {# For people who would rather book a time to talk than fill in the form. #}
-    <div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-      <a href="#request-form" class="btn-primary">{{ cms.text('request-services.hero.formButton', 'Fill in the form') }} {{ icon('arrow-right', 'size-4') }}</a>
-      <a href="{{ apptLink.href }}" {{ apptLink.attrs }} class="btn-dark">{{ icon('calendar', 'size-4') }} {{ apptLink.label }}</a>
-    </div>
-    <p class="mt-4 text-[15px] text-muted">{{ cms.text('request-services.hero.apptNote', 'Prefer to talk it through first? Request an appointment, or call') }} <a href="{{ site.phone | telHref }}" class="font-semibold text-ink hover:text-brand-700">{{ site.phone }}</a>.</p>
-  {% endcall %}
+  {{ ds.pageHead('Ask about services', cms.text('request-services.head.title', 'Ask about services'), cms.text('request-services.head.intro', 'We would love to help as much as we can. Reach out and set a day for a consultation with one of our representatives. We can address your questions and concerns before you decide on our services.')) }}
 
-  <section class="section">
-    <div class="container-page grid gap-12 lg:grid-cols-[1.5fr_1fr]">
-      <div class="min-w-0">
-        {{ ui.flash(flash) }}
-        <form id="request-form" method="post" action="/request-services" class="relative scroll-mt-28 space-y-8" novalidate data-once>
-          {{ ui.errorSummary(errors) }}
-          <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
-          {{ ui.honeypot() }}
+  <section><div class="d-wrap d-form-layout">
+    {% if flash and flash.type == 'success' %}
+      <div class="d-card">{{ f.success(flash, '/request-services') }}</div>
+    {% else %}
+    <form id="request-form" class="d-card" method="post" action="/request-services#request-form" novalidate data-wizard data-once>
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      {{ ui.honeypot() }}
+      {{ f.progress(['About you', 'About them', 'Review']) }}
+      {% include "partials/ds-form-status.njk" %}
 
-          <fieldset class="card space-y-6">
-            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
-              <span class="grid size-9 place-items-center rounded-full bg-accent-600 font-display text-base text-white">1</span> {{ cms.text('request-services.step1', 'About you') }}
-            </legend>
-            <div class="clear-both grid gap-6 sm:grid-cols-2">
-              {{ ui.input('first_name', 'First name', values, errors, autocomplete='given-name') }}
-              {{ ui.input('last_name', 'Last name', values, errors, autocomplete='family-name') }}
-              {{ ui.input('phone', 'Phone', values, errors, type='tel', autocomplete='tel') }}
-              {{ ui.input('email', 'Email', values, errors, type='email', autocomplete='email') }}
-            </div>
-            <div class="grid gap-6 sm:grid-cols-2">
-              <fieldset>
-                <legend class="form-label">How do you prefer to be contacted?</legend>
-                <div class="mt-2 flex flex-wrap gap-3">
-                  {% for key, text in { phone: 'Phone', email: 'Email' } %}
-                    <label class="flex cursor-pointer items-center gap-2.5 rounded-2xl border border-line px-4 py-3 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
-                      <input type="radio" name="preferred_contact" value="{{ key }}" class="size-4 accent-brand-700" {% if values.preferred_contact == key %}checked{% endif %}> <span class="font-medium">{{ text }}</span>
-                    </label>
-                  {% endfor %}
-                </div>
-              </fieldset>
-              {{ ui.select('best_time', 'Best time to call', values, errors, options.bestTime, required=true) }}
-            </div>
-          </fieldset>
+      <fieldset class="d-step" data-step="1"><legend>{{ cms.text('request-services.step1', 'About you') }}</legend>
+        <div class="d-row">{{ f.text('rq-first_name', 'first_name', 'First name', values, errors, true, 'text', 'given-name', 60) }}{{ f.text('rq-last_name', 'last_name', 'Last name', values, errors, true, 'text', 'family-name', 60) }}</div>
+        <div class="d-row">{{ f.text('rq-phone', 'phone', 'Phone', values, errors, true, 'tel', 'tel', 30) }}{{ f.text('rq-email', 'email', 'Email', values, errors, true, 'email', 'email', 191) }}</div>
+        <div class="d-field" role="group" aria-labelledby="grp-contact"><span class="d-lbl" id="grp-contact">How do you prefer to be contacted?</span>
+          <div class="d-choice">
+            <label><input type="radio" name="preferred_contact" value="phone"{% if values.preferred_contact != 'email' %} checked{% endif %}> Phone</label>
+            <label><input type="radio" name="preferred_contact" value="email"{% if values.preferred_contact == 'email' %} checked{% endif %}> Email</label>
+          </div>{{ ds.err('preferred_contact', errors) }}</div>
+        {{ f.select('rq-best_time', 'best_time', 'Best time to call', values, errors, options.bestTime, true) }}
+      </fieldset>
 
-          <fieldset class="card space-y-6">
-            <legend class="float-left mb-2 flex w-full items-center gap-3 text-xl font-bold">
-              <span class="grid size-9 place-items-center rounded-full bg-brand-700 font-display text-base text-white">2</span> {{ cms.text('request-services.step2', 'About the person who needs support') }}
-            </legend>
-            <div class="clear-both grid gap-6 sm:grid-cols-2">
-              {{ ui.select('relationship', 'Your relationship to the person', values, errors, options.relationship, required=true) }}
-              {{ ui.input('individual_first_name', 'Their first name', values, errors, required=false, autocomplete='off') }}
-              {{ ui.select('county', 'County where support is needed', values, errors, counties) }}
-              {{ ui.select('dda_eligibility', 'DDA eligibility', values, errors, options.ddaEligibility) }}
-              {{ ui.select('pcp', 'Person-Centered Plan (PCP)', values, errors, options.pcp) }}
-              {{ ui.select('priority_category', 'DDA funding priority category, if known', values, errors, options.priority) }}
-            </div>
-            {{ shared.serviceChoices('services', 'Services of interest', services, values, errors) }}
-            {{ ui.textarea('message', 'Anything else we should know?', values, errors, required=false, rows=4, maxlength=1500, hint='Optional. A sentence or two is plenty.') }}
-          </fieldset>
+      <fieldset class="d-step" data-step="2"><legend>{{ cms.text('request-services.step2', 'About the individual who needs support') }}</legend>
+        {{ f.select('rq-relationship', 'relationship', 'Your relationship to the individual', values, errors, options.relationship, true) }}
+        <div class="d-row">{{ f.text('rq-individual_first_name', 'individual_first_name', 'Their first name', values, errors, false, 'text', '', 60) }}{{ f.select('rq-county', 'county', 'County where support is needed', values, errors, counties) }}</div>
+        <div class="d-row">
+          {{ f.select('rq-dda_eligibility', 'dda_eligibility', 'DDA eligibility', values, errors, options.ddaEligibility, false, 'DDA is the Maryland agency that decides who qualifies for funded services. “Not sure” is fine.') }}
+          {{ f.select('rq-pcp', 'pcp', 'Person-Centered Plan (PCP)', values, errors, options.pcp, false, 'A plan the person and their team write about their goals. “Not started yet” is okay.') }}
+        </div>
+        {{ f.select('rq-priority_category', 'priority_category', 'DDA funding priority category, if known', values, errors, options.priority, false, 'If your coordinator mentioned Crisis Resolution or Crisis Prevention, choose that. Otherwise “Not sure” is fine.') }}
+        {{ f.services('grp-services', 'Services of interest', values, errors, services) }}
+        <div class="d-field"><label for="rq-message">Anything else we should know?</label><textarea id="rq-message" name="message" maxlength="1500"{{ f.invalid('message', errors) }}>{{ values.message }}</textarea><div class="d-hint">Optional. A sentence or two is plenty.</div>{{ ds.err('message', errors) }}</div>
+      </fieldset>
 
-          <div>
-            <label class="flex gap-3 text-[15px] text-ink" for="f-consent">
-              <input id="f-consent" type="checkbox" name="consent" value="yes" class="mt-1 size-5 shrink-0 accent-brand-700" required
-                {% if values.consent == 'yes' %}checked{% endif %}
-                {% if errors.consent %}aria-invalid="true" aria-describedby="f-consent-error"{% endif %}>
-              <span>{{ cms.text('request-services.consent', 'I confirm the information above is correct and I agree to be contacted about services.') }} See our <a href="/privacy" class="link">Privacy Policy</a>.</span>
-            </label>
-            {{ ui.fieldError('consent', errors) }}
-          </div>
+      <fieldset class="d-step" data-step="3"><legend>Review and send</legend>
+        <div class="d-review-wrap"><p class="d-hint d-review-hint">Please check the details below.</p><dl class="d-review"></dl></div>
+        <div class="d-field"><label class="d-check-row"><input type="checkbox" name="consent" value="yes" required{% if values.consent == 'yes' %} checked{% endif %}{{ f.invalid('consent', errors) }}> <span>{{ cms.text('request-services.consent', 'I confirm the information above is correct and I agree to be contacted about services.') }}</span></label>{{ ds.err('consent', errors) }}</div>
+        {{ ui.captcha(turnstileSiteKey, errors) }}
+      </fieldset>
 
-          {{ ui.captcha(turnstileSiteKey, errors) }}
-          <div class="flex flex-wrap items-center gap-4">
-            <button type="submit" class="btn-primary">{{ cms.text('request-services.submit', 'Send request') }} {{ icon('arrow-right', 'size-4') }}</button>
-            <p class="text-sm text-muted">Fields marked (optional) can be left blank.</p>
-          </div>
-        </form>
-      </div>
+      {{ f.actions(cms.text('request-services.submit', 'Send request')) }}
+      <p class="d-form-note">Fields marked <span class="d-req">*</span> are required.</p>
+    </form>
+    {% endif %}
 
-      {{ shared.formSidebar(site) }}
-    </div>
-  </section>
+    {% set doc = 'request-services' %}
+    {% include "partials/ds-form-aside.njk" %}
+  </div></section>
 {% endblock %}

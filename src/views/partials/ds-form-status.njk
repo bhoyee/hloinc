@@ -1,0 +1,12 @@
+{# Messages after sending a form: thanks (with the reference) or what to fix. #}
+{% if flash and flash.type == 'success' %}
+  <div class="d-form-status d-ok" role="status">{{ flash.message }}</div>
+{% elif flash and flash.message %}
+  <div class="d-form-status d-err" role="alert">{{ flash.message }}</div>
+{% endif %}
+{% if errors and (errors | length) %}
+  <div class="d-form-status d-err" role="alert">
+    Please check the {{ 'answer' if (errors | length) == 1 else 'answers' }} marked below.
+    {% if errors.limit %}<span class="d-block">{{ errors.limit }}</span>{% endif %}
+  </div>
+{% endif %}

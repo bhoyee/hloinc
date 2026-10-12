@@ -1,0 +1,9 @@
+{# Address, phone, email, fax and hours, as listed in the design's contact blocks. #}
+{% import "partials/ds.njk" as ds %}
+<ul class="d-cd-list">
+  <li>{{ ds.cdIcon('pin') }}<div><strong>{{ cms.text('site.cd.addressLabel', 'Address') }}</strong>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}<br><a href="{{ ds.directions(site) }}" target="_blank" rel="noopener">Get directions<span class="d-sr-only"> (opens in a new tab)</span></a></div></li>
+  <li>{{ ds.cdIcon('phone') }}<div><strong>{{ cms.text('site.cd.phoneLabel', 'Phone') }}</strong><a href="{{ site.phone | telHref }}">{{ site.phone }}</a></div></li>
+  <li>{{ ds.cdIcon('mail') }}<div><strong>{{ cms.text('site.cd.emailLabel', 'Email') }}</strong><a href="mailto:{{ site.email }}">{{ site.email }}</a></div></li>
+  <li>{{ ds.cdIcon('fax') }}<div><strong>{{ cms.text('site.cd.faxLabel', 'Fax') }}</strong>{{ cms.text('site.fax', '(410) 553-4151') }}</div></li>
+  <li>{{ ds.cdIcon('clock') }}<div><strong>{{ cms.text('site.cd.hoursLabel', 'Office hours') }}</strong>{{ site.hours }}<br>{{ cms.text('site.cd.weekend', 'Saturday – Sunday closed') }}</div></li>
+</ul>

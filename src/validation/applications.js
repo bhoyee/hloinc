@@ -22,4 +22,14 @@ const applicationSchema = z.object({
   consent: z.literal('yes', { error: 'Please confirm you have read how we use your information.' }),
 });
 
-module.exports = { applicationSchema };
+/**
+ * The "Apply online" form on the Careers page (HLO's design, version 20): the same
+ * details, plus a cell number, the job chosen from the list, and a message.
+ */
+const careersApplicationSchema = applicationSchema.extend({
+  job: z.string({ error: 'Choose the position you are applying for.' }).trim().min(1, 'Choose the position you are applying for.').max(200),
+  cell: phoneField().refine((v) => v !== '', 'Enter your cell number.'),
+  cover_note: z.string({ error: 'Tell us a little about yourself.' }).trim().min(1, 'Tell us a little about yourself.').max(3000, 'Keep your message under 3,000 characters.'),
+});
+
+module.exports = { applicationSchema, careersApplicationSchema };

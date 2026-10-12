@@ -266,10 +266,9 @@ describe('appointment types', () => {
     await post(agent, '/portal/appointments/types/new', '/portal/appointments/types', { name: 'Family meeting', duration_minutes: 45, capacity: 2, active: 'yes' });
     const t = await db('appointment_types').where({ name: 'Family meeting' }).first();
     expect(t).toMatchObject({ duration_minutes: 45, capacity: 2, active: 1 });
-    expect((await request(app).get('/appointments/request')).text).toContain('Family meeting');
-
+    // (The website's appointment request page is hidden in HLO's design, version 20.)
     await post(agent, `/portal/appointments/types/${t.id}`, `/portal/appointments/types/${t.id}`, { name: 'Family meeting', duration_minutes: 45, capacity: 2 });
-    expect((await request(app).get('/appointments/request')).text).not.toContain('Family meeting');
+    expect(await db('appointment_types').where({ id: t.id }).first()).toMatchObject({ active: 0 });
   });
 
   it('won’t delete a type that has appointments', async () => {

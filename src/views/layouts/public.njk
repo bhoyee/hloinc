@@ -1,13 +1,17 @@
 {% extends "layouts/base.njk" %}
 
+{# The public website (HLO's design, version 20): html.site switches on public/css/site.css. #}
+{% block htmlAttrs %} class="site"{% endblock %}
+
 {# Light/dark theme: set before the page is drawn (public website only). #}
 {% block headEarly %}<meta name="color-scheme" content="light dark"><script src="/js/theme.js"></script>{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/css/site.css?v=5"><script src="/js/ds.js" defer></script>{% endblock %}
 
 {% block body %}
-  {% include "partials/header.njk" %}
-  <main id="main">
+  {% include "partials/site-header.njk" %}
+  <main id="main" class="{% block mainClass %}{% endblock %}">
     {% block content %}{% endblock %}
   </main>
-  {% include "partials/footer.njk" %}
+  {% include "partials/site-footer.njk" %}
   {% include "partials/cookie-notice.njk" %}
 {% endblock %}

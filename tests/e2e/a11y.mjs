@@ -4,8 +4,9 @@ import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const base = process.env.BASE_URL || 'http://127.0.0.1:4310';
-const paths = ['/', '/about', '/services', '/services/personal-supports', '/services/employment-services', '/request-services', '/service-areas', '/getting-started',
-  '/resources', '/careers', '/careers/direct-support-professional', '/contact', '/referrals', '/appointments/request', '/privacy', '/terms', '/data-protection', '/cookies', '/nope'];
+// (Getting started, Service areas, single service pages and the appointment request are hidden in HLO's design, version 20.)
+const paths = ['/', '/about', '/services', '/request-services', '/resources', '/careers', '/careers/direct-support-professional', '/contact', '/referrals',
+  '/privacy', '/terms', '/data-protection', '/cookies', '/nope'];
 
 const browser = await chromium.launch();
 let failures = 0;
@@ -27,7 +28,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
   }
   // Form in its error state.
   await page.goto(base + '/contact');
-  await page.fill('#f-email', 'bad');
+  await page.fill('#ct-email', 'bad');
   await page.waitForTimeout(3100); // minimum fill time
   await page.click('form button[type=submit]');
   await page.waitForLoadState();

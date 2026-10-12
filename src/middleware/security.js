@@ -18,7 +18,7 @@ function securityHeaders() {
         imgSrc: ["'self'", 'data:'],
         fontSrc: ["'self'"],
         connectSrc: ["'self'", ...turnstile],
-        // Google Maps loads only after the visitor clicks "Show map" on the contact page.
+        // The Google map of the office on the home and contact pages.
         frameSrc: ["'self'", 'https://www.google.com', ...turnstile],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],

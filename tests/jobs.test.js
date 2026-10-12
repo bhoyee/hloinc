@@ -83,7 +83,9 @@ describe('jobs manager: create and publish', () => {
     const job = await db('jobs').first();
     expect(job.status).toBe('published');
     expect(job.published_at).toBeTruthy();
-    expect((await request(app).get(`/careers/${job.slug}`)).status).toBe(200);
+    // Each job's details are on the Careers page; its old address takes you there.
+    expect((await request(app).get(`/careers/${job.slug}`)).status).toBe(302);
+    expect((await request(app).get('/careers')).text).toContain(`id="job-${job.slug}"`);
 
     await post(director, `/portal/jobs/${job.id}`, `/portal/jobs/${job.id}/status`, { action: 'unpublish' });
     expect((await db('jobs').first()).status).toBe('draft');
@@ -103,7 +105,7 @@ describe('jobs manager: create and publish', () => {
     const director = await signIn(app, await makeUser('program_director'));
     await post(director, '/portal/jobs/new', '/portal/jobs', { ...JOB, description: 'Great role <script>alert(1)</script> with real impact', intent: 'publish' });
     const job = await db('jobs').first();
-    const page = await request(app).get(`/careers/${job.slug}`);
+    const page = await request(app).get('/careers');
     expect(page.text).not.toContain('<script>alert(1)</script>');
     expect(page.text).toContain('&lt;script&gt;');
   });
@@ -193,7 +195,7 @@ describe('jobs manager: formatted text', () => {
     expect(job.description).toContain('<strong>live well</strong>');
     expect(job.description).not.toContain('script');
     expect(job.benefits).not.toContain('javascript');
-    const page = (await request(app).get(`/careers/${job.slug}`)).text;
+    const page = (await request(app).get('/careers')).text;
     expect(page).toContain('<ol><li>Daily routines</li><li>Outings</li></ol>');
     expect(page).toContain('href="https://hloinc.com/careers"');
     // The editor opens with the same formatting.
@@ -206,7 +208,7 @@ describe('jobs manager: formatted text', () => {
     const director = await signIn(app, await makeUser('program_director'));
     await post(director, '/portal/jobs/new', '/portal/jobs', { ...JOB, intent: 'publish' });
     const job = await db('jobs').first();
-    expect((await request(app).get(`/careers/${job.slug}`)).text).toContain('<ul><li>High school diploma</li></ul>');
+    expect((await request(app).get('/careers')).text).toContain('<ul><li>High school diploma</li></ul>');
     expect((await director.get(`/portal/jobs/${job.id}`)).text).toContain('<ul><li>High school diploma</li></ul>');
   });
 });

@@ -89,7 +89,7 @@ describe('demand', () => {
 
     const [services, counties] = await insights.demand(admin, marylandParts(new Date()).date);
     const count = (chart, label) => chart.series[0].values[chart.categories.indexOf(label)];
-    expect(count(services, 'Respite')).toBe(2);
+    expect(count(services, 'Respite Care Services')).toBe(2);
     expect(count(services, 'Employment Services')).toBe(1);
     expect(count(services, 'Not sure yet')).toBe(1);
     expect(services.categories).toContain('CDS');

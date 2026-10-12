@@ -8,7 +8,7 @@ const jobs = require('../services/jobs');
 const announcements = require('../services/announcements');
 const inquiries = require('../services/inquiries');
 const applications = require('../services/applications');
-const { applicationSchema } = require('../validation/applications');
+const { applicationSchema, careersApplicationSchema } = require('../validation/applications');
 const services = require('../content/services');
 
 // The services shown in the listings on the home and services pages.
@@ -43,6 +43,32 @@ function meta(doc, title, description) {
 }
 
 const router = express.Router();
+
+/*
+ * Pages not in HLO's website design (version 20, October 2026). They're kept, not
+ * deleted, in case HLO wants them back: old links go to the matching section of
+ * the new pages. To bring a page back, remove it here (and from HIDDEN_PAGES in
+ * services/cms.js and the sitemap).
+ */
+const SERVICE_ANCHORS = {
+  'community-residential-services': 'svc-residential',
+  'supported-living': 'svc-supported',
+  'personal-supports': 'svc-personal',
+  'community-development-services': 'svc-cds',
+  'respite-care': 'svc-respite',
+  'transportation-services': 'svc-transport',
+};
+const HIDDEN = {
+  '/getting-started': '/about#apply',
+  '/service-areas': '/about#service-area',
+  '/appointments/request': '/request-services',
+};
+router.get(Object.keys(HIDDEN), (req, res) => res.redirect(302, HIDDEN[req.path]));
+router.get('/services/:slug', (req, res, next) => {
+  if (!services.some((s) => s.slug === req.params.slug)) return next();
+  const anchor = SERVICE_ANCHORS[req.params.slug];
+  res.redirect(302, anchor ? `/services#${anchor}` : '/services');
+});
 
 router.get('/', async (req, res) => {
   const [page, news] = await Promise.all([content.getPage('home'), announcements.activePublic()]);
@@ -119,6 +145,80 @@ function pageList(current, pages) {
   return out;
 }
 
+/*
+ * Careers (HLO's design, version 20): benefits, the open positions (from Jobs in the
+ * portal, each with its details), and one "Apply online" form that sends to
+ * Applications. The previous Careers design is kept (pages/public/careers-old.njk,
+ * job.njk, job-apply.njk): set OLD_CAREERS to true to bring it back.
+ */
+const OLD_CAREERS = false;
+
+async function renderCareers(req, res, { values = {}, errors = {} } = {}) {
+  spam.issueForm(req, 'application');
+  const open = await jobs.listPublished();
+  res.status(Object.keys(errors).length ? 422 : 200).render('pages/public/careers.njk', {
+    ...meta('careers', 'Careers', 'Join the HLO team and help adults in Maryland live independent, connected lives.'),
+    jobs: open,
+    structuredData: open.map((j) => jobs.toJobPosting(j, res.locals.site)),
+    values: { job: typeof req.query.job === 'string' ? req.query.job : '', ...values },
+    errors,
+    maxLabel: applications.MAX_LABEL,
+  });
+}
+
+if (!OLD_CAREERS) {
+  router.get('/careers', (req, res) => renderCareers(req, res));
+  router.get('/careers/apply', (req, res) => res.redirect(302, '/careers#apply'));
+
+  router.post('/careers/apply', async (req, res) => {
+    const sent = 'Thank you. Your application has been sent.';
+    if (spam.botCheck(req, 'application', ['first_name', 'last_name', 'cover_note'])) return dropQuietly(req, res, '/careers#apply', sent);
+
+    const parsed = careersApplicationSchema.safeParse(req.body);
+    const errors = parsed.success ? {} : fieldErrors(parsed.error);
+    const job = parsed.success ? await jobs.findPublishedBySlug(parsed.data.job) : null;
+    if (parsed.success && !job) errors.job = 'That position is no longer open. Please choose another.';
+    if (req.uploadError) errors.resume = req.uploadError;
+    else if (!req.file) errors.resume = 'Attach your resume (PDF or Word .docx).';
+    if (Object.keys(errors).length) return renderCareers(req, res, { values: req.body, errors });
+
+    const blocked = await humanCheck(req, 'application', parsed.data.email, { ...parsed.data, job: job.id });
+    if (blocked === 'duplicate') return dropQuietly(req, res, '/careers#apply', sent);
+    if (blocked) return renderCareers(req, res, { values: req.body, errors: blocked });
+
+    let result;
+    try {
+      result = await applications.submit(job, parsed.data, req.file, { ip: req.ip });
+    } catch (err) {
+      if (err.status !== 422) throw err;
+      if (err.infected) {
+        await require('../services/audit').audit(req, {
+          action: 'application.virus_blocked',
+          entityType: 'job',
+          entityId: job.id,
+          summary: `A resume uploaded for “${job.title}” was refused: the virus scan found ${err.infected.detail}`,
+          metadata: { engine: err.infected.engine, detail: err.infected.detail },
+        });
+      }
+      return renderCareers(req, res, { values: req.body, errors: { [err.field || 'resume']: err.message } });
+    }
+    setFlash(req, 'success', `Thank you, ${parsed.data.first_name}. Your application for ${job.title} has been sent. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`);
+    res.redirect(303, '/careers#apply');
+  });
+
+  // Each job's own page is folded into Careers: old links open that job there.
+  router.get('/careers/:slug', async (req, res, next) => {
+    const job = await jobs.findPublishedBySlug(req.params.slug);
+    if (!job) return next();
+    res.redirect(302, `/careers#job-${job.slug}`);
+  });
+  router.get(['/careers/:slug/apply', '/careers/:slug/applied'], async (req, res, next) => {
+    const job = await jobs.findPublishedBySlug(req.params.slug);
+    if (!job) return next();
+    res.redirect(302, `/careers?job=${encodeURIComponent(job.slug)}#apply`);
+  });
+}
+
 router.get('/careers', async (req, res) => {
   const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
   const criteria = {
@@ -138,7 +238,7 @@ router.get('/careers', async (req, res) => {
   };
 
   // Live search asks for just the results block.
-  const view = req.query.partial === '1' ? 'partials/careers-results.njk' : 'pages/public/careers.njk';
+  const view = req.query.partial === '1' ? 'partials/careers-results.njk' : 'pages/public/careers-old.njk';
   if (req.query.partial === '1') res.set('X-Robots-Tag', 'noindex');
   res.render(view, {
     ...meta('careers', 'Careers', 'Join the HLO team and help adults in Maryland live independent, connected lives.'),
@@ -315,7 +415,7 @@ function renderReferral(req, res, { values = {}, errors = {} } = {}) {
     roles: REFERRER_ROLES,
     options: OPTIONS,
     counties: COUNTIES,
-    services,
+    services: listed,
     values: { ...values, services: selected },
     errors,
   });
@@ -355,7 +455,7 @@ function renderRequest(req, res, { values = {}, errors = {} } = {}) {
     ...meta('request-services', 'Request services', 'Request services from Healthy Living Option Inc. for yourself or a loved one. Our team will reach out to talk through the options.'),
     options: OPTIONS,
     counties: COUNTIES,
-    services,
+    services: listed,
     values: { preferred_contact: 'phone', ...values, services: [].concat(values.services || []) },
     errors,
   });
@@ -462,16 +562,12 @@ router.get('/sitemap.xml', async (req, res) => {
     '/',
     '/about',
     '/services',
-    ...services.map((s) => `/services/${s.slug}`),
-    '/service-areas',
-    '/getting-started',
     '/resources',
     '/request-services',
     '/careers',
     ...(await jobs.listPublished()).map((j) => `/careers/${j.slug}`),
     '/contact',
     '/referrals',
-    '/appointments/request',
     ...legalLinks.map((l) => `/${l.slug}`),
   ];
   const urls = paths.map((p) => `  <url><loc>${config.appUrl}${p}</loc></url>`).join('\n');

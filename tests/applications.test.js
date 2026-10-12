@@ -43,32 +43,36 @@ beforeEach(async () => {
 afterAll(() => db.destroy());
 
 async function apply({ file = PDF, filename = 'My Resume.pdf', fields = {} } = {}) {
-  const { agent, csrf } = await formAgent(app, '/careers/test-dsp/apply');
-  const req = agent.post('/careers/test-dsp/apply').field('_csrf', csrf);
-  const values = { first_name: 'Jordan', last_name: 'Applicant', email: 'jordan@example.com', phone: '410-555-0142', cover_note: 'I can start next month.', consent: 'yes', ...fields };
+  const { agent, csrf } = await formAgent(app, '/careers');
+  const req = agent.post('/careers/apply').field('_csrf', csrf);
+  const values = { job: 'test-dsp', first_name: 'Jordan', last_name: 'Applicant', email: 'jordan@example.com', phone: '410-555-0142', cell: '443-555-0143', cover_note: 'I can start next month.', consent: 'yes', ...fields };
   for (const [k, v] of Object.entries(values)) req.field(k, v);
   if (file) req.attach('resume', file, filename);
   return req;
 }
 
 describe('applying for a job', () => {
-  it('links each job to its own application form (no ADP)', async () => {
-    const page = request.agent(app);
-    const res = await page.get('/careers/test-dsp');
-    expect(res.text).toContain('href="/careers/test-dsp/apply"');
+  it('lists each job with an Apply link and one upload form on the Careers page (no ADP)', async () => {
+    const res = await request(app).get('/careers');
+    expect(res.text).toContain('id="job-test-dsp"');
+    expect(res.text).toContain('data-apply-job="test-dsp"');
+    expect(res.text).toContain('<option value="test-dsp"');
+    expect(res.text).toContain('action="/careers/apply#apply" enctype="multipart/form-data"');
     expect(res.text).not.toMatch(/ADP/);
-    const form = await page.get('/careers/test-dsp/apply');
-    expect(form.text).toContain('enctype="multipart/form-data"');
+    // Old links to the job and its form open it on the Careers page.
+    expect((await request(app).get('/careers/test-dsp')).headers.location).toBe('/careers#job-test-dsp');
+    expect((await request(app).get('/careers/test-dsp/apply')).headers.location).toBe('/careers?job=test-dsp#apply');
+    expect((await request(app).get('/careers?job=test-dsp')).text).toContain('<option value="test-dsp" selected>');
   });
 
   it('saves the application with an encrypted, scanned resume, and tells everyone', async () => {
     const admin = await makeUser('admin');
     const res = await apply();
     expect(res.status).toBe(303);
-    expect(res.headers.location).toBe('/careers/test-dsp/applied');
+    expect(res.headers.location).toBe('/careers#apply');
 
     const [a] = await db('job_applications');
-    expect(a).toMatchObject({ job_id: job.id, job_title: 'Test DSP', first_name: 'Jordan', phone: '(410) 555-0142', resume_type: 'pdf', resume_name: 'My Resume.pdf', scan_status: 'clean', status: 'new' });
+    expect(a).toMatchObject({ job_id: job.id, job_title: 'Test DSP', first_name: 'Jordan', phone: '(410) 555-0142', cell: '(443) 555-0143', resume_type: 'pdf', resume_name: 'My Resume.pdf', scan_status: 'clean', status: 'new' });
     expect(a.reference).toMatch(/^HLO-APP-/);
     // Stored encrypted, outside the public folders.
     const stored = fs.readFileSync(path.join(DIR, `${a.resume_file}.bin`));
@@ -108,16 +112,18 @@ describe('applying for a job', () => {
   });
 
   it('needs a resume, and the usual details', async () => {
-    const res = await apply({ file: null, fields: { email: 'not-an-email', consent: '' } });
+    const res = await apply({ file: null, fields: { email: 'not-an-email', consent: '', cell: '', job: '' } });
     expect(res.status).toBe(422);
     expect(res.text).toContain('Attach your resume');
     expect(res.text).toContain('Enter a valid email address');
+    expect(res.text).toContain('Enter your cell number');
+    expect(res.text).toContain('Choose the position you are applying for');
     expect(await db('job_applications')).toHaveLength(0);
   });
 
   it('rejects a form without its token', async () => {
-    const res = await (await formAgent(app, '/careers/test-dsp/apply')).agent
-      .post('/careers/test-dsp/apply').field('first_name', 'X').attach('resume', PDF, 'cv.pdf');
+    const res = await (await formAgent(app, '/careers')).agent
+      .post('/careers/apply').field('first_name', 'X').attach('resume', PDF, 'cv.pdf');
     expect(res.status).toBe(303); // sent back with "nothing was sent"
     expect(await db('job_applications')).toHaveLength(0);
   });
@@ -125,6 +131,12 @@ describe('applying for a job', () => {
   it('only accepts applications for live jobs', async () => {
     await db('jobs').where({ id: job.id }).update({ status: 'draft' });
     expect((await request(app).get('/careers/test-dsp/apply')).status).toBe(404);
+    // A job taken down while someone was filling in the form.
+    await db('jobs').insert({ title: 'Test DSP 2', slug: 'test-dsp-2', status: 'published', published_at: new Date(), description: 'x' });
+    const res = await apply();
+    expect(res.status).toBe(422);
+    expect(res.text).toContain('That position is no longer open');
+    expect(await db('job_applications')).toHaveLength(0);
   });
 });
 

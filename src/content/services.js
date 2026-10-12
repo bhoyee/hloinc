@@ -4,7 +4,8 @@
  * HLO's approved services, in the order and wording HLO supplied (hloinc-site
  * mock-up from HLO's IT, October 2026). Staff can change any of this text in
  * the portal's page editor; this file is the starting text.
- * Transportation and nursing are intentionally excluded (requirements §2).
+ * Names follow HLO's website design (version 20, October 2026), which added
+ * Transportation Services. Nursing is intentionally excluded (requirements §2).
  * Wording must not promise eligibility or clinical treatment.
  * Slugs stay fixed so existing links and saved referrals keep working.
  */
@@ -21,7 +22,7 @@ const services = [
     photo: 'apartment-open-plan',
     where: ['shared-home'],
     imageAlt: 'Furnished open-plan living and dining area in an apartment home',
-    name: 'Residential Services',
+    name: 'Residential Support',
     icon: 'home',
     summary: 'A furnished apartment home with the day-to-day support each person’s Individual Support Plan (ISP) calls for.',
     intro: [
@@ -66,7 +67,7 @@ const services = [
     photo: 'personal-support-smile',
     where: ['home', 'community'],
     imageAlt: 'Woman smiling up at her support person',
-    name: 'Personal Support',
+    name: 'Personal Supports',
     icon: 'hand-heart',
     summary: 'Hands-on help with daily living, health and community life, guided by the person-centered plan.',
     intro: [
@@ -109,7 +110,7 @@ const services = [
     photo: 'respite-boardwalk',
     where: ['home', 'community'],
     imageAlt: 'Friends on a relaxed walk along a boardwalk',
-    name: 'Respite',
+    name: 'Respite Care Services',
     icon: 'sun',
     summary: 'Short-term relief for families and caregivers while the person keeps receiving quality supports.',
     intro: [
@@ -124,6 +125,21 @@ const services = [
     ],
     suitedFor: 'Families who provide most of a loved one’s support and need time to recharge.',
     setting: 'At home or in the community',
+  },
+  {
+    slug: 'transportation-services',
+    photo: 'd-van',
+    where: ['community'],
+    imageAlt: 'Silver minivan converted to be wheelchair accessible, with a side-entry ramp',
+    name: 'Transportation Services',
+    icon: 'map-pin',
+    summary: 'Transportation to and from community activities and appointments, such as shopping, church and personal visits, based on the needs in each person’s Person-Centered Plan.',
+    intro: [
+      'Transportation services are designed specifically to improve the participant’s ability to independently access community activities within their own community in response to needs identified through the participant’s Person-Centered Plan.',
+    ],
+    includes: ['Transportation to and from community outings and appointments, such as personal visits, shopping or church'],
+    suitedFor: 'Adults whose Person-Centered Plan includes help getting to community activities.',
+    setting: 'In the community',
   },
   {
     slug: 'employment-services',

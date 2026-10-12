@@ -1,0 +1,75 @@
+{#
+  Building blocks of the redesigned public pages (HLO's design, version 20).
+  Styles: public/css/site.css (classes prefixed "d-"). Behaviour: public/js/ds.js.
+#}
+
+{# Dark green page heading with breadcrumb. title/intro may be cms.text() values. #}
+{% macro pageHead(crumb, title, intro) %}
+  <section class="d-page-head"><div class="d-wrap">
+    <div class="d-crumbs"><a href="/">Home</a> / {{ crumb }}</div>
+    <h1>{{ title }}</h1>
+    {% if intro %}<p>{{ intro }}</p>{% endif %}
+  </div></section>
+{% endmacro %}
+
+{#
+  "On this page": a sticky bar of the page's sections, highlighting the one being read.
+  On phones it becomes a dropdown. items: [{ id, label }]
+#}
+{% macro pagenav(items) %}
+  <nav class="d-pagenav" aria-label="On this page" data-pagenav>
+    <button type="button" class="d-pn-toggle" aria-expanded="false">
+      <span class="d-burger" aria-hidden="true"><i></i><i></i><i></i></span><span class="d-pn-cur">On this page</span>
+      <svg class="d-pn-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="d-wrap">
+      <span class="d-pn-label">On this page</span>
+      {% for it in items %}<a href="#{{ it.id }}" data-t="{{ it.id }}">{{ it.label }}</a>{% endfor %}
+    </div>
+  </nav>
+{% endmacro %}
+
+{# Previous / next page links at the end of a main page. #}
+{% macro pager(order, currentHref) %}
+  {% set idx = -1 %}
+  {% for p in order %}{% if p.href == currentHref %}{% set idx = loop.index0 %}{% endif %}{% endfor %}
+  {% if idx >= 0 %}
+    <section class="d-pager-sec" aria-label="More pages"><div class="d-wrap d-pager">
+      {% if idx > 0 %}{% set prev = order[idx - 1] %}<a class="d-prev" href="{{ prev.href }}"><small>Previous</small><span>{{ prev.label }}</span></a>{% endif %}
+      {% if idx < order.length - 1 %}{% set next = order[idx + 1] %}<a class="d-next" href="{{ next.href }}"><small>Next</small><span>{{ next.label }}</span></a>{% endif %}
+    </div></section>
+  {% endif %}
+{% endmacro %}
+
+{# A photo from the Site content editor (cms.image): small and large sizes. #}
+{% macro img(image, sizes='(min-width: 1000px) 33vw, 100vw', extra='', lazy=true) %}
+  <img src="{{ image.src }}" srcset="{{ image.srcset }}" sizes="{{ sizes }}" alt="{{ image.alt }}" width="{{ image.w }}" height="{{ image.h }}"{% if lazy %} loading="lazy"{% endif %} {{ extra | safe }} {{ image.attrs }}>
+{% endmacro %}
+
+{# The tick used in feature lists. #}
+{% macro tick() %}<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="currentColor" opacity=".15"/><path d="M5.5 10.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endmacro %}
+
+{# Map of the office (Google Maps), shown straight away as in HLO's design. See the Cookie Policy. #}
+{% macro map(site) %}
+  {% set q = site.address.street.split(',')[0] ~ ', ' ~ site.address.city ~ ', ' ~ site.address.state ~ ', ' ~ site.address.zip %}
+  <div class="d-map"><iframe title="Map showing {{ site.legalName }} at {{ site.address.street }}, {{ site.address.city }}" src="https://www.google.com/maps?q={{ q | urlencode }}&amp;z=15&amp;output=embed" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+{% endmacro %}
+
+{# Contact detail icons, as in the design. #}
+{% macro cdIcon(name) %}
+  <span class="d-cd-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    {%- if name == 'pin' %}<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>
+    {%- elif name == 'phone' %}<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>
+    {%- elif name == 'mail' %}<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/>
+    {%- elif name == 'fax' %}<path d="M7 8V3h10v5"/><rect x="3" y="8" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/>
+    {%- else %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>{% endif -%}
+  </svg></span>
+{% endmacro %}
+
+{# "Get directions" link for the office. #}
+{% macro directions(site) -%}
+https://www.google.com/maps/search/?api=1&query={{ (site.address.street ~ ' ' ~ site.address.city ~ ' ' ~ site.address.state ~ ' ' ~ site.address.zip) | urlencode }}
+{%- endmacro %}
+
+{# Form field error, under the field. #}
+{% macro err(name, errors) %}{% if errors[name] %}<p class="d-field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}{% endmacro %}

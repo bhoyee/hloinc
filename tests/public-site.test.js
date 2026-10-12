@@ -8,59 +8,71 @@ afterAll(() => db.destroy());
 
 describe('public pages', () => {
   it.each([
-    ['/', 'Supporting adults with developmental disabilities'],
+    ['/', 'Serving adult individuals with intellectual and developmental disabilities'],
     ['/about', 'Mission statement'],
-    ['/services', 'Personal Support'],
-    ['/services/employment-services', 'Employment Services'],
-    ['/request-services', 'Request services'],
-    ['/services/respite-care', 'What support can include'],
-    ['/service-areas', 'St. Mary’s County'],
-    ['/getting-started', 'I am making a referral'],
+    ['/services', 'Personal Supports'],
+    ['/request-services', 'Ask about services'],
+    ['/referrals', 'Send a referral'],
     ['/resources', 'Words you may hear along the way'],
-    ['/careers', 'Open positions'],
+    ['/careers', 'Come work with us'],
     ['/contact', 'Send us a message'],
-    ['/appointments/request', 'Request an appointment'],
   ])('%s renders', async (path, text) => {
     const res = await request(app).get(path);
     expect(res.status).toBe(200);
     expect(res.text).toContain(text);
   });
 
-  it('lists HLO’s approved services (not Employment), and no nursing or transportation', async () => {
+  // Pages not in HLO's design (version 20) are kept but hidden: old links go to the new place.
+  it.each([
+    ['/getting-started', '/about#apply'],
+    ['/service-areas', '/about#service-area'],
+    ['/appointments/request', '/request-services'],
+    ['/services/respite-care', '/services#svc-respite'],
+    ['/services/community-residential-services', '/services#svc-residential'],
+    ['/services/employment-services', '/services'],
+  ])('%s now goes to %s', async (path, to) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(to);
+  });
+
+  it('lists the six services of the design, including Transportation (not Employment or nursing)', async () => {
     const res = await request(app).get('/services');
-    const slugs = new Set([...res.text.matchAll(/<a href="\/services\/([a-z-]+)" class="group flex h-full/g)].map((m) => m[1]));
-    expect([...slugs].sort()).toEqual(['community-development-services', 'community-residential-services', 'personal-supports', 'respite-care', 'supported-living']);
-    expect(res.text).not.toMatch(/nursing|transportation/i);
+    const anchors = [...res.text.matchAll(/<div class="d-svc" id="(svc-[a-z]+)"/g)].map((m) => m[1]);
+    expect(anchors).toEqual(['svc-residential', 'svc-supported', 'svc-personal', 'svc-cds', 'svc-respite', 'svc-transport']);
+    expect(res.text).toContain('Transportation Services');
+    expect(res.text).not.toContain('Employment Services');
+    expect(res.text).not.toMatch(/nursing/i);
   });
 
   it('shows HLO’s confirmed address and hours', async () => {
     const res = await request(app).get('/contact');
     expect(res.text).toContain('4 E Rolling Crossroads, Suites 301–303');
     expect(res.text).toContain('MD 21228');
-    expect(res.text).toContain('Sat – Sun closed');
+    expect(res.text).toContain('Saturday – Sunday');
   });
 
   it('shows the ten counties', async () => {
-    const res = await request(app).get('/service-areas');
-    expect(res.text.match(/County|Baltimore City/g).length).toBeGreaterThanOrEqual(10);
+    const res = await request(app).get('/about');
+    const counties = res.text.match(/<ul class="d-counties">([\s\S]*?)<\/ul>/)[1];
+    expect(counties.match(/<li/g)).toHaveLength(10);
+    expect(counties).toContain('St. Mary’s');
   });
 
-  it('lists the contact recipients in the required order', async () => {
+  it('sends contact messages to the General inquiry inbox (no recipient choice)', async () => {
     const res = await request(app).get('/contact');
-    const options = [...res.text.matchAll(/<option value="([a-z_]+)"/g)].map((m) => m[1]);
-    expect(options).toEqual(['general', 'program_coordinator', 'program_director', 'executive', 'intake']);
+    expect(res.text).toContain('<input type="hidden" name="recipient" value="general">');
+    expect(res.text).not.toMatch(/<select[^>]+name="recipient"/);
   });
 
-  it('preselects the intake recipient from ?to=intake', async () => {
-    const res = await request(app).get('/contact?to=intake');
-    expect(res.text).toMatch(/<option value="intake" selected>/);
-  });
-
-  it('serves robots.txt and a sitemap that hide the portal', async () => {
+  it('serves robots.txt and a sitemap that hide the portal and the hidden pages', async () => {
     const robots = await request(app).get('/robots.txt');
     expect(robots.text).toContain('Disallow: /portal');
     const sitemap = await request(app).get('/sitemap.xml');
-    expect(sitemap.text).toContain('/services/personal-supports');
+    expect(sitemap.text).toContain('/services</loc>');
+    expect(sitemap.text).toContain('/referrals</loc>');
+    expect(sitemap.text).not.toContain('/getting-started');
+    expect(sitemap.text).not.toContain('/services/personal-supports');
     expect(sitemap.text).not.toContain('/portal');
   });
 });
@@ -95,7 +107,7 @@ describe('contact form', () => {
   beforeEach(() => db('contact_messages').del());
 
   const valid = {
-    recipient: 'intake',
+    recipient: 'general',
     name: 'Pat Example',
     email: 'pat@example.com',
     phone: '410-555-0123',
@@ -109,7 +121,7 @@ describe('contact form', () => {
 
     const rows = await db('contact_messages');
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ recipient: 'intake', email: 'pat@example.com', status: 'new', email_status: 'sent' });
+    expect(rows[0]).toMatchObject({ recipient: 'general', email: 'pat@example.com', status: 'new', email_status: 'sent' });
 
     const page = await agent.get('/contact');
     expect(page.text).toContain('Your message has been sent');
@@ -125,7 +137,7 @@ describe('contact form', () => {
     expect(res.text).toContain('Enter a valid email address');
     expect(res.text).toContain('at least 10 characters');
     expect(res.text).toContain('value="Pat Example"');
-    expect(res.text).toMatch(/id="f-email"[^>]*aria-invalid="true"/);
+    expect(res.text).toMatch(/id="ct-email"[^>]*aria-invalid="true"/);
     expect(await db('contact_messages')).toHaveLength(0);
   });
 
@@ -153,7 +165,8 @@ describe('contact form', () => {
   });
 });
 
-describe('appointment requests', () => {
+// The appointment request page is hidden in HLO's design (version 20); these come back with it.
+describe.skip('appointment requests', () => {
   let typeId;
 
   beforeEach(async () => {
@@ -253,10 +266,20 @@ describe('careers', () => {
   });
 
   it('shows a published job with its Apply button (our own form, not ADP)', async () => {
-    const res = await request(app).get('/careers/direct-support-professional');
+    const res = await request(app).get('/careers');
     expect(res.status).toBe(200);
-    expect(res.text).toContain('href="/careers/direct-support-professional/apply"');
+    expect(res.text).toContain('data-apply-job="direct-support-professional"');
+    expect(res.text).toContain('action="/careers/apply#apply"');
     expect(res.text).not.toContain('workforcenow.adp.com');
+  });
+
+  it('gives Google the open jobs as JobPosting data (with pay)', async () => {
+    const res = await request(app).get('/careers');
+    const data = JSON.parse(res.text.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    expect(Array.isArray(data)).toBe(true);
+    expect(data[0]['@type']).toBe('JobPosting');
+    // One entry per job listed on the page.
+    expect(data).toHaveLength((res.text.match(/<li id="job-/g) || []).length);
   });
 
   it('hides draft jobs', async () => {
@@ -331,7 +354,8 @@ describe('dates', () => {
   });
 });
 
-describe('services help', () => {
+// Hidden in HLO's design (version 20): the Services page no longer has the quick guide.
+describe.skip('services help', () => {
   it('guides visitors who are unsure which service fits', async () => {
     const res = await request(app).get('/services');
     expect(res.text).toContain('Not sure which service fits?');
@@ -342,7 +366,8 @@ describe('services help', () => {
   });
 });
 
-describe('getting started comparison', () => {
+// The Getting started page is hidden in HLO's design (version 20).
+describe.skip('getting started comparison', () => {
   it('tags every service so the "where" filter can find it', async () => {
     const res = await request(app).get('/getting-started');
     const rows = [...res.text.matchAll(/<tr data-where="([a-z -]+)"/g)].map((m) => m[1]);
@@ -426,7 +451,7 @@ describe('referrals', () => {
     expect(res.text).toContain('Enter the person’s first name or initials');
     expect(res.text).toContain('Choose the county where the person lives');
     // What was typed is kept, including ticked services.
-    expect(res.text).toMatch(/value="respite-care" class="[^"]*" checked/);
+    expect(res.text).toMatch(/value="respite-care" checked/);
     expect(await db('contact_messages')).toHaveLength(0);
   });
 
@@ -441,7 +466,7 @@ describe('content from the current site', () => {
   it('lists every condition HLO supports on the Services page', async () => {
     const res = await request(app).get('/services');
     for (const c of ['Cerebral Palsy', 'Muscular Dystrophy', 'Multiple Sclerosis', 'Cystic Fibrosis', 'Spinal Cord Injury',
-      'Orthopedic Impairment', 'Behavioral Problems', 'Other undetermined disabilities', 'Intellectual disabilities', 'Autism']) {
+      'Orthopedic Impairment', 'Behavioral support needs', 'Other undetermined disabilities', 'Intellectual disabilities', 'Autism']) {
       expect(res.text).toContain(c);
     }
   });
@@ -453,7 +478,8 @@ describe('content from the current site', () => {
   });
 });
 
-describe('job detail page', () => {
+// The previous Careers design (search, pages per job) is kept but switched off: OLD_CAREERS in src/routes/public.js.
+describe.skip('job detail page', () => {
   beforeEach(async () => {
     await db('jobs').del();
     await db('jobs').insert({
@@ -509,7 +535,8 @@ describe('job detail page', () => {
   });
 });
 
-describe('careers search and pagination', () => {
+// The previous Careers design (search, pages per job) is kept but switched off: OLD_CAREERS in src/routes/public.js.
+describe.skip('careers search and pagination', () => {
   beforeEach(async () => {
     await db('jobs').del();
     const rows = [];
@@ -596,7 +623,8 @@ describe('careers search and pagination', () => {
   });
 });
 
-describe('careers live search', () => {
+// The previous Careers design (search, pages per job) is kept but switched off: OLD_CAREERS in src/routes/public.js.
+describe.skip('careers live search', () => {
   beforeEach(async () => {
     await db('jobs').del();
     await db('jobs').insert([
@@ -631,7 +659,8 @@ describe('careers live search', () => {
   });
 });
 
-describe('careers search relevance', () => {
+// The previous Careers design (search, pages per job) is kept but switched off: OLD_CAREERS in src/routes/public.js.
+describe.skip('careers search relevance', () => {
   it('lists title matches before description-only matches', async () => {
     await db('jobs').del();
     await db('jobs').insert([
@@ -645,27 +674,25 @@ describe('careers search relevance', () => {
 });
 
 describe('contact page', () => {
-  it('does not load Google Maps until the visitor asks', async () => {
+  it('shows the office map, as in HLO’s design', async () => {
     const res = await request(app).get('/contact');
-    expect(res.text).not.toMatch(/<iframe/);
-    expect(res.text).toContain('data-map-src="https://www.google.com/maps?q=4%20E%20Rolling%20Crossroads%2C%20Catonsville%2C%20MD%2C%2021228&amp;output=embed"');
+    expect(res.text).toContain('<iframe title="Map showing');
+    expect(res.text).toContain('src="https://www.google.com/maps?q=4%20E%20Rolling%20Crossroads%2C%20Catonsville%2C%20MD%2C%2021228&amp;z=15&amp;output=embed"');
     expect(res.headers['content-security-policy']).toContain('frame-src \'self\' https://www.google.com');
   });
 
-  it('shows an office open/closed status', async () => {
+  it('shows the office hours and the four ways to reach us', async () => {
     const res = await request(app).get('/contact');
-    expect(res.text).toMatch(/(Open now · until 5 p\.m\.|Closed · opens)/);
-  });
-
-  it('explains each recipient so visitors can choose', async () => {
-    const res = await request(app).get('/contact');
-    expect(res.text).toContain('Starting services with HLO and referrals.');
-    expect(res.text).toContain('href="/contact?to=intake#contact-form" data-set-recipient="intake"');
+    for (const t of ['Call us', 'Fax us', 'Write to us', 'Working hours']) expect(res.text).toContain(t);
+    // The hours come from Site content → Office hours ("Monday – Friday, 9am – 5pm": days, then times).
+    const { createRequire } = await import('module');
+    const hours = (await createRequire(import.meta.url)('../src/services/content').getBusiness()).hours;
+    expect(res.text).toContain(`<td>${hours.split(', ')[0]}</td>`);
   });
 
   it('mentions the optional map in the Cookie Policy', async () => {
     const res = await request(app).get('/cookies');
-    expect(res.text).toContain('The map loads only if you select “Show map”');
+    expect(res.text).toContain('show a Google map of our office');
   });
 });
 
@@ -674,12 +701,19 @@ describe('main menu', () => {
 
   it('has a Home link', async () => {
     const res = await request(app).get('/about');
-    expect(res.text).toMatch(/<a href="\/"[^>]*>Home<\/a>/);
+    expect(res.text).toMatch(/<a href="\/"[^>]*><span>Home<\/span><\/a>/);
   });
 
-  it('marks only the current page, in both desktop and mobile menus', async () => {
-    expect(current((await request(app).get('/')).text)).toEqual(['/', '/']);
-    expect(current((await request(app).get('/services/respite-care')).text)).toEqual(['/services', '/services']);
+  it('marks only the current page (one menu for all screen sizes)', async () => {
+    expect(current((await request(app).get('/')).text)).toEqual(['/']);
+    expect(current((await request(app).get('/services')).text)).toEqual(['/services']);
+  });
+
+  it('lists every service in the Services dropdown', async () => {
+    const res = await request(app).get('/');
+    const menu = res.text.match(/<ul class="d-dd-menu"[\s\S]*?<\/ul>/)[0];
+    const items = [...menu.matchAll(/<li><a href="\/services#(svc-[a-z]+)">/g)].map((m) => m[1]);
+    expect(items).toEqual(['svc-residential', 'svc-supported', 'svc-personal', 'svc-cds', 'svc-respite', 'svc-transport']);
   });
 });
 
@@ -699,7 +733,7 @@ describe('request services', () => {
     dda_eligibility: 'in_progress',
     pcp: 'not_sure',
     priority_category: '',
-    services: ['community-residential-services', 'employment-services'],
+    services: ['community-residential-services', 'transportation-services'],
     message: 'Looking at options for next year.',
     consent: 'yes',
   };
@@ -710,7 +744,7 @@ describe('request services', () => {
     expect(res.status).toBe(303);
     const [row] = await db('contact_messages');
     expect(row).toMatchObject({ type: 'request', recipient: 'intake', name: 'Robin Example', email: 'robin@example.com', phone: '(410) 555-0144', email_status: 'sent' });
-    expect(JSON.parse(row.details)).toMatchObject({ relationship: 'family', individual_first_name: 'Sam', county: 'Baltimore County', services: ['community-residential-services', 'employment-services'] });
+    expect(JSON.parse(row.details)).toMatchObject({ relationship: 'family', individual_first_name: 'Sam', county: 'Baltimore County', services: ['community-residential-services', 'transportation-services'] });
     const page = await agent.get('/request-services');
     expect(page.text).toContain('Thank you, Robin');
   });
@@ -723,6 +757,13 @@ describe('request services', () => {
     expect(res.text).toContain('Please confirm the information is correct');
     expect(res.text).toContain('value="Robin"');
     expect(await db('contact_messages')).toHaveLength(0);
+  });
+
+  it('treats “Not sure yet” as no service chosen', async () => {
+    const { agent, csrf } = await formAgent(app, '/request-services');
+    await agent.post('/request-services').type('form').send({ ...valid, services: [], services_not_sure: 'yes', _csrf: csrf });
+    const [row] = await db('contact_messages');
+    expect(JSON.parse(row.details).services).toEqual([]);
   });
 
   it('is linked from the header and the home page', async () => {

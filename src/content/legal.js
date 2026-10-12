@@ -362,7 +362,7 @@ const cookies = {
       heading: 'Other websites',
       paragraphs: [
         'When you follow a link to another website, such as Google Maps for directions, that website may set its own cookies under its own policy.',
-        'Our contact page can show a Google map of our office. The map loads only if you select “Show map”; until then, nothing is loaded from Google. Once loaded, Google may set cookies under its own privacy policy.',
+        'Our home and contact pages show a Google map of our office. The map is provided by Google, which may set cookies under its own privacy policy.',
       ],
     },
     {

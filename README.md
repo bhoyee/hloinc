@@ -35,12 +35,16 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 
 ### Main features
 
-**Public website**
-- Pages: Home, About, Services (and one page per service), Resources (glossary), Service areas, Getting started, Careers, Contact, legal pages.
+**Public website** (HLO's design, version 20, October 2026)
+- Pages: Home, About, Services, Resources, Careers, Contact, Ask about services, Send a referral, legal pages.
+  - Built from HLO's design file: deep-green headings, gold buttons, Bitter and Public Sans fonts, a sticky "On this page" bar, a Services dropdown, Previous/Next page links, and a county checker on the home page. Styles are in `public/css/site.css` (classes prefixed `d-`), behaviour in `public/js/ds.js`, shared pieces in `src/views/partials/ds*.njk`, starting text in `src/content/design.js`.
+  - Ask about services and Referral are three-step forms (about you, about them, review); they still work without JavaScript.
+  - Getting started, Service areas, the single service pages and Request an appointment are hidden, not deleted: old links go to the matching section (see `HIDDEN` in `src/routes/public.js` and `HIDDEN_PAGES` in `src/services/cms.js`).
+  - Careers: benefits, the open positions from Jobs (each expands to its details and pay), and one **Apply online** form (with resume upload and cell number) that sends to Applications. Old job links open that job on the page. The previous Careers design is kept: `careers-old.njk`, switched on with `OLD_CAREERS` in `src/routes/public.js`.
 - **Forms**:
-  - Contact (routed to the chosen role's inbox), Request services, Make a referral, Request an appointment, Job application with resume upload.
+  - Contact (to the General inquiry inbox), Ask about services, Send a referral, Job application with resume upload.
   - Each form gives a reference number (e.g. `HLO-REQ-7K3M9P`) and sends a branded confirmation email.
-- **Careers**: open jobs with search and filters. Each job has an apply form, and a clear "no openings" message is shown when nothing is posted.
+- **Careers**: open jobs from the portal with their details and pay, one apply form with resume upload, and a clear "no openings" message when nothing is posted.
 - **Announcements**: banners for the public site, staff or both, with start and end dates and pause/resume.
 - **Light and dark theme**: follows the visitor's device, with a sun/moon switch in the header. The staff portal always stays light.
 - **Visual page editor** for site text and photos: drafts, preview, publish and version history.

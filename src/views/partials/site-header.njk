@@ -1,0 +1,33 @@
+{# Site header (HLO's design, version 20). Menu items, phone line and button are editable in Site content. #}
+{% set menuItems = cms.list('site.menu', design.menu) %}
+{% set hdrCta = cms.link('site.hdr.cta', 'Ask about services', '/request-services') %}
+<header class="d-site-header ds">
+  <div class="d-wrap d-hdr">
+    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home">{% include "partials/ds-brand.njk" %}<span class="d-wm" aria-hidden="true"><span>Healthy Living</span><span>Option Inc.</span></span></a>
+    <nav class="d-nav" id="site-nav" aria-label="Main">
+      <ul class="d-nav-links">
+        {% for item in menuItems %}
+          {% set active = currentPath == item.href or (item.href != '/' and currentPath.startsWith(item.href + '/')) %}
+          {% if item.href == '/services' %}
+            <li class="d-has-dd" {{ item.attrs }}><a href="{{ item.href }}" {{ item.hrefAttrs }}{% if active %} aria-current="page"{% endif %}><span>{{ item.text('label') }}</span></a>
+              <button class="d-dd-toggle" type="button" aria-expanded="false" aria-label="Show services list"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+              <ul class="d-dd-menu" aria-label="Our services">
+                {% for s in design.services %}<li><a href="/services#{{ s.anchor }}">{{ s.menu or s.name }}</a></li>{% endfor %}
+                <li class="d-dd-all"><a href="/services">All services</a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li {{ item.attrs }}><a href="{{ item.href }}" {{ item.hrefAttrs }}{% if active %} aria-current="page"{% endif %}><span>{{ item.text('label') }}</span></a></li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+      <div class="d-nav-cta"><a class="d-btn d-btn-primary d-btn-sm" href="{{ hdrCta.href }}">{{ hdrCta.label }}</a></div>
+    </nav>
+    <div class="d-hdr-tools">
+      <a class="d-top-call" href="{{ site.phone | telHref }}"><span><small>{{ cms.text('site.hdr.callLine', 'Feel free to talk to us') }}</small><b>{{ site.phone }}</b></span></a>
+      <button class="d-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg class="d-i-moon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+      <a class="d-btn d-btn-primary d-btn-sm d-hdr-cta" href="{{ hdrCta.href }}" {{ hdrCta.attrs }}>{{ hdrCta.label }}</a>
+      <button class="d-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="d-burger" aria-hidden="true"><i></i><i></i><i></i></span><span class="d-mt-label">Menu</span></button>
+    </div>
+  </div>
+</header>

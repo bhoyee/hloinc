@@ -1,0 +1,19 @@
+{# The side column next to the Ask about services and Referral forms. `doc` is the page's Site content key. #}
+{% import "partials/ds.njk" as ds %}
+<aside>
+  <div class="d-aside-card"><h3>{{ cms.text(doc ~ '.aside.readyTitle', 'Helpful to have ready') }}</h3>
+    <ul class="d-tick">{% for r in cms.list(doc ~ '.aside.ready', [
+      { text: 'DDA eligibility status' }, { text: 'Funding priority category (CR or CP), if known' },
+      { text: 'Whether a Person-Centered Plan (PCP) exists' }, { text: 'Your Coordinator of Community Services (CCS) contact' }
+    ]) %}<li {{ r.attrs }}>{{ r.text('text') }}</li>{% endfor %}</ul>
+    <p class="d-small-note">{{ cms.text(doc ~ '.aside.readyNote', 'Not sure about any of these? That is fine. We will help you sort it out.') }}</p></div>
+  <figure class="d-aside-photo"><div class="d-tile-img">{{ ds.img(cms.image(doc ~ '.aside.photo', 'd-living-room', 'Bright furnished living room with a sectional sofa and large windows'), '(min-width: 980px) 30vw, 100vw') }}</div></figure>
+  <div class="d-aside-card"><h3>{{ cms.text(doc ~ '.aside.nextTitle', 'What happens next') }}</h3>
+    <ul>{% for r in cms.list(doc ~ '.aside.next', [
+      { text: 'A member of our team reviews your message.' }, { text: 'We call or email you using the details you give.' },
+      { text: 'We talk through the individual’s needs and how we can help.' }
+    ]) %}<li {{ r.attrs }}>{{ r.text('text') }}</li>{% endfor %}</ul></div>
+  <div class="d-aside-card"><h3>{{ cms.text(doc ~ '.aside.talkTitle', 'Prefer to talk?') }}</h3>
+    <p><a class="d-big-phone" href="{{ site.phone | telHref }}">{{ site.phone }}</a><br>{{ site.hours }}</p></div>
+  <div class="d-aside-card"><h3>{{ cms.text(doc ~ '.aside.privacyTitle', 'Your privacy') }}</h3><p class="d-privacy">{{ cms.text(doc ~ '.aside.privacy', 'Please do not include Social Security numbers, medical records, or other sensitive documents in this form. We will arrange a secure way to collect anything we need.') }}</p></div>
+</aside>

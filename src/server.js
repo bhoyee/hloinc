@@ -29,6 +29,10 @@ function createApp() {
   });
   env.addGlobal('currentYear', new Date().getFullYear());
   env.addGlobal('cms', cms.helpers);
+  // Starting content of the redesigned public pages (menu, services, glossary…).
+  env.addGlobal('design', require('./content/design'));
+  // ['a', 'b'] -> [{ name: 'a' }, { name: 'b' }]: plain lists as editable list items.
+  env.addFilter('listOf', (arr, key) => (Array.isArray(arr) ? arr.map((v) => ({ [key]: v })) : []));
   env.addGlobal('icon', (name, className) => new nunjucks.runtime.SafeString(icon(name, className)));
   // The editor's starting content (clean HTML) from saved text of either kind, and its plain-text fallback.
   env.addFilter('editorHtml', (value) => new nunjucks.runtime.SafeString(richText(value)));
@@ -103,6 +107,7 @@ function createApp() {
   app.use(sessionMiddleware());
   // Job applications are multipart (with a resume), so read them here for the CSRF check below.
   app.post('/careers/:slug/apply', limiters.applications, require('./routes/applicationUpload'));
+  app.post('/careers/apply', limiters.applications, require('./routes/applicationUpload'));
   // Profile photos are multipart too.
   app.post('/portal/account/avatar', require('./routes/avatarUpload'));
   app.post('/portal/help', require('./routes/helpUpload'));

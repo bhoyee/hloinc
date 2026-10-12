@@ -39,3 +39,26 @@ Free to use under the [Pexels licence](https://www.pexels.com/license/) (no attr
 | `employment-coffee` | pexels.com/photo/7697916 | Man at his job at a coffee machine (Employment Services) |
 | `team-colleagues` | pexels.com/photo/7162943 | Three colleagues smiling together (About) |
 | `hlo-about` | hloinc.com (HLO's own photo) | Support staff and an individual at HLO — only 378×420, too small for large banners |
+
+## Website design (version 20, October 2026)
+
+The redesigned public pages use the photos from HLO's design file, downloaded and hosted here
+(`public/img/photos/d-*.webp`, each with a `-sm` version). All are stock photos, not HLO staff,
+clients or vehicles.
+
+| File | Source | Licence |
+|---|---|---|
+| d-boardwalk | Pexels 8777851 | Pexels licence (free, no attribution required) |
+| d-friends-waterfront | Pexels 8777835 | Pexels licence |
+| d-team-wheelchair | Pexels 8777814 | Pexels licence |
+| d-living-dining | Pexels 6585598 | Pexels licence |
+| d-kitchen-wheelchair | Pexels 7446631 | Pexels licence |
+| d-support-smile | Pexels 8127422 | Pexels licence |
+| d-art-class | Pexels 5757078 | Pexels licence |
+| d-living-room | Pexels 4320380 | Pexels licence |
+| d-kitchen-dining | Pexels 29252364 | Pexels licence |
+| d-bedroom | Pexels 8089268 | Pexels licence |
+| d-bedroom-window | Pexels 34496701 | Pexels licence |
+| d-van | Wikimedia Commons: “2021 Vantage Mobility Northstar on Toyota Sienna XSE AWD…”, by Elise240SX | CC BY-SA 4.0: credit required (shown in the website footer) |
+
+Fonts: Bitter and Public Sans (SIL Open Font License), hosted in `public/fonts`.
