@@ -62,6 +62,8 @@ async function main() {
     counts.shifts = await trx('shifts').whereIn('user_id', keepStaff ? demoStaff : staffIds).modify((q) => { if (keepStaff) q.whereNull('created_by'); }).del();
     counts.notifications = await trx('notifications').whereIn('user_id', staffIds).del();
     counts.staff = await trx('users').whereIn('id', staffIds).del();
+    // The demo positions on the Careers page (seeds/12_demo_positions.js).
+    counts.positions = await trx('jobs').whereIn('slug', require('../src/db/seeds/12_demo_positions').SLUGS).del();
     if (process.env.NODE_ENV !== 'production') {
       counts.jobs = await trx('jobs').where('apply_url', 'https://workforcenow.adp.com/').where('slug', 'like', '%-%').whereNotNull('pay_range').del();
     }
