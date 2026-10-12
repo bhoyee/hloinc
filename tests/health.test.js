@@ -138,3 +138,33 @@ describe('system health page', () => {
     expect(await db('email_log').count({ n: '*' }).first()).toEqual({ n: 0 });
   });
 });
+
+describe('system health: deploys', () => {
+  it('reports a refused version only until a newer one goes live', async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const dir = path.join(config.paths.root, 'tmp');
+    const file = path.join(dir, 'skipped-commit');
+    const hadDir = fs.existsSync(dir);
+    let hadDeployed = null;
+    fs.mkdirSync(dir, { recursive: true });
+    try {
+      // A version not in the live code: shown.
+      fs.writeFileSync(file, 'f'.repeat(40));
+      expect((await health.snapshot()).version.refused).toMatchObject({ commit: 'fffffff' });
+      // A newer version went live after it: no longer shown.
+      const deployed = path.join(dir, 'deployed-commit');
+      hadDeployed = fs.existsSync(deployed) ? fs.readFileSync(deployed) : null;
+      fs.writeFileSync(deployed, 'e'.repeat(40));
+      const earlier = new Date(Date.now() - 3600000);
+      fs.utimesSync(file, earlier, earlier);
+      expect((await health.snapshot()).version.refused).toBeNull();
+    } finally {
+      fs.rmSync(file, { force: true });
+      const deployed = path.join(dir, 'deployed-commit');
+      if (hadDeployed) fs.writeFileSync(deployed, hadDeployed);
+      else fs.rmSync(deployed, { force: true });
+      if (!hadDir) fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

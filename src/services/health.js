@@ -118,13 +118,18 @@ async function version() {
   ]);
   const [commit, committedAt, subject] = log ? log.split('\t') : [];
   const head = log ? await git(['rev-parse', 'HEAD']) : null;
+  // A refused version only matters until a newer one goes live: then it's already
+  // part of the live code, or was replaced.
+  let refused = skipped && skipped.text && skipped.text !== head && skipped.text !== (deployed && deployed.text);
+  if (refused && deployed && deployed.at > skipped.at) refused = false;
+  if (refused && head && (await git(['merge-base', '--is-ancestor', skipped.text, head])) !== null) refused = false;
   return {
     commit: commit || null,
     subject: subject || null,
     committedAt: committedAt ? new Date(committedAt) : null,
     deployedAt: deployed ? deployed.at : null,
     // A newer version that failed its tests or its install, and wasn't put live.
-    refused: skipped && skipped.text && skipped.text !== head && skipped.text !== (deployed && deployed.text) ? { commit: skipped.text.slice(0, 7), at: skipped.at } : null,
+    refused: refused ? { commit: skipped.text.slice(0, 7), at: skipped.at } : null,
     node: process.version,
     env: config.env,
     startedAt: new Date(Date.now() - process.uptime() * 1000),

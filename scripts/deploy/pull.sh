@@ -47,6 +47,7 @@ echo "$(ts) → deploying ${TARGET:0:7} (was ${CURRENT:0:7})"
 git reset --hard --quiet "$TARGET"
 if bash scripts/deploy/remote.sh "$ACTIVATE"; then
   echo "$TARGET" > tmp/deployed-commit
+  rm -f tmp/skipped-commit   # an older refused version no longer matters
   echo "$(ts) ✓ deployed ${TARGET:0:7}"
 else
   echo "$(ts) ✗ deploy of ${TARGET:0:7} failed; going back to ${CURRENT:0:7}"
