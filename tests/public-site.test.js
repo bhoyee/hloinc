@@ -749,6 +749,18 @@ describe('request services', () => {
     expect(page.text).toContain('Thank you, Robin');
   });
 
+  it('asks for the best time to call only when they prefer a call', async () => {
+    const { agent, csrf } = await formAgent(app, '/request-services');
+    expect((await agent.get('/request-services')).text).toContain('<div data-call-only>');
+    const byEmail = await agent.post('/request-services').type('form').send({ ...valid, email: 'by-email@example.com', preferred_contact: 'email', best_time: '', _csrf: csrf });
+    expect(byEmail.status).toBe(303);
+    expect(JSON.parse((await db('contact_messages').first()).details).best_time).toBe('');
+    const second = await formAgent(app, '/request-services');
+    const byPhone = await second.agent.post('/request-services').type('form').send({ ...valid, preferred_contact: 'phone', best_time: '', _csrf: second.csrf });
+    expect(byPhone.status).toBe(422);
+    expect(byPhone.text).toContain('Choose the best time to call');
+  });
+
   it('requires the essentials and keeps what was typed', async () => {
     const { agent, csrf } = await formAgent(app, '/request-services');
     const res = await agent.post('/request-services').type('form').send({ ...valid, last_name: '', relationship: '', consent: '', _csrf: csrf });

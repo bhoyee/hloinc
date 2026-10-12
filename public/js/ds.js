@@ -192,7 +192,7 @@
       var order = [];
       steps.slice(0, last).forEach(function (step) {
         step.querySelectorAll('input, select, textarea').forEach(function (f) {
-          if (!f.name || f.type === 'hidden' || f.closest('[aria-hidden="true"]')) return;
+          if (!f.name || f.type === 'hidden' || f.disabled || f.closest('[aria-hidden="true"]')) return;
           var value = '';
           if (f.type === 'checkbox' || f.type === 'radio') {
             if (!f.checked) return;
@@ -296,6 +296,19 @@
       var first = document.getElementById('jb-first_name');
       if (first) setTimeout(function () { try { first.focus({ preventScroll: true }); } catch (err) { first.focus(); } }, 300);
     });
+  });
+
+  // Ask about services: "Best time to call" only when they prefer a call.
+  document.querySelectorAll('[data-call-only]').forEach(function (box) {
+    var form = box.closest('form');
+    var radios = form ? [].slice.call(form.querySelectorAll('input[name="preferred_contact"]')) : [];
+    function sync() {
+      var email = radios.some(function (r) { return r.checked && r.value === 'email'; });
+      box.hidden = email;
+      box.querySelectorAll('select, input').forEach(function (f) { f.disabled = email; });
+    }
+    radios.forEach(function (r) { r.addEventListener('change', sync); });
+    sync();
   });
 
   // The success panel's tick draws itself.

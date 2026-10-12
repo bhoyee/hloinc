@@ -26,7 +26,8 @@
             <label><input type="radio" name="preferred_contact" value="phone"{% if values.preferred_contact != 'email' %} checked{% endif %}> Phone</label>
             <label><input type="radio" name="preferred_contact" value="email"{% if values.preferred_contact == 'email' %} checked{% endif %}> Email</label>
           </div>{{ ds.err('preferred_contact', errors) }}</div>
-        {{ f.select('rq-best_time', 'best_time', 'Best time to call', values, errors, options.bestTime, true) }}
+        {# Shown only for a call (public/js/ds.js). #}
+        <div data-call-only>{{ f.select('rq-best_time', 'best_time', 'Best time to call', values, errors, options.bestTime, true) }}</div>
       </fieldset>
 
       <fieldset class="d-step" data-step="2"><legend>{{ cms.text('request-services.step2', 'About the individual who needs support') }}</legend>

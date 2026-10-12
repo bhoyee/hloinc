@@ -116,7 +116,8 @@ const requestSchema = z
     phone,
     email,
     preferred_contact: z.enum(['phone', 'email'], { error: 'Choose how you prefer to be contacted.' }).default('phone'),
-    best_time: z.enum(Object.keys(OPTIONS.bestTime), { error: 'Choose the best time to call.' }),
+    // Only asked when they prefer a call (the field hides for email).
+    best_time: z.union([z.literal(''), z.enum(Object.keys(OPTIONS.bestTime))], { error: 'Choose the best time to call.' }).optional().default(''),
     relationship: z.enum(Object.keys(OPTIONS.relationship), { error: 'Choose your relationship to the person.' }),
     individual_first_name: z.string().trim().max(60, 'A first name is enough here.').optional().default(''),
     county: z.union([z.literal(''), z.enum(COUNTIES)], { error: 'Choose a county from the list.' }).optional().default(''),
@@ -126,7 +127,11 @@ const requestSchema = z
     services: checkboxList(services.map((s) => s.slug)),
     message: z.string().trim().max(1500, 'Keep this under 1,500 characters.').optional().default(''),
     consent: z.literal('yes', { error: 'Please confirm the information is correct and we may contact you.' }),
-  });
+  })
+  .superRefine((d, ctx) => {
+    if (d.preferred_contact === 'phone' && !d.best_time) ctx.addIssue({ code: 'custom', path: ['best_time'], message: 'Choose the best time to call.' });
+  })
+  .transform((d) => (d.preferred_contact === 'email' ? { ...d, best_time: '' } : d));
 
 /** Today's date in Maryland as YYYY-MM-DD. */
 function todayInMaryland(now = new Date()) {
