@@ -50,18 +50,22 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 - **Visual page editor** for site text and photos: drafts, preview, publish and version history.
 
 **Staff portal**
+- **Menu** grouped by job: Inbox, Scheduling, Hiring, Website, Administration.
 - **Dashboard** (live):
   - Cards and charts, plus "Needs attention" and "Today at HLO".
   - **Appointments** widget (roles that see appointments): Week or Month view with the number booked per day; pick a day to list its appointments, hover for details.
   - The staff announcement board and recent leads.
   - Recent activity (audit-log roles) or **My work** (everyone else), and My shifts.
 - **Messages**:
+  - Quick views: All, Contact messages, Intake (referrals and service requests), Assigned to me.
   - Inboxes per role and "Contact form" badges.
+  - **Send to…**: Reception passes a contact page message to the team who should handle it; that team gets a bell alert and an email (permission "Send messages on to another team").
+  - **Book a meeting** from a message: the appointment starts from the message's details, joins the same lead and shows in the message's history.
   - Coloured statuses, searchable "Handled by" and internal notes.
   - Formatted email replies.
   - Overdue alerts, and email to the person a message is assigned to.
 - **Leads**: everyone who reached out, with stage, owner, timeline and CSV export.
-- **Appointments**: list, calendar, appointment types, walk-in/phone logging, confirmation emails, and a **reminder email the day before** (from 10 a.m., with Add to Google Calendar and directions).
+- **Appointments** (booked by staff): list, calendar, appointment types, walk-in/phone logging, confirmation emails, and a **reminder email the day before** (from 10 a.m., with Add to Google Calendar and directions). Website appointment requests are switched off in `src/lib/features.js` (`appointmentRequests`); switching them on brings back the Requests tab, counter, alerts and reports.
 - **Schedule**: team and personal views, shifts, and time-off requests with approval (in-app and email).
 - **Jobs & applications**:
   - Posting with a formatted editor and Maryland pay-transparency checks.

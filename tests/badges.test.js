@@ -1,6 +1,14 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
+import { createRequire } from 'module';
 import { createApp, db } from './helpers.js';
 import { resetRoles, makeUser, signIn, post } from './portal-helpers.js';
+
+const require = createRequire(import.meta.url);
+const features = require('../src/lib/features');
+// Tests that turn on website appointment requests put the switch back afterwards.
+afterEach(() => {
+  features.appointmentRequests = false;
+});
 
 const app = createApp();
 
@@ -34,6 +42,7 @@ afterAll(() => db.destroy());
 
 describe('menu counters', () => {
   it('shows unread messages and waiting requests on the menu', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     await message();
     await message({ name: 'Second' });
     await db('appointments').insert([
@@ -71,6 +80,7 @@ describe('menu counters', () => {
   });
 
   it('drops the appointment counter when a request is confirmed or cancelled', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     const [id] = await db('appointments').insert({ type_id: typeId, source: 'website', status: 'requested', name: 'A', email: 'a@example.com' });
     const director = await signIn(app, await makeUser('program_director'));
     expect((await summary(director)).appointments).toBe(1);

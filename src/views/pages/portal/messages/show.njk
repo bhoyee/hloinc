@@ -99,17 +99,21 @@
             {% for e in events %}
               <li class="relative">
                 <span class="absolute top-0.5 -left-[2.1rem] grid size-6 place-items-center rounded-full ring-4 ring-white {{ 'bg-brand-700 text-white' if e.kind == 'reply' else ('bg-amber-100 text-amber-900' if e.kind == 'note' else 'bg-surface text-muted ring-line') }}" aria-hidden="true">
-                  {{ icon('mail' if e.kind == 'reply' else ('pencil' if e.kind == 'note' else ('users' if e.kind == 'assign' else 'check')), 'size-3.5') }}
+                  {{ icon('mail' if e.kind == 'reply' else ('pencil' if e.kind == 'note' else ('users' if e.kind == 'assign' else ('arrow-right' if e.kind == 'passed_on' else ('calendar' if e.kind == 'meeting' else 'check')))), 'size-3.5') }}
                 </span>
                 <p class="text-sm text-muted">
                   <strong class="font-semibold text-ink">{{ e.user_name or 'Someone' }}</strong>
-                  {% if e.kind == 'reply' %}emailed a reply{% elif e.kind == 'note' %}added a note{% elif e.kind == 'assign' %}{{ e.body | lower }}{% else %}changed the status: {{ e.body }}{% endif %}
+                  {% if e.kind == 'reply' %}emailed a reply{% elif e.kind == 'note' %}added a note{% elif e.kind == 'assign' %}{{ e.body | lower }}{% elif e.kind == 'passed_on' %}{{ e.body.split(':')[0] | lower }}{% elif e.kind == 'meeting' %}booked a meeting{% else %}changed the status: {{ e.body }}{% endif %}
                   · {{ e.created_at | dateTime }}
                   {% if e.kind == 'reply' and e.email_status == 'failed' %}<span class="ml-1 inline-flex items-center gap-1 font-semibold text-accent-700">{{ icon('exclamation', 'size-3.5') }} Not delivered</span>{% endif %}
                 </p>
                 {% if e.kind == 'reply' and e.body_html %}
                   {# Cleaned on the server when it was sent (lib/richText). #}
                   <div class="prose-reply mt-1.5 rounded-2xl bg-brand-50 px-4 py-3 text-[15px] text-ink">{{ e.body_html | safe }}</div>
+                {% elif e.kind == 'passed_on' and ':' in e.body %}
+                  <p class="mt-1.5 rounded-2xl bg-surface px-4 py-3 text-[15px] whitespace-pre-line text-ink">{{ e.body.split(': ').slice(1).join(': ') }}</p>
+                {% elif e.kind == 'meeting' %}
+                  <p class="mt-1.5 text-[15px] text-ink">{{ e.body }}</p>
                 {% elif e.kind in ['reply', 'note'] %}
                   <p class="mt-1.5 rounded-2xl px-4 py-3 text-[15px] whitespace-pre-line text-ink {{ 'bg-brand-50' if e.kind == 'reply' else 'bg-amber-50' }}">{{ e.body }}</p>
                 {% endif %}
@@ -171,6 +175,29 @@
           <p class="mt-1 text-sm text-muted">{{ m.assigned_name or 'Nobody yet' }}</p>
         {% endif %}
       </section>
+
+      {% if can('messages.pass_on') %}
+        {# Reception passes a message to the team who should handle it. #}
+        <section class="rounded-3xl border border-line bg-white p-6 shadow-soft" aria-labelledby="send-h">
+          <h2 id="send-h" class="text-base font-bold">Send to…</h2>
+          <p class="mt-1 text-sm text-muted">Now in <strong class="text-ink">{{ recipientLabels[m.recipient] or m.recipient }}</strong>. Pass it to the team who should handle it; they’re told by notification and email.</p>
+          <form method="post" action="/portal/messages/{{ m.id }}/send" class="mt-3 space-y-2" data-once>
+            <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+            <label for="f-send-to" class="sr-only">Send to</label>
+            <select id="f-send-to" name="to" class="form-control !py-2" required>
+              <option value="">Choose a team…</option>
+              {% for key, label in recipientLabels %}{% if key != m.recipient %}<option value="{{ key }}">{{ label }}</option>{% endif %}{% endfor %}
+            </select>
+            <label for="f-send-note" class="sr-only">Note (optional)</label>
+            <textarea id="f-send-note" name="note" rows="2" maxlength="500" class="form-control !py-2 text-sm" placeholder="Note for them (optional)"></textarea>
+            <button type="submit" class="btn-green w-full !py-2">{{ icon('arrow-right', 'size-4') }} Send</button>
+          </form>
+        </section>
+      {% endif %}
+
+      {% if can('appointments.log') %}
+        <a href="/portal/appointments/new?message={{ m.id }}" class="btn-secondary w-full">{{ icon('calendar', 'size-4') }} Book a meeting</a>
+      {% endif %}
 
       <section class="rounded-3xl border border-line bg-white p-6 text-sm shadow-soft" aria-labelledby="email-h">
         <h2 id="email-h" class="font-semibold text-ink">Email to the team</h2>

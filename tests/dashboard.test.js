@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { createRequire } from 'module';
 import { createApp, db } from './helpers.js';
 
 const require = createRequire(import.meta.url);
+const features = require('../src/lib/features');
+// Tests that turn on website appointment requests put the switch back afterwards.
+afterEach(() => {
+  features.appointmentRequests = false;
+});
 const bcrypt = require('bcryptjs');
 const roles = require('../src/services/roles');
 const config = require('../src/config');
@@ -68,6 +73,7 @@ afterAll(() => db.destroy());
 
 describe('dashboard page', () => {
   it('shows the live clock, cards and charts to the CEO/COO', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     const agent = await signIn(await makeUser('admin'));
     const res = await agent.get('/portal');
     expect(res.status).toBe(200);
@@ -80,6 +86,7 @@ describe('dashboard page', () => {
   });
 
   it('hides charts from roles without "Dashboard analytics"', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     const agent = await signIn(await makeUser('reception'));
     const res = await agent.get('/portal');
     expect(res.status).toBe(200);
@@ -99,6 +106,7 @@ describe('dashboard page', () => {
 
 describe('dashboard data (silent refresh)', () => {
   it('returns current tiles and charts as JSON', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     await db('appointments').insert({ type_id: typeId, source: 'website', status: 'requested', name: 'A', email: 'a@example.com' });
     const agent = await signIn(await makeUser('admin'));
     const res = await agent.get('/portal/dashboard/data');
@@ -193,6 +201,7 @@ describe('dashboard data (silent refresh)', () => {
 
 describe('appointments widget', () => {
   it('shows this week with the number booked per day, and today’s appointments', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     await db('appointments').insert([
       { type_id: typeId, source: 'phone', status: 'confirmed', name: 'Today Person', phone: '4105550100', scheduled_at: marylandDateTime(today(), '10:00') },
       { type_id: typeId, source: 'website', status: 'cancelled', name: 'Cancelled Person', email: 'c@example.com', scheduled_at: marylandDateTime(today(), '11:00') },

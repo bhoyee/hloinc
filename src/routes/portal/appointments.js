@@ -58,7 +58,7 @@ router.get('/', can('appointments.view'), async (req, res) => {
   const filters = { q: str(req.query.q), status: str(req.query.status), type: /^\d+$/.test(req.query.type || '') ? req.query.type : '', source: str(req.query.source) };
   if (!appts.STATUS_LABELS[filters.status]) filters.status = '';
   // A status cuts across the tabs (e.g. "Cancelled"), so choosing one shows the All tab.
-  const tab = filters.status ? 'all' : appts.TABS[req.query.tab] ? req.query.tab : 'requests';
+  const tab = filters.status ? 'all' : appts.TABS[req.query.tab] ? req.query.tab : appts.TABS.requests ? 'requests' : 'upcoming';
   const perPage = await perPageFor(req);
   const result = await appts.list({ tab, ...filters, page: req.query.page, perPage });
   const pageUrl = (p) => `/portal/appointments?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
@@ -161,12 +161,21 @@ router.get('/calendar', can('appointments.view'), async (req, res) => {
 
 // --- Log a walk-in or phone appointment -------------------------------------------------
 
-async function renderLog(req, res, { values, errors = {}, problems = [], status = 200 } = {}) {
+/** The message a meeting is being booked from ("Book a meeting" on a message), if this person can see it. */
+async function fromMessage(req, id) {
+  if (!/^\d+$/.test(String(id || ''))) return null;
+  const { MESSAGE_ACCESS, can: allowed } = require('../../auth/permissions');
+  if (!MESSAGE_ACCESS.some((p) => allowed(req.user, p))) return null;
+  return require('../../services/messages').get(req.user, Number(id));
+}
+
+async function renderLog(req, res, { values, errors = {}, problems = [], status = 200, message = null } = {}) {
   const now = marylandParts(new Date());
   const types = await activeTypes();
   res.status(status).render('pages/portal/appointments/log.njk', {
-    title: 'Log a walk-in or phone appointment',
+    title: message ? `Book a meeting: ${message.name}` : 'Log a walk-in or phone appointment',
     crumbs: apptCrumbs,
+    message,
     types,
     staff: await appts.staffOptions(),
     values: values || {
@@ -181,21 +190,43 @@ async function renderLog(req, res, { values, errors = {}, problems = [], status 
   });
 }
 
-router.get('/new', can('appointments.log'), (req, res) => renderLog(req, res));
+router.get('/new', can('appointments.log'), async (req, res) => {
+  const message = await fromMessage(req, req.query.message);
+  if (!message) return renderLog(req, res);
+  // Booking a meeting from a referral, service request or contact message: start from its details.
+  const now = marylandParts(new Date());
+  const types = await activeTypes();
+  renderLog(req, res, {
+    message,
+    values: {
+      source: 'phone',
+      type_id: types[0] ? String(types[0].id) : '',
+      name: message.name,
+      phone: message.phone || '',
+      email: message.email || '',
+      date: addDaysIso(now.date, 1),
+      time: '10:00',
+      duration_minutes: types[0] ? types[0].duration_minutes : appts.DEFAULT_DURATION,
+      notes: `Follow-up to ${ref(message)}`,
+      message_id: String(message.id),
+    },
+  });
+});
 
 router.post('/', can('appointments.log'), async (req, res) => {
+  const message = await fromMessage(req, req.body.message_id);
   const parsed = logSchema.safeParse(req.body);
-  if (!parsed.success) return renderLog(req, res, { values: req.body, errors: fieldErrors(parsed.error), status: 422 });
+  if (!parsed.success) return renderLog(req, res, { values: req.body, errors: fieldErrors(parsed.error), status: 422, message });
   const d = parsed.data;
   const type = await db('appointment_types').where({ id: d.type_id, active: true }).first();
-  if (!type) return renderLog(req, res, { values: req.body, errors: { type_id: 'Choose an appointment type.' }, status: 422 });
+  if (!type) return renderLog(req, res, { values: req.body, errors: { type_id: 'Choose an appointment type.' }, status: 422, message });
 
   const start = marylandDateTime(d.date, d.time);
   // A walk-in happening now is expected; only warn about past times for phone bookings.
   const problems = (await bookingProblems({ type, start, duration: d.duration_minutes })).filter(
     (p) => !(d.source === 'walk_in' && p.startsWith('That time is in the past'))
   );
-  if (problems.length && d.override !== 'yes') return renderLog(req, res, { values: req.body, problems, status: 422 });
+  if (problems.length && d.override !== 'yes') return renderLog(req, res, { values: req.body, problems, status: 422, message });
 
   const appt = await appts.create({
     type_id: type.id,
@@ -214,9 +245,19 @@ router.post('/', can('appointments.log'), async (req, res) => {
     handled_by: req.user.id,
   });
   try {
-    await require('../../services/leads').attachAppointment(appt.id, { name: d.name, email: d.email, phone: d.phone }, { byStaff: true });
+    if (message && message.lead_id) {
+      // Booked from a message: the same person (lead) as the message.
+      await db('appointments').where({ id: appt.id }).update({ lead_id: message.lead_id });
+      await require('../../services/leads').markContacted(message.lead_id, req.user);
+    } else {
+      await require('../../services/leads').attachAppointment(appt.id, { name: d.name, email: d.email, phone: d.phone }, { byStaff: true });
+    }
   } catch (err) {
     console.error('Could not link appointment to a lead:', err.message);
+  }
+  if (message) {
+    const when = new Date(start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    await require('../../services/messages').addEvent(message.id, req.user, 'meeting', `${type.name}, ${when} (${ref(appt)})`);
   }
   await audit(req, {
     action: 'appointment.log',

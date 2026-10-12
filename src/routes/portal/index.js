@@ -3,7 +3,7 @@
 const { MESSAGE_ACCESS } = require('../../auth/permissions');
 const express = require('express');
 const { loadUser, requireAuth, requireMfaSetup, requirePermission } = require('../../middleware/auth');
-const { navFor } = require('../../lib/portalNav');
+const { navFor, groupsFor } = require('../../lib/portalNav');
 
 const router = express.Router();
 
@@ -18,6 +18,7 @@ router.use(loadUser);
 router.use((req, res, next) => {
   res.locals.currentPath = req.originalUrl.split('?')[0].replace(/\/+$/, '') || '/portal';
   res.locals.portalNav = req.user ? navFor(res.locals.can, res.locals.currentPath) : [];
+  res.locals.portalNavGroups = groupsFor(res.locals.portalNav);
   next();
 });
 

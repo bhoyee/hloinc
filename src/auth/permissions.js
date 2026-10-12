@@ -47,6 +47,7 @@ const MODULES = [
       inbox_program_director: '“Program director” messages',
       inbox_executive: '“CEO/COO” messages',
       inbox_intake: 'Intake: referrals, service requests and “Intake specialist” messages',
+      pass_on: 'Send messages on to another team (“Send to…”), without replying or changing them',
     },
     labels: { view: 'View all', edit: 'Reply & update status' },
   },
@@ -144,7 +145,7 @@ const MODULES = [
 ];
 
 /** The per-inbox message permissions, and every permission that opens the inbox at all. */
-const INBOX_PERMISSIONS = Object.keys(MODULES.find((m) => m.key === 'messages').extras).map((k) => `messages.${k}`);
+const INBOX_PERMISSIONS = Object.keys(MODULES.find((m) => m.key === 'messages').extras).filter((k) => k.startsWith('inbox_')).map((k) => `messages.${k}`);
 const MESSAGE_ACCESS = ['messages.view', ...INBOX_PERMISSIONS];
 const inboxPermission = (recipientKey) => `messages.inbox_${recipientKey}`;
 
@@ -198,7 +199,7 @@ const DEFAULT_ROLES = [
     permissions: [
       'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'appointments.manage_types',
       'schedule.view', 'schedule.edit',
-      'messages.inbox_program_director', 'messages.inbox_intake', 'messages.edit',
+      'messages.inbox_program_director', 'messages.inbox_intake', 'messages.edit', 'messages.pass_on',
       'leads.view', 'leads.edit', 'leads.export',
       'jobs.view', 'jobs.edit', 'jobs.archive', 'jobs.delete',
       'announcements.view',
@@ -213,7 +214,7 @@ const DEFAULT_ROLES = [
     permissions: [
       'appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log',
       'schedule.view', 'schedule.edit',
-      'messages.inbox_program_coordinator', 'messages.edit',
+      'messages.inbox_program_coordinator', 'messages.edit', 'messages.pass_on',
       'leads.view', 'leads.edit',
       'announcements.view',
     ],
@@ -222,13 +223,13 @@ const DEFAULT_ROLES = [
     key: 'intake_specialist',
     name: 'Intake Specialist',
     description: 'Appointments and the intake / referral inbox.',
-    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.inbox_intake', 'messages.edit', 'leads.view', 'leads.edit'],
+    permissions: ['appointments.view', 'appointments.edit', 'appointments.archive', 'appointments.log', 'messages.inbox_intake', 'messages.edit', 'messages.pass_on', 'leads.view', 'leads.edit'],
   },
   {
     key: 'reception',
     name: 'Reception',
-    description: 'Front desk: logs walk-in and phone appointments; read-only schedules; General inquiry messages.',
-    permissions: ['appointments.view', 'appointments.log', 'schedule.view', 'messages.inbox_general'],
+    description: 'Front desk: logs walk-in and phone appointments; read-only schedules; reads contact page messages and sends them on to the right team.',
+    permissions: ['appointments.view', 'appointments.log', 'schedule.view', 'messages.inbox_general', 'messages.pass_on'],
   },
 ];
 

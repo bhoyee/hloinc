@@ -1,5 +1,7 @@
 'use strict';
 
+const features = require('../lib/features');
+
 /**
  * Everything the dashboard shows that changes during the day: the headline
  * tiles and the analytics charts. The page renders it once and the browser
@@ -43,11 +45,11 @@ async function tiles(user, today) {
   if (scope) {
     list.push({
       key: 'messages',
-      label: 'New messages',
+      label: 'New contact messages',
       icon: 'inbox',
       value: await count(scope(db('contact_messages').where({ status: 'new', type: 'message' }).whereNull('archived_at'))),
-      note: 'From the website contact form',
-      href: '/portal/messages?tab=new&type=message',
+      note: 'To read and pass on',
+      href: '/portal/messages?tab=new&view=contact',
     });
     list.push({
       key: 'referrals',
@@ -73,13 +75,27 @@ async function tiles(user, today) {
       label: 'Appointments',
       icon: 'calendar',
       parts: [
-        {
-          key: 'requests',
-          label: 'Requests',
-          value: await count(db('appointments').where({ status: 'requested' })),
-          note: 'To confirm',
-          href: '/portal/appointments?tab=requests',
-        },
+        // Website requests while that form is on; otherwise what staff have booked this week.
+        features.appointmentRequests
+          ? {
+            key: 'requests',
+            label: 'Requests',
+            value: await count(db('appointments').where({ status: 'requested' })),
+            note: 'To confirm',
+            href: '/portal/appointments?tab=requests',
+          }
+          : {
+            key: 'week',
+            label: 'This week',
+            value: await count(
+              db('appointments')
+                .whereIn('status', ['confirmed', 'completed'])
+                .where('scheduled_at', '>=', marylandDateTime(weekStartIso(today), '00:00'))
+                .where('scheduled_at', '<', marylandDateTime(addDaysIso(weekStartIso(today), 7), '00:00'))
+            ),
+            note: 'Booked',
+            href: `/portal/appointments/calendar?view=week&date=${today}`,
+          },
         {
           key: 'today',
           label: 'Today',
@@ -175,7 +191,7 @@ async function enquiriesByWeek(user, today) {
       series.push({ key, name, color, values });
     }
   }
-  if (can(user, 'appointments.view')) {
+  if (features.appointmentRequests && can(user, 'appointments.view')) {
     const rows = await db('appointments').where({ source: 'website' }).where('created_at', '>=', from).select('created_at');
     const values = starts.map(() => 0);
     for (const r of rows) if (index(r.created_at) >= 0) values[index(r.created_at)] += 1;

@@ -19,6 +19,7 @@ const { recipients } = require('../lib/site');
 const roles = require('./roles');
 const content = require('./content');
 const notifications = require('./notifications');
+const features = require('../lib/features');
 
 const SETTING = 'alerts.routing';
 
@@ -29,10 +30,11 @@ const EVENTS = [
   { key: 'referral', label: 'New referral', help: 'Make a referral form', sees: seesInbox('intake'), defaults: ['intake_specialist'] },
   { key: 'request', label: 'New service request', help: 'Request services form', sees: seesInbox('intake'), defaults: ['intake_specialist'] },
   { key: 'appointment', label: 'New appointment request', help: 'Request an appointment form', sees: (r) => r.permissions.has('appointments.view'), defaults: ['reception', 'intake_specialist'] },
+  // General inquiry: every contact page message. The others: messages passed on to that team with "Send to…".
   ...recipients.map((r) => ({
     key: `message_${r.key}`,
-    label: `Contact form: ${r.label}`,
-    help: 'Contact page',
+    label: r.key === 'general' ? 'Contact page message' : `Passed on to ${r.label}`,
+    help: r.key === 'general' ? 'Every message from the contact page' : 'Sent on from Messages with “Send to…”',
     sees: seesInbox(r.key),
     defaults: { general: ['reception'], program_coordinator: ['program_coordinator'], program_director: ['program_director'], executive: [ADMIN_ROLE], intake: ['intake_specialist'] }[r.key] || [ADMIN_ROLE],
   })),
@@ -42,7 +44,7 @@ const EVENTS = [
   {
     key: 'overdue',
     label: 'Waiting too long',
-    help: 'Still New after 2 business days (appointment requests: 1). Also emailed.',
+    help: features.appointmentRequests ? 'Still New after 2 business days (appointment requests: 1). Also emailed.' : 'Still New after 2 business days. Also emailed.',
     sees: (r) => r.permissions.has('messages.view') || r.permissions.has('appointments.view'),
     defaults: [ADMIN_ROLE],
   },
@@ -65,7 +67,8 @@ async function grid() {
   const current = await routing();
   return {
     roles: all.map((r) => ({ key: r.key, name: r.name })),
-    rows: EVENTS.map((e) => ({
+    // Alerts for parts the website doesn't offer now are kept, but not shown (lib/features.js).
+    rows: EVENTS.filter((e) => e.key !== 'appointment' || features.appointmentRequests).map((e) => ({
       key: e.key,
       label: e.label,
       help: e.help,
@@ -121,8 +124,10 @@ async function checkOverdue(now = new Date()) {
   const { businessDaysBefore, WAIT } = require('./workday');
   const msgs = await db('contact_messages').where({ status: 'new' }).whereNull('archived_at').whereNull('escalated_at')
     .where('created_at', '<', businessDaysBefore(now, WAIT.inbox)).select('id', 'type');
-  const appts = await db('appointments').where({ status: 'requested' }).whereNull('escalated_at')
-    .where('created_at', '<', businessDaysBefore(now, WAIT.appointmentRequest)).pluck('id');
+  const appts = features.appointmentRequests
+    ? await db('appointments').where({ status: 'requested' }).whereNull('escalated_at')
+      .where('created_at', '<', businessDaysBefore(now, WAIT.appointmentRequest)).pluck('id')
+    : [];
   if (!msgs.length && !appts.length) return 0;
   if (msgs.length) await db('contact_messages').whereIn('id', msgs.map((m) => m.id)).update({ escalated_at: now });
   if (appts.length) await db('appointments').whereIn('id', appts).update({ escalated_at: now });

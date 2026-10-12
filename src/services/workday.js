@@ -52,7 +52,7 @@ async function attention(user, now = new Date()) {
     const failed = await count(scope(db('contact_messages').where({ email_status: 'failed' }).whereNot({ status: 'resolved' }).whereNull('archived_at')));
     if (failed) items.push({ key: 'failed-email', tone: 'red', icon: 'exclamation', title: `${plural(failed, 'email', 'emails')} to the team did not send`, detail: 'Saved in the inbox, but nobody was emailed', href: '/portal/messages?tab=all&failed=1' });
   }
-  if (can(user, 'appointments.view')) {
+  if (require('../lib/features').appointmentRequests && can(user, 'appointments.view')) {
     const stale = await count(db('appointments').where({ status: 'requested' }).where('created_at', '<', businessDaysBefore(now, WAIT.appointmentRequest)));
     if (stale) items.push({ key: 'old-appointments', tone: 'red', icon: 'calendar', title: `${plural(stale, 'appointment request', 'appointment requests')} not confirmed after ${WAIT.appointmentRequest} business day`, detail: 'Waiting for a time', href: '/portal/appointments?tab=requests' });
   }

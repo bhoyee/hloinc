@@ -70,6 +70,17 @@ const TABS = {
   all: { label: 'All', where: (q) => q },
 };
 
+/**
+ * Quick views over the inbox (with the status tabs): contact page messages,
+ * intake (referrals and service requests), and the ones assigned to you.
+ */
+const VIEWS = {
+  all: { label: 'All' },
+  contact: { label: 'Contact messages', where: (q) => q.where('m.type', 'message') },
+  intake: { label: 'Intake', where: (q) => q.whereIn('m.type', ['referral', 'request']) },
+  mine: { label: 'Assigned to me' },
+};
+
 /** The contact form inboxes this person can open (all of them with "View all"). Intake includes referrals and service requests. */
 function inboxesFor(user) {
   if (can(user, 'messages.view')) return recipients.map((r) => r.key);
@@ -108,8 +119,10 @@ async function tabCounts(user) {
 
 const PER_PAGE = 25;
 
-async function list(user, { tab = 'new', q = '', type = '', recipient = '', mine = false, unassigned = false, failed = false, page = 1, perPage = PER_PAGE } = {}) {
+async function list(user, { tab = 'new', view = 'all', q = '', type = '', recipient = '', mine = false, unassigned = false, failed = false, page = 1, perPage = PER_PAGE } = {}) {
   const query = TABS[tab].where(base(user));
+  if (VIEWS[view] && VIEWS[view].where) VIEWS[view].where(query);
+  if (view === 'mine') mine = true;
   const keyword = String(q).trim().slice(0, 100);
   if (keyword) {
     const like = likeOf(keyword);
@@ -183,6 +196,39 @@ async function assign(m, assignee, user) {
   await db('contact_messages').where({ id: m.id }).update({ assigned_to: id, updated_at: new Date() });
   await addEvent(m.id, user, 'assign', assignee ? `Assigned to ${assignee.name}` : 'Unassigned');
   return true;
+}
+
+/**
+ * Send a message on to another team's inbox (reception passes contact messages to the
+ * right person). The message moves to that inbox; the people chosen for it under
+ * Roles & permissions → Alerts get a bell alert and an email (no message details).
+ * Returns the people told, or null if nothing changed.
+ */
+async function passOn(m, toKey, user, note = '') {
+  if (!RECIPIENT_LABELS[toKey] || toKey === m.recipient) return null;
+  await db('contact_messages').where({ id: m.id }).update({ recipient: toKey, updated_at: new Date() });
+  await addEvent(m.id, user, 'passed_on', `Sent to ${RECIPIENT_LABELS[toKey]}${note ? `: ${note}` : ''}`);
+  const config = require('../config');
+  const { notify } = require('./notify');
+  const people = (await require('./alerts').peopleFor(`message_${toKey}`)).filter((p) => p.id !== user.id);
+  const kind = TYPE_LABELS[m.type].toLowerCase();
+  const title = `${user.name} sent you a ${kind}`;
+  await Promise.all(people.map((p) => require('./notifications').notifyUser(p.id, { type: m.type, title, body: note ? `“${note.slice(0, 140)}”` : `From ${m.name}`, link: `/portal/messages/${m.id}` })));
+  await Promise.all(people.filter((p) => p.email).map((p) => notify({
+    to: p.email,
+    subject: `${title} (${ref(m)})`,
+    text: [
+      `Hello ${p.name.split(' ')[0]},`,
+      '',
+      `${user.name} passed a ${kind} from the website (${ref(m)}) to the ${RECIPIENT_LABELS[toKey]} inbox.`,
+      ...(note ? ['', `Their note: ${note}`] : []),
+      '',
+      'The details stay in the staff portal.',
+    ].join('\n'),
+    cta: { label: 'Open it in the staff portal', href: `${config.appUrl}/portal/messages/${m.id}` },
+    footnote: 'Sent by the HLO staff portal because your role is told about messages passed to this inbox (Roles & permissions → Alerts).',
+  })));
+  return people;
 }
 
 /** Staff who work from the inbox, for the "Assign to" list. Assigning a message lets that person see it. */
@@ -282,6 +328,8 @@ function remove(m) {
 }
 
 module.exports = {
+  VIEWS,
+  passOn,
   inboxesFor,
   detailRows,
   STATUS_LABELS,

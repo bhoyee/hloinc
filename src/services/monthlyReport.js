@@ -87,6 +87,10 @@ async function gather(m) {
 
   // Appointments: requests received this month, and appointments that were due this month
   const websiteRequests = await count(inMonth(db('appointments')).where({ source: 'website' }));
+  // Booked by staff (walk-ins and calls, including meetings booked from a message).
+  const staffBooked = await count(inMonth(db('appointments')).whereIn('source', ['walk_in', 'phone']));
+  // Contact messages reception passed on to another team ("Send to…").
+  const passedOn = await count(inMonth(db('contact_message_events')).where({ kind: 'passed_on' }));
   const due = await inMonth(db('appointments as a'), 'a.scheduled_at').leftJoin('appointment_types as t', 't.id', 'a.type_id').select('a.status', 'a.source', 't.name as type_name');
   const status = tally(due, 'status');
   const completed = status.get('completed') || 0;
@@ -114,6 +118,8 @@ async function gather(m) {
     contact: contact.length,
     byInbox: tally(contact, 'recipient'),
     websiteRequests,
+    staffBooked,
+    passedOn,
     completed,
     noShow,
     cancelled: status.get('cancelled') || 0,
@@ -180,9 +186,11 @@ async function build(m, { now = new Date(), user = null } = {}) {
     {
       key: 'appointments',
       title: 'Appointments',
-      intro: 'Requests are counted in the month they arrived; appointments in the month they were due.',
+      intro: 'Bookings are counted in the month they were made; appointments in the month they were due.',
       metrics: [
-        metric('Requests from the website', c.websiteRequests, p.websiteRequests),
+        require('../lib/features').appointmentRequests
+          ? metric('Requests from the website', c.websiteRequests, p.websiteRequests)
+          : metric('Appointments booked by staff', c.staffBooked, p.staffBooked),
         metric('Appointments held', c.completed, p.completed),
         metric('No-shows', c.noShow, p.noShow),
         metric('Cancelled', c.cancelled, p.cancelled),
@@ -209,7 +217,7 @@ async function build(m, { now = new Date(), user = null } = {}) {
       key: 'contact',
       title: 'Contact form messages',
       intro: 'Questions and messages from the Contact page, by who they were sent to.',
-      metrics: [metric('Messages received', c.contact, p.contact)],
+      metrics: [metric('Messages received', c.contact, p.contact), metric('Passed on to another team', c.passedOn, p.passedOn)],
       breakdowns: [{ title: 'Sent to', rows: toRows(c.byInbox, inboxLabels) }],
     },
     {

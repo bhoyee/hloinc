@@ -38,13 +38,15 @@ function base() {
 }
 
 const { insertWithReference, normalizeSearch } = require('../lib/reference');
+const features = require('../lib/features');
 const { orWherePhone } = require('../validation/phone');
 
 const likeOf = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /** Tabs on the appointments screen. */
 const TABS = {
-  requests: { label: 'Requests', apply: (q) => q.where('a.status', 'requested').orderBy('a.created_at', 'asc') },
+  // Website requests only while that form is on (lib/features.js).
+  ...(features.appointmentRequests ? { requests: { label: 'Requests', apply: (q) => q.where('a.status', 'requested').orderBy('a.created_at', 'asc') } } : {}),
   upcoming: {
     label: 'Upcoming',
     apply: (q) => q.where('a.status', 'confirmed').where('a.scheduled_at', '>=', new Date()).orderBy('a.scheduled_at', 'asc'),
@@ -66,9 +68,9 @@ async function tabCounts() {
   return counts;
 }
 
-async function list({ tab = 'requests', q = '', status = '', type = '', source = '', page = 1, perPage = PER_PAGE } = {}) {
+async function list({ tab = TABS.requests ? 'requests' : 'upcoming', q = '', status = '', type = '', source = '', page = 1, perPage = PER_PAGE } = {}) {
   const query = base();
-  TABS[tab].apply(query);
+  (TABS[tab] || TABS.upcoming).apply(query);
   if (q) {
     const code = normalizeSearch(q);
     query.where((w) => {
@@ -240,7 +242,7 @@ async function widget({ view = 'week', date, day } = {}, now = new Date()) {
         href: `/portal/appointments/${a.id}`,
       };
     }),
-    waiting: Number((await db('appointments').where({ status: 'requested' }).count({ n: '*' }).first()).n),
+    waiting: features.appointmentRequests ? Number((await db('appointments').where({ status: 'requested' }).count({ n: '*' }).first()).n) : 0,
   };
 }
 

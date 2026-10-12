@@ -51,10 +51,16 @@ const recipients = [
     description: 'Starting services with HLO and referrals.' },
 ];
 
-/** Team mailboxes: one per contact form choice, plus appointment requests. Set under Website content. */
+/**
+ * Team mailboxes: one per contact form choice, plus appointment requests and applications.
+ * Set under Website content. `hidden`: not fed by the website now (HLO's design, version 20:
+ * every contact message goes to General inquiry, and there is no appointment request form).
+ * Their saved addresses are kept.
+ */
+const UNUSED = new Set(['program_coordinator', 'program_director', 'executive']);
 const mailboxes = [
-  ...recipients.map((r) => (r.key === 'intake' ? { key: r.key, label: 'Intake specialist (also referrals and service requests)' } : { key: r.key, label: r.label })),
-  { key: 'appointments', label: 'Appointment requests' },
+  ...recipients.map((r) => (r.key === 'intake' ? { key: r.key, label: 'Intake specialist (also referrals and service requests)' } : { key: r.key, label: r.key === 'general' ? 'Contact page messages' : r.label, hidden: UNUSED.has(r.key) })),
+  { key: 'appointments', label: 'Appointment requests', hidden: !require('./features').appointmentRequests },
   { key: 'careers', label: 'Job applications' },
 ];
 

@@ -57,7 +57,7 @@
             {% for j in jobs %}
               <li id="job-{{ j.slug }}" class="d-job">
                 <details>
-                  <summary><span class="d-job-title">{{ j.title }}</span><span class="d-job-meta">{{ [j.employment_type, j.pay_range] | select | join(' · ') }}</span></summary>
+                  <summary><span class="d-job-title">{{ j.title }}</span>{# Pay is in the details below (Maryland requires it in every posting). #}<span class="d-job-meta">{{ j.employment_type }}</span></summary>
                   <div class="d-job-body">
                     <dl class="d-job-facts">
                       {% if j.department %}<dt>Department</dt><dd>{{ j.department }}</dd>{% endif %}

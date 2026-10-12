@@ -13,9 +13,17 @@
 {% endblock %}
 
 {% block content %}
+  {# Quick views: what kind of message (status tabs below). #}
+  <nav aria-label="Show" class="mb-3 flex flex-wrap gap-2">
+    {% for v in views %}
+      <a href="/portal/messages?tab={{ tab }}{% if v.key != 'all' %}&view={{ v.key }}{% endif %}" {% if v.key == view %}aria-current="true"{% endif %}
+         class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition {{ 'bg-brand-900 text-white ring-brand-900' if v.key == view else 'bg-white text-ink ring-line hover:bg-surface' }}">{{ v.label }}</a>
+    {% endfor %}
+  </nav>
+
   <nav aria-label="Inbox lists" class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1.5 shadow-soft">
     {% for t in tabs %}
-      <a href="/portal/messages?tab={{ t.key }}" {% if t.key == tab %}aria-current="page"{% endif %}
+      <a href="/portal/messages?tab={{ t.key }}{% if filters.view %}&view={{ filters.view }}{% endif %}" {% if t.key == tab %}aria-current="page"{% endif %}
          class="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ 'bg-brand-700 text-white' if t.key == tab else 'text-muted hover:bg-surface hover:text-ink' }}">
         {{ t.label }}
         <span class="rounded-full px-2 py-0.5 text-xs {{ 'bg-white text-brand-800' if t.key == tab else ('bg-accent-600 text-white' if t.key == 'new' and counts[t.key] else 'bg-surface ring-1 ring-line') }}">{{ counts[t.key] }}</span>
@@ -25,18 +33,13 @@
 
   <form method="get" data-live-filter="#msg-results" action="/portal/messages" role="search" aria-label="Filter messages" class="mb-5 grid gap-3 rounded-3xl border border-line bg-white p-4 shadow-soft sm:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_auto_auto] xl:items-center">
     <input type="hidden" name="tab" value="{{ tab }}">
+    {% if filters.view %}<input type="hidden" name="view" value="{{ filters.view }}">{% endif %}
     <div class="relative sm:col-span-2 xl:col-span-1">
       <label for="f-q" class="sr-only">Search by name, email, phone or text</label>
       <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">{{ icon('search', 'size-5') }}</span>
       <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Name, email, phone or text" class="form-control !pl-12" maxlength="100">
     </div>
-    <div>
-      <label for="f-type" class="sr-only">Type</label>
-      <select id="f-type" name="type" class="form-control">
-        <option value="">All types</option>
-        {% for key, label in typeLabels %}<option value="{{ key }}" {% if filters.type == key %}selected{% endif %}>{{ label }}s only</option>{% endfor %}
-      </select>
-    </div>
+    {% if filters.type %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
     {% if seeAll %}
       <div>
         <label for="f-recipient" class="sr-only">Sent to</label>
@@ -46,9 +49,7 @@
         </select>
       </div>
     {% endif %}
-    <label class="flex items-center gap-2 text-sm font-medium text-ink">
-      <input type="checkbox" name="mine" value="1" class="size-4 accent-brand-700" {% if filters.mine %}checked{% endif %}> Assigned to me
-    </label>
+    {% if filters.mine %}<input type="hidden" name="mine" value="1">{% endif %}
     {% if filters.unassigned %}<input type="hidden" name="unassigned" value="1">{% endif %}
     {% if filters.failed %}<input type="hidden" name="failed" value="1">{% endif %}
     <button type="submit" class="btn-green" data-live-hide>Filter</button>

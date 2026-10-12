@@ -5,6 +5,11 @@
   <form method="post" action="/portal/appointments" class="max-w-3xl space-y-6" novalidate data-once>
     {{ ui.errorSummary(errors) }}
     <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+    {% if message %}
+      <input type="hidden" name="message_id" value="{{ message.id }}">
+      <p class="flex gap-3 rounded-2xl bg-brand-50 p-4 text-[15px] text-brand-900 ring-1 ring-brand-100">{{ icon('calendar', 'mt-0.5 size-5 shrink-0') }}
+        <span>Booking a meeting from <a href="/portal/messages/{{ message.id }}" class="link">{{ message.reference or 'this message' }}</a>. It’s added to the message’s history and to the same lead.</span></p>
+    {% endif %}
 
     <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8">
       <fieldset id="f-source" tabindex="-1">

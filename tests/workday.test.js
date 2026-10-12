@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { createRequire } from 'module';
 import { createApp, db } from './helpers.js';
 import { resetRoles, makeUser, signIn } from './portal-helpers.js';
 
 const require = createRequire(import.meta.url);
+const features = require('../src/lib/features');
+// Tests that turn on website appointment requests put the switch back afterwards.
+afterEach(() => {
+  features.appointmentRequests = false;
+});
 const workday = require('../src/services/workday');
 const roles = require('../src/services/roles');
 const { marylandDateTime, marylandParts, addDaysIso } = require('../src/lib/hours');
@@ -48,6 +53,7 @@ describe('business days', () => {
 
 describe('needs attention', () => {
   it('lists overdue referrals, unassigned items, failed emails and old appointment requests', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     const admin = await staff('admin');
     const old = new Date(Date.now() - 10 * DAY);
     await message({ type: 'referral', recipient: 'intake', created_at: old });

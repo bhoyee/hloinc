@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { createRequire } from 'module';
 import { createApp, db } from './helpers.js';
 import { resetRoles, makeUser, signIn } from './portal-helpers.js';
 
 const require = createRequire(import.meta.url);
+const features = require('../src/lib/features');
+// Tests that turn on website appointment requests put the switch back afterwards.
+afterEach(() => {
+  features.appointmentRequests = false;
+});
 const report = require('../src/services/monthlyReport');
 const { marylandDateTime } = require('../src/lib/hours');
 
@@ -58,6 +63,7 @@ async function seedSeptember() {
 
 describe('monthly report', () => {
   it('counts each area in Maryland time and compares with the month before', async () => {
+    features.appointmentRequests = true; // website appointment requests switched on (lib/features.js)
     await seedSeptember();
     const r = await report.build('2026-09', { now: new Date('2026-10-05T12:00:00Z') });
     expect(r.label).toBe('September 2026');

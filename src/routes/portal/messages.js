@@ -27,13 +27,15 @@ const replySchema = z.string().trim().min(5, 'Write your reply first.').max(5000
 router.get('/', async (req, res) => {
   const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 100) : '');
   const tab = msgs.TABS[req.query.tab] ? req.query.tab : 'new';
+  const view = msgs.VIEWS[req.query.view] ? req.query.view : 'all';
   const filters = {
+    view: view === 'all' ? '' : view,
     q: str(req.query.q), type: str(req.query.type), recipient: str(req.query.recipient), mine: req.query.mine === '1' ? '1' : '',
     // From the dashboard's "Needs attention" links.
     unassigned: req.query.unassigned === '1' ? '1' : '', failed: req.query.failed === '1' ? '1' : '',
   };
   const perPage = await perPageFor(req);
-  const result = await msgs.list(req.user, { tab, ...filters, mine: filters.mine === '1', unassigned: filters.unassigned === '1', failed: filters.failed === '1', page: req.query.page, perPage });
+  const result = await msgs.list(req.user, { tab, ...filters, view, mine: filters.mine === '1', unassigned: filters.unassigned === '1', failed: filters.failed === '1', page: req.query.page, perPage });
   const readIds = new Set(await require('../../db/knex')('message_reads').where({ user_id: req.user.id }).whereIn('message_id', result.items.map((m) => m.id)).pluck('message_id'));
   result.items = result.items.map((m) => ({ ...m, unread: !readIds.has(m.id) && !m.archived_at && m.status !== 'resolved' }));
   const pageUrl = (p) => `/portal/messages?${new URLSearchParams(Object.entries({ tab, ...filters, page: p > 1 ? p : '' }).filter(([, v]) => v))}`;
@@ -50,6 +52,8 @@ router.get('/', async (req, res) => {
     filters,
     seeAll,
     tabs: Object.entries(msgs.TABS).map(([key, t]) => ({ key, label: t.label })),
+    view,
+    views: Object.entries(msgs.VIEWS).map(([key, v]) => ({ key, label: v.label })),
     counts: await msgs.tabCounts(req.user),
     ...result,
     statusLabels: msgs.STATUS_LABELS,
@@ -162,6 +166,22 @@ router.post('/:id/assign', can('messages.edit'), async (req, res) => {
     // Handed on a message they only saw because it was assigned to them.
     if (!(await msgs.get(req.user, req.msg.id))) return res.redirect(303, '/portal/messages');
   }
+  back(req, res);
+});
+
+// Reception passes a message on to the team who should handle it.
+router.post('/:id/send', can('messages.pass_on'), async (req, res) => {
+  const to = typeof req.body.to === 'string' ? req.body.to : '';
+  const note = typeof req.body.note === 'string' ? req.body.note.trim().slice(0, 500) : '';
+  if (!msgs.RECIPIENT_LABELS[to] || to === req.msg.recipient) {
+    setFlash(req, 'error', 'Choose who to send it to.');
+    return back(req, res);
+  }
+  const told = await msgs.passOn(req.msg, to, req.user, note);
+  await audit(req, { action: 'message.pass_on', entityType: 'message', entityId: req.msg.id, summary: `${req.user.name} sent ${req.msg.type} ${ref(req.msg)} to ${msgs.RECIPIENT_LABELS[to]}` });
+  setFlash(req, 'success', `Sent to ${msgs.RECIPIENT_LABELS[to]}.${told && told.length ? ` ${told.length === 1 ? `${told[0].name} has` : `${told.length} people have`} been told by notification and email.` : ' Nobody is set up to be told about this inbox yet (Roles & permissions → Alerts).'}`);
+  // Passed on out of this person's inboxes: back to the list.
+  if (!(await msgs.get(req.user, req.msg.id))) return res.redirect(303, '/portal/messages');
   back(req, res);
 });
 

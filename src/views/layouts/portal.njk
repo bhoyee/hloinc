@@ -44,15 +44,11 @@
     </div>
 
     <nav aria-label="Portal" class="flex-1 overflow-y-auto px-3 py-5">
-      <ul class="space-y-1">
-        {% for item in portalNav %}{% if not item.soon and item.group != 'admin' %}{{ navLink(item, navBadges) }}{% endif %}{% endfor %}
-      </ul>
-
-      {% set adminItems = portalNav | selectattr('group') %}
-      {% if adminItems.length %}
-        <p class="mt-7 px-3 text-xs font-semibold tracking-wider text-brand-400 uppercase">Administration</p>
-        <ul class="mt-2 space-y-1">{% for item in adminItems %}{{ navLink(item, navBadges) }}{% endfor %}</ul>
-      {% endif %}
+      {# Grouped by job: Inbox, Scheduling, Hiring, Website, Administration (lib/portalNav.js). #}
+      {% for g in portalNavGroups %}
+        {% if g.label %}<p class="mt-6 px-3 text-xs font-semibold tracking-wider text-brand-400 uppercase">{{ g.label }}</p>{% endif %}
+        <ul class="{{ 'mt-2 ' if g.label }}space-y-1">{% for item in g.items %}{{ navLink(item, navBadges) }}{% endfor %}</ul>
+      {% endfor %}
 
       {% set soonItems = portalNav | selectattr('soon') %}
       {% if soonItems.length %}

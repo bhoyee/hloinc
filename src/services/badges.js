@@ -17,6 +17,7 @@
 const db = require('../db/knex');
 const { can } = require('../auth/permissions');
 const messages = require('./messages');
+const features = require('../lib/features');
 
 async function unreadMessages(user) {
   const scope = messages.scopeFor(user);
@@ -31,7 +32,8 @@ async function unreadMessages(user) {
 }
 
 async function waitingRequests(user) {
-  if (!can(user, 'appointments.view')) return null;
+  // No website appointment requests (lib/features.js): nothing waits to be confirmed.
+  if (!features.appointmentRequests || !can(user, 'appointments.view')) return null;
   const row = await db('appointments').where({ status: 'requested' }).count({ n: '*' }).first();
   return Number(row.n);
 }

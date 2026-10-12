@@ -20,7 +20,7 @@ const FULL = 'site_content.edit';
 const SECTIONS = [
   { key: 'contact', label: 'Contact details', icon: 'phone', description: 'Phone, email and address shown across the site.', permissions: [FULL] },
   { key: 'hours', label: 'Office hours', icon: 'clock', description: 'Opening hours, the “Open now” badge and the walk-in note.', permissions: [FULL, LIMITED] },
-  { key: 'recipients', label: 'Team email addresses', icon: 'mail', description: 'Where each contact form choice, referrals, service requests and appointment requests are emailed.', permissions: [FULL] },
+  { key: 'recipients', label: 'Team email addresses', icon: 'mail', description: 'Where contact page messages, referrals, service requests and job applications are emailed.', permissions: [FULL] },
 ];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
