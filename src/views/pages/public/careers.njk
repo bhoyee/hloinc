@@ -17,6 +17,7 @@
     {%- elif name == 'pto' %}<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
     {%- elif name == 'sick' %}<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/>
     {%- elif name == 'life' %}<path d="M12 3 5 6v5.5c0 4.2 2.8 7.4 7 9.5 4.2-2.1 7-5.3 7-9.5V6l-7-3z"/><path d="m9 12 2 2 4-4.5"/>
+    {%- elif name == 'cash' %}<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/>
     {%- elif name == 'retirement' %}<path d="M3 17 9 11l4 4 8-8"/><path d="M15 7h6v6"/>
     {%- else %}<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M12 9v5M9.5 11.5h5"/>{% endif -%}
   </svg>
@@ -40,7 +41,7 @@
       <ul class="d-benefit-grid">
         {% for b in cms.list('careers.benefits.items', [
           { name: 'Health insurance', icon: 'heart' }, { name: 'Dental', icon: 'dental' }, { name: 'Vision', icon: 'vision' }, { name: 'Paid time off', icon: 'pto' },
-          { name: 'Sick leave', icon: 'sick' }, { name: 'Life insurance', icon: 'life' }, { name: '401(k)', icon: 'retirement' }
+          { name: 'Sick leave', icon: 'sick' }, { name: 'Life insurance', icon: 'life' }, { name: '401(k)', icon: 'retirement' }, { name: 'Referral bonus', icon: 'cash' }
         ]) %}
           <li class="d-benefit" {{ b.attrs }}><span class="d-benefit-ic">{{ benefitIcon(b.icon) }}</span><span class="d-benefit-name">{{ b.text('name') }}</span></li>
         {% endfor %}

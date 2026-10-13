@@ -3,7 +3,8 @@
 {% set hdrCta = cms.link('site.hdr.cta', 'Ask about services', '/request-services') %}
 <header class="d-site-header ds">
   <div class="d-wrap d-hdr">
-    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home">{% include "partials/ds-brand.njk" %}<span class="d-wm" aria-hidden="true"><span>Healthy Living</span><span>Option Inc.</span></span></a>
+    {# HLO's logo (October 2026); the dark theme uses a copy with light lettering. #}
+    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home"><img class="d-logo" src="/img/logo-wide.webp" width="800" height="200" alt=""><img class="d-logo d-logo-dark" src="/img/logo-wide-dark.webp" width="800" height="200" alt=""></a>
     <nav class="d-nav" id="site-nav" aria-label="Main">
       <ul class="d-nav-links">
         {% for item in menuItems %}
