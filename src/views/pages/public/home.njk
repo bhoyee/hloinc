@@ -3,6 +3,11 @@
 
 {% block mainClass %}ds{% endblock %}
 
+{#
+  Home page (HLO's design, version 41, October 2026). Every text, photo, list and section
+  is editable in Site content; the keys are new for this version so earlier edits of the
+  previous design don't override the new copy.
+#}
 {% block content %}
   {% if announcements.length %}
     <section class="d-news" aria-label="Announcements"><div class="d-wrap">
@@ -12,17 +17,16 @@
     </div></section>
   {% endif %}
 
-  {% for sec in cms.sections('home', { hero: 'Top banner', glance: 'At a glance', services: 'Services we offer', intro: 'Introducing HLO', refer: 'Referral and support band', contact: 'Contact details' }) %}
+  {% for sec in cms.sections('home', { hero: 'Top banner', glance: 'At a glance', who: 'Who we are', services: 'Services', how: 'How getting started works', faq: 'Questions', refer: 'Ask about services and referrals', contact: 'Contact details' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'hero' %}
-    {% set heroImg = cms.image('home.hb.image', 'd-boardwalk', 'Friends on a relaxed walk along a boardwalk, one using a wheelchair') %}
-    {% set cta1 = cms.link('home.hb.cta1', 'Ask about services', '/request-services') %}
-    {% set cta2 = cms.link('home.hb.cta2', 'Refer someone', '/referrals') %}
+    {% set heroImg = cms.image('home.top.image', 'd-team-smiling', '') %}
+    {% set cta1 = cms.link('home.top.cta1', 'Explore Our Services', '/services') %}
+    {% set cta2 = cms.link('home.top.cta2', 'Make a referral', '/referrals') %}
     <section class="d-hb">{{ ds.img(heroImg, '(min-width: 900px) 44vw, 100vw', 'class="d-hb-bg"', false) }}<div class="d-wrap">
       <div class="d-hb-copy">
-        <span class="d-eyebrow d-eyebrow-bold">{{ cms.text('home.hb.eyebrow', 'We are a licensed Maryland DDA Provider') }}</span>
-        <h1>{{ cms.text('home.hb.title', 'Serving adult individuals with intellectual and developmental disabilities in Central & Southern Maryland') }}</h1>
-        <p class="d-lead">{{ cms.text('home.hb.intro', 'A place to live, help with daily life, activities in the community, breaks for caregivers, and transportation. Every service is planned around what the individual wants for their life.') }}</p>
+        <h1>{{ cms.text('home.top.title', 'Supporting Individuals with Developmental Disabilities') }}</h1>
+        <p class="d-lead">{{ cms.text('home.top.intro', 'We are committed to supporting individuals with developmental disabilities to live independent lives as adults by community inclusion as a choice.') }}</p>
         <div class="d-hb-actions">
           <a class="d-btn d-btn-primary" href="{{ cta1.href }}" {{ cta1.attrs }}>{{ cta1.label }}</a>
           <a class="d-btn d-btn-outline-light" href="{{ cta2.href }}" {{ cta2.attrs }}>{{ cta2.label }}</a>
@@ -30,21 +34,21 @@
       </div>
     </div></section>
     {{ ds.pagenav([
+      { id: 'who-we-are', label: cms.text('home.nav.who', 'Who we are') },
       { id: 'services-offer', label: cms.text('home.nav.services', 'Services') },
-      { id: 'introducing', label: cms.text('home.nav.about', 'About us') },
+      { id: 'how-it-starts', label: cms.text('home.nav.start', 'Getting started') },
+      { id: 'faq', label: cms.text('home.nav.faq', 'Questions') },
       { id: 'contact-details', label: cms.text('home.nav.contact', 'Contact') }
     ]) }}
 
   {% elif sec.key == 'glance' %}
+    {% set note = cms.link('home.atGlance.noteLink', 'send us a note', '/request-services') %}
     <section class="d-glance-band" aria-labelledby="gc-title"><div class="d-wrap">
       <div class="d-glance-card">
         <h2 class="d-gc-title" id="gc-title">At a glance</h2>
         <dl class="d-glance">
-          <div><dt>{{ cms.text('home.glance.whoTitle', 'Who we support') }}</dt><dd>{{ cms.text('home.glance.who', 'Adults with intellectual and developmental disabilities, including autism') }}</dd></div>
-          <div><dt>{{ cms.text('home.glance.offerTitle', 'What we offer') }}</dt><dd><ul class="d-offer-list">
-            {% for s in design.services %}<li><a href="/services#{{ s.anchor }}">{{ s.name }}</a></li>{% endfor %}
-          </ul></dd></div>
-          <div><dt>{{ cms.text('home.glance.whereTitle', 'Where we serve') }}</dt><dd>
+          <div><dt>{{ cms.text('home.atGlance.whoTitle', 'Who we serve') }}</dt><dd>{{ cms.text('home.atGlance.who', 'Adults with intellectual and developmental disabilities, including autism. Services are approved and funded through Maryland’s Developmental Disabilities Administration (DDA).') }}</dd></div>
+          <div><dt>{{ cms.text('home.atGlance.whereTitle', 'Where we serve') }}</dt><dd>
             <label for="county-check" class="d-sr-only">Choose your county to check whether we serve it</label>
             <select id="county-check" data-county-check data-phone="{{ site.phone }}" data-tel="{{ site.phone | telHref }}">
               <option value="">Check your county…</option>
@@ -53,69 +57,131 @@
               {% endfor %}
               <option value="Somewhere else">Somewhere else</option>
             </select>
-            <p class="d-county-result" id="county-result" role="status" aria-live="polite">{{ cms.text('home.glance.where', 'Anne Arundel, Baltimore City, Baltimore, Calvert, Charles, Harford, Howard, Montgomery, Prince George’s and St. Mary’s.') }}</p>
+            <p class="d-county-result" id="county-result" role="status" aria-live="polite">{{ cms.text('home.atGlance.where', 'Baltimore City, and Anne Arundel, Baltimore, Calvert, Charles, Harford, Howard, Montgomery, Prince George’s and St. Mary’s counties.') }}</p>
           </dd></div>
+          <div><dt>{{ cms.text('home.atGlance.talkTitle', 'Talk with us') }}</dt><dd>{{ cms.text('home.atGlance.talkCall', 'Call') }} <a href="{{ site.phone | telHref }}">{{ site.phone }}</a>, {{ site.hours }}. {{ cms.text('home.atGlance.talkOr', 'Or') }} <a href="{{ note.href }}" {{ note.attrs }}>{{ note.label }}</a> {{ cms.text('home.atGlance.talkRest', 'and we will get back to you during office hours.') }}</dd></div>
         </dl>
       </div>
     </div></section>
 
-  {% elif sec.key == 'services' %}
-    {% set allLink = cms.link('home.offer.all', 'View all services', '/services') %}
-    <section class="d-svc-home" id="services-offer"><div class="d-wrap">
-      <div class="d-section-head d-center">
-        <h2>{{ cms.text('home.offer.title', 'Services We Offer') }}</h2>
-        <p>{{ cms.text('home.offer.intro', 'Six services, each planned around the individual’s own plan and delivered at home and out in the community. Choose a service to read more.') }}</p>
+  {% elif sec.key == 'who' %}
+    {% set whoImg = cms.image('home.who.image', 'd-care-wheelchair', 'A caregiver helping a young woman in a wheelchair indoors') %}
+    {% set more = cms.link('home.who.cta', 'More about us', '/about') %}
+    {% set lead = cms.link('home.who.lead', 'Meet our leadership', '/about#leadership') %}
+    <section class="d-who" id="who-we-are"><div class="d-wrap">
+      <div class="d-who-grid">
+        <div class="d-who-photo">{{ ds.img(whoImg, '(min-width: 900px) 45vw, 100vw') }}</div>
+        <div class="d-who-text">
+          <p class="d-eyebrow">{{ cms.text('home.who.eyebrow', 'Who we are') }}</p>
+          <h2>{{ cms.text('home.who.title', 'A team of professionals that get to know you first and make a meaningful impact') }}</h2>
+          {{ cms.rich('home.who.text', 'Healthy Living Option Inc. (HLO Inc.) is a DDA provider based in Catonsville, Maryland. We serve adults with intellectual and developmental disabilities, including autism, in Baltimore City and nine counties across Central Maryland and the Southern Region.\n\nEvery adult we serve deserves to be listened to, treated with dignity and trusted to make their own choices. Our trained team begins by learning what matters to each individual, then walks beside them toward the goals they set.') }}
+          <p class="d-is-mission"><strong>{{ cms.text('home.who.missionLabel', 'Our mission') }}</strong>{{ cms.text('home.who.mission', 'to support adults with intellectual and developmental disabilities in living independent, self-directed lives, with inclusion in the community as a choice.') }}</p>
+          <div class="d-cta-row"><a class="d-btn d-btn-dark" href="{{ more.href }}" {{ more.attrs }}>{{ more.label }}</a><a class="d-link-more" href="{{ lead.href }}" {{ lead.attrs }}>{{ lead.label }}</a></div>
+        </div>
       </div>
-      <div class="d-svc-list">
-        {% for s in cms.list('home.offer.items', design.cards) %}
-          {% set photo = s.image('photo', s.alt) %}
-          <div class="d-svc" {{ s.attrs }}>
-            <div class="d-svc-img">{{ ds.img(photo, '(min-width: 1000px) 30vw, (min-width: 620px) 50vw, 100vw') }}</div>
-            <div class="d-svc-body">
-              <h3>{{ s.text('name') }}</h3>
-              <p class="d-svc-desc">{{ s.text('summary') }}</p>
-              <a class="d-btn d-btn-primary d-btn-sm" href="{{ s.href }}" {{ s.hrefAttrs }}>Learn more<span class="d-sr-only"> about {{ s.name }}</span></a>
-            </div>
-          </div>
+      <ul class="d-values">
+        {% for v in cms.list('home.who.values', [
+          { title: 'Your voice comes first', text: 'Every individual helps write their own Person-Centered Plan. We listen, then turn those hopes into steady, practical help from one day to the next.' },
+          { title: 'A home, and a place in the neighborhood', text: 'Our apartment homes are comfortable and fully furnished, and life reaches well beyond the front door, where every individual is welcomed as a valued neighbor.' },
+          { title: 'Respect, always', text: 'Dignity, compassion and respect guide everything we do. We honor each individual’s rights and choices, and families and coordinators are always welcome to ask us anything.' }
+        ]) %}
+          <li {{ v.attrs }}><h3>{{ v.text('title') }}</h3><p>{{ v.text('text') }}</p></li>
         {% endfor %}
-      </div>
-      <p><a class="d-btn d-btn-ghost" href="{{ allLink.href }}" {{ allLink.attrs }}>{{ allLink.label }}</a></p>
+      </ul>
     </div></section>
 
-  {% elif sec.key == 'intro' %}
-    {% set introImg = cms.image('home.intro.image', 'd-friends-waterfront', 'Friends enjoying time together outdoors by the waterfront') %}
-    {% set aboutLink = cms.link('home.intro.cta', 'About us', '/about') %}
-    <section class="d-intro-simple" id="introducing"><div class="d-wrap">
-      <div class="d-is-text">
-        <h2>{{ cms.text('home.intro.title', 'Introducing Healthy Living Option Inc.') }}</h2>
-        {{ cms.rich('home.intro.text', 'We support each individual’s rights, choices and dignity. Our approach is person-centered: the individual leads, and our trained staff support them to reach the goals they set.\n\nOur services meet individuals’ needs today and help prepare them for independence and a full life, at home in a comfortable apartment and out in the community.') }}
-        <p class="d-is-mission"><strong>{{ cms.text('home.intro.missionLabel', 'Our mission:') }}</strong> {{ cms.text('home.intro.mission', 'to support adults with developmental disabilities to live independent, self-directed lives, with community inclusion as a choice.') }}</p>
-        <a class="d-btn d-btn-dark" href="{{ aboutLink.href }}" {{ aboutLink.attrs }}>{{ aboutLink.label }}</a>
+  {% elif sec.key == 'services' %}
+    {% set allLink = cms.link('home.help.all', 'View all services', '/services') %}
+    {% set cards = cms.list('home.help.items', design.homeCards) %}
+    <section class="d-svc-home" id="services-offer"><div class="d-wrap">
+      <div class="d-section-head">
+        <h2>{{ cms.text('home.help.title', 'Help with every part of daily life') }}</h2>
+        <p>{{ cms.text('home.help.intro', 'Six DDA services, each shaped around the individual’s own plan and offered at home and out in the neighborhood. Choose one to read more.') }}</p>
       </div>
-      <div class="d-intro-photo">{{ ds.img(introImg, '(min-width: 900px) 45vw, 100vw') }}</div>
+      {% for g in [
+        { key: 'home', title: 'A place to call home', text: 'Choose where and how you live, with help built around your routines and preferences.' },
+        { key: 'life', title: 'Everyday life and friendships', text: 'Hands-on help with daily tasks, and chances to learn, make friends and feel at home in the neighborhood.' },
+        { key: 'family', title: 'Families and getting around', text: 'A caring break for caregivers, and dependable rides to the places that matter.' }
+      ] %}
+        <div class="d-svc-group" id="grp-{{ g.key }}">
+          <div class="d-svc-group-head"><h3>{{ cms.text('home.help.' + g.key + '.title', g.title) }}</h3><p>{{ cms.text('home.help.' + g.key + '.text', g.text) }}</p></div>
+          <div class="d-svc-list">
+            {% for s in cards %}{% if s.group == g.key %}
+              {% set photo = s.image('photo', s.alt) %}
+              <div class="d-svc" {{ s.attrs }}>
+                <div class="d-svc-img">{{ ds.img(photo, '(min-width: 1000px) 30vw, (min-width: 620px) 50vw, 100vw') }}</div>
+                <div class="d-svc-body">
+                  <h4>{{ s.text('name') }}</h4>
+                  <p class="d-svc-desc">{{ s.text('summary') }}</p>
+                  <a class="d-link-more" href="{{ s.href }}" {{ s.hrefAttrs }}>Learn more<span class="d-sr-only"> about {{ s.name }}</span></a>
+                </div>
+              </div>
+            {% endif %}{% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+      <p class="d-svc-more"><a class="d-btn d-btn-ghost" href="{{ allLink.href }}" {{ allLink.attrs }}>{{ allLink.label }}</a></p>
+    </div></section>
+
+  {% elif sec.key == 'how' %}
+    {% set res = cms.link('home.start.noteLink', 'Resources page', '/resources') %}
+    <section class="d-how" id="how-it-starts"><div class="d-wrap">
+      <div class="d-section-head">
+        <h2>{{ cms.text('home.start.title', 'How getting started works') }}</h2>
+        <p>{{ cms.text('home.start.intro', 'You do not need every answer ready. Reach out and we will walk you through each step.') }}</p>
+      </div>
+      <ol class="d-hm-steps">
+        {% for st in cms.list('home.start.steps', [
+          { title: 'Say hello', text: 'Call ' + site.phone + ' or send the request form. Coordinators, agencies and family members can also make a referral.' },
+          { title: 'Tell us about the individual', text: 'We take time to learn their goals, needs and preferences, then explain which of our services may fit.' },
+          { title: 'Plan the next steps together', text: 'We work with the individual, their family and their Coordinator of Community Services so services match the Person-Centered Plan, and we write the Provider Implementation Plan (PIP).' }
+        ]) %}
+          <li {{ st.attrs }}><h3>{{ st.text('title') }}</h3><p>{{ st.text('text') }}</p></li>
+        {% endfor %}
+      </ol>
+      <p class="d-how-note">{{ cms.text('home.start.note', 'Maryland’s DDA, not HLO Inc., decides who is eligible for services. If you are still at that stage, our') }} <a href="{{ res.href }}" {{ res.attrs }}>{{ res.label }}</a> {{ cms.text('home.start.noteEnd', 'explains the process and links to the state’s application.') }}</p>
+    </div></section>
+
+  {% elif sec.key == 'faq' %}
+    <section class="d-faq" id="faq"><div class="d-wrap d-faq-grid">
+      <div class="d-faq-head">
+        <h2>{{ cms.text('home.faq.title', 'Questions families often ask') }}</h2>
+        <p>{{ cms.text('home.faq.intro', 'Not seeing your question? Call') }} <a href="{{ site.phone | telHref }}">{{ site.phone }}</a> {{ cms.text('home.faq.introEnd', 'and we will be glad to help.') }}</p>
+      </div>
+      <div class="d-faq-list">
+        {% for q in cms.list('home.faq.items', [
+          { q: 'Who can receive services?', a: 'Adults with intellectual and developmental disabilities, including autism, who are eligible for services through Maryland’s DDA. Eligibility is decided by the DDA. If you are not sure where you are in the process, call us and we will point you to the right next step.' },
+          { q: 'Do I need a Coordinator of Community Services first?', a: 'A Coordinator of Community Services (CCS) helps an individual and their family plan, find and coordinate DDA services, and often sends referrals. If you do not have one yet, you are still welcome to contact us with questions.' },
+          { q: 'Where do you serve?', a: 'In Baltimore City, and in Anne Arundel, Baltimore, Calvert, Charles, Harford, Howard, Montgomery, Prince George’s and St. Mary’s counties. Use the county check near the top of this page, or call us if you are close to the edge of the area.' },
+          { q: 'What do “PCP” and “PIP” mean?', a: '<p>A Person-Centered Plan (PCP) is written with the individual and the people they choose. It describes their goals, preferences and the supports they want. A Provider Implementation Plan (PIP) is what we write from that plan to turn the goals into day-to-day support. Our <a href="/resources#glossary">plain-language glossary</a> explains more terms.</p>' },
+          { q: 'Can I ask questions before deciding?', a: 'Yes. Call us during office hours or send a request online. Questions about our approach, or about how we work with families and coordinators, are always welcome.' }
+        ]) %}
+          <details {{ q.attrs }}><summary>{{ q.text('q') }}</summary><div>{{ q.rich('a') }}</div></details>
+        {% endfor %}
+      </div>
     </div></section>
 
   {% elif sec.key == 'refer' %}
-    {% set referLink = cms.link('home.refer.cta', 'Refer someone', '/referrals') %}
-    {% set askLink = cms.link('home.support.cta', 'Ask about services', '/request-services') %}
+    {% set askLink = cms.link('home.fit.cta', 'Ask about services', '/request-services') %}
+    {% set referLink = cms.link('home.fit.referCta', 'Make a referral', '/referrals') %}
     <section class="d-refer-band" aria-label="Get started"><div class="d-wrap">
-      <aside class="d-refer-card">
-        <h3>{{ cms.text('home.refer.title', 'Send Your Referrals') }}</h3>
-        <p>{{ cms.text('home.refer.text', 'Take the time to send a referral. It allows us to help more individuals who require our special assistance. Information is kept strictly confidential.') }}</p>
-        <a class="d-btn d-btn-primary" href="{{ referLink.href }}" {{ referLink.attrs }}>{{ referLink.label }}</a>
-      </aside>
-      <aside class="d-refer-card d-navy">
-        <h3>{{ cms.text('home.support.title', 'Looking for Support?') }}</h3>
-        <p>{{ cms.text('home.support.text', 'Tell us a little about the individual who needs support and we will reach out to talk through the options. You do not need every answer ready.') }}</p>
+      <div class="d-refer-card">
+        <h2>{{ cms.text('home.fit.title', 'Looking for the right fit?') }}</h2>
+        <p>{{ cms.text('home.fit.text', 'Tell us a little about the adult who would like help, and we will reach out to talk through the options. You do not need every answer ready.') }}</p>
         <a class="d-btn d-btn-primary" href="{{ askLink.href }}" {{ askLink.attrs }}>{{ askLink.label }}</a>
-      </aside>
+      </div>
+      <div class="d-refer-card d-navy">
+        <h2>{{ cms.text('home.fit.referTitle', 'Making a referral?') }}</h2>
+        <p>{{ cms.text('home.fit.referText', 'Coordinators, agencies and family members can refer someone for services. What you share is used only to respond to the referral.') }}</p>
+        <a class="d-btn d-btn-outline-light" href="{{ referLink.href }}" {{ referLink.attrs }}>{{ referLink.label }}</a>
+      </div>
     </div></section>
 
   {% elif sec.key == 'contact' %}
     <section class="d-alt" id="contact-details"><div class="d-wrap d-cd">
       <div>
-        <h2>{{ cms.text('home.cd.title', 'Contact Details') }}</h2>
-        <p class="d-lede">{{ cms.text('home.cd.intro', 'Stop by, call or write. We serve Central Maryland and the Southern Region, across nine counties and Baltimore City.') }}</p>
+        <h2>{{ cms.text('home.reach.title', 'Contact details') }}</h2>
+        <p class="d-lede">{{ cms.text('home.reach.intro', 'We would love to hear from you. Stop by, call or write. We serve Central Maryland and the Southern Region, across nine counties and Baltimore City.') }}</p>
         {% include "partials/ds-contact-list.njk" %}
       </div>
       {{ ds.map(site) }}

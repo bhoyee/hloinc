@@ -4,8 +4,9 @@
 
 {% block mainClass %}ds{% endblock %}
 
+{# Contact page (HLO's design, version 41, October 2026). Keys for text that changed in this version are new. #}
 {% block content %}
-  {{ ds.pageHead('Contact', cms.text('contact.head.title', 'Contact Us'), cms.text('contact.head.intro', 'You can use any of the means below to contact us.')) }}
+  {{ ds.pageHead('Contact', cms.text('contact.head.title', 'Contact Us'), cms.text('contact.head.lede', 'We would love to hear from you. Reach us in whichever way is easiest.')) }}
   {{ ds.pagenav([
     { id: 'reach', label: cms.text('contact.nav.reach', 'Reach us') },
     { id: 'message', label: cms.text('contact.nav.message', 'Send a message') },
@@ -17,46 +18,50 @@
   {% if sec.key == 'reach' %}
     <section id="reach"><div class="d-wrap">
       <div class="d-contact-grid">
-        <div class="d-info-card"><h2>{{ cms.text('contact.reach.address', 'Address') }}</h2><p>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</p><p class="d-mt-14"><a href="{{ ds.directions(site) }}" target="_blank" rel="noopener">Get directions<span class="d-sr-only"> (opens in a new tab)</span></a></p></div>
-        <div class="d-info-card"><h2>{{ cms.text('contact.reach.call', 'Call us') }}</h2><p><a class="d-big-phone" href="{{ site.phone | telHref }}">{{ site.phone }}</a></p></div>
-        <div class="d-info-card"><h2>{{ cms.text('contact.reach.fax', 'Fax us') }}</h2><p class="d-big-fax">{{ cms.text('site.fax', '(410) 553-4151') }}</p></div>
-        <div class="d-info-card"><h2>{{ cms.text('contact.reach.write', 'Write to us') }}</h2><p><a href="mailto:{{ site.email }}">{{ site.email }}</a></p></div>
+        <div class="d-info-card"><h2>{{ cms.text('contact.reach.address', 'Address') }}</h2><p>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</p><p class="d-mt-s"><a href="{{ ds.directions(site) }}" target="_blank" rel="noopener">Get directions<span class="d-sr-only"> (opens in a new tab)</span></a></p></div>
+        <div class="d-info-card"><h2>{{ cms.text('contact.reach.call', 'Call us') }}</h2><p><a class="d-tel-big" href="{{ site.phone | telHref }}">{{ site.phone }}</a></p></div>
+        <div class="d-info-card"><h2>{{ cms.text('contact.reach.faxTitle', 'Fax') }}</h2><p class="d-fax-big">{{ cms.text('site.fax', '(410) 553-4151') }}</p></div>
+        <div class="d-info-card"><h2>{{ cms.text('contact.reach.emailTitle', 'Email') }}</h2><p><a href="mailto:{{ site.email }}">{{ site.email }}</a></p></div>
       </div>
     </div></section>
 
   {% elif sec.key == 'message' %}
     {% set ask = cms.link('contact.looking.ask', 'Ask about services', '/request-services') %}
-    {% set refer = cms.link('contact.looking.refer', 'Refer someone', '/referrals') %}
+    {% set refer = cms.link('contact.looking.referCta', 'Make a referral', '/referrals') %}
     <section class="d-alt" id="message"><div class="d-wrap d-form-layout">
       <form class="d-card" method="post" action="/contact#message" novalidate data-once>
         <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
         {# Every website message goes to the General inquiry inbox (reception). #}
         <input type="hidden" name="recipient" value="general">
         {{ ui.honeypot() }}
+        <p class="d-req-note">Fields marked <span class="d-req" aria-hidden="true">*</span><span class="d-sr-only">with an asterisk</span> are required.</p>
         <fieldset><legend>{{ cms.text('contact.form.title', 'Send us a message') }}</legend>
           {% include "partials/ds-form-status.njk" %}
           <div class="d-row">
             <div class="d-field"><label for="ct-name">Your name <span class="d-req">*</span></label><input type="text" id="ct-name" name="name" required autocomplete="name" maxlength="120" value="{{ values.name }}"{% if errors.name %} aria-invalid="true" aria-describedby="name-error"{% endif %}>{{ ds.err('name', errors) }}</div>
-            <div class="d-field"><label for="ct-email">Your email <span class="d-req">*</span></label><input type="email" id="ct-email" name="email" required autocomplete="email" maxlength="191" value="{{ values.email }}"{% if errors.email %} aria-invalid="true" aria-describedby="email-error"{% endif %}>{{ ds.err('email', errors) }}</div>
+            <div class="d-field"><label for="ct-email">Your email address <span class="d-req">*</span></label><input type="email" id="ct-email" name="email" required autocomplete="email" maxlength="191" value="{{ values.email }}"{% if errors.email %} aria-invalid="true" aria-describedby="email-error"{% endif %}>{{ ds.err('email', errors) }}</div>
           </div>
-          <div class="d-field"><label for="ct-phone">Phone (optional)</label><input name="phone" type="tel" id="ct-phone" autocomplete="tel" maxlength="20" inputmode="tel" value="{{ values.phone }}"{% if errors.phone %} aria-invalid="true" aria-describedby="phone-error"{% endif %}>{{ ds.err('phone', errors) }}</div>
+          <div class="d-field"><label for="ct-phone">Phone number (optional)</label><input name="phone" type="tel" id="ct-phone" autocomplete="tel" maxlength="20" inputmode="tel" value="{{ values.phone }}"{% if errors.phone %} aria-invalid="true" aria-describedby="phone-error"{% endif %}>{{ ds.err('phone', errors) }}</div>
           <div class="d-field"><label for="ct-message">Your message <span class="d-req">*</span></label><textarea id="ct-message" name="message" required maxlength="3000"{% if errors.message %} aria-invalid="true" aria-describedby="message-error"{% endif %}>{{ values.message }}</textarea>{{ ds.err('message', errors) }}</div>
         </fieldset>
         {{ ui.captcha(turnstileSiteKey, errors) }}
         <div class="d-form-actions"><button class="d-btn d-btn-primary" type="submit">{{ cms.text('contact.form.submit', 'Send message') }}</button></div>
-        <p class="d-form-note">{{ cms.text('contact.form.note', 'Not for emergencies. For a life-threatening emergency, call 911.') }}</p>
       </form>
-      <aside>
-        <div class="d-aside-card"><h3>{{ cms.text('contact.hours.title', 'Working hours') }}</h3>
+      <aside aria-label="Office hours and other ways to get in touch">
+        <div class="d-aside-card"><h2>{{ cms.text('contact.hours.heading', 'Office hours') }}</h2>
           {# From Site content → Office hours, e.g. "Monday – Friday, 9am – 5pm": days, then times. #}
           {% set hoursParts = site.hours.split(', ') %}
           <table class="d-hours">
-            <tr><td>{{ hoursParts[0] }}</td><td>{{ hoursParts.slice(1).join(', ') }}</td></tr>
-            <tr><td>{{ cms.text('contact.hours.weekendDays', 'Saturday – Sunday') }}</td><td>{{ cms.text('contact.hours.weekend', 'Closed') }}</td></tr>
+            <tbody>
+              <tr><th scope="row">{{ hoursParts[0] }}</th><td>{{ hoursParts.slice(1).join(', ') }}</td></tr>
+              <tr><th scope="row">{{ cms.text('contact.hours.weekendLabel', 'Saturday and Sunday') }}</th><td>{{ cms.text('contact.hours.weekend', 'Closed') }}</td></tr>
+            </tbody>
           </table>
         </div>
-        <div class="d-aside-card"><h3>{{ cms.text('contact.looking.title', 'Looking for services?') }}</h3><p>{{ cms.text('contact.looking.text', 'Use our dedicated forms so your message reaches the right person.') }}</p>
+        <div class="d-aside-card"><h2>{{ cms.text('contact.looking.title', 'Looking for services?') }}</h2><p>{{ cms.text('contact.looking.text', 'Use our dedicated forms so your message reaches the right person.') }}</p>
           <p class="d-acts-inline"><a class="d-btn d-btn-primary d-btn-sm" href="{{ ask.href }}" {{ ask.attrs }}>{{ ask.label }}</a><a class="d-btn d-btn-ghost d-btn-sm" href="{{ refer.href }}" {{ refer.attrs }}>{{ refer.label }}</a></p></div>
+        <div class="d-aside-card"><h2>{{ cms.text('contact.emergency.title', 'In an emergency') }}</h2>
+          <p>{{ cms.text('contact.emergency.text', 'For a life-threatening emergency, call') }} <a href="tel:911">911</a>. {{ cms.text('contact.emergency.crisis', 'For a mental health crisis, call or text') }} <a href="tel:988">988</a>.</p></div>
       </aside>
     </div></section>
 
@@ -64,7 +69,7 @@
     <section id="find-us"><div class="d-wrap d-cd">
       <div>
         <h2>{{ cms.text('contact.find.title', 'Find us') }}</h2>
-        <p class="d-lede">{{ cms.text('contact.find.intro', 'We serve Central Maryland and the Southern Region, across nine counties and Baltimore City. For a life-threatening emergency, call 911.') }}</p>
+        <p class="d-lede">{{ cms.text('contact.find.lede', 'We serve Central Maryland and the Southern Region, across nine counties and Baltimore City.') }}</p>
         <ul class="d-counties">{% for c in cms.list('contact.find.counties', design.counties | listOf('name')) %}<li {{ c.attrs }}>{{ c.text('name') }}</li>{% endfor %}</ul>
       </div>
       {{ ds.map(site) }}

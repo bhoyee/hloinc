@@ -11,41 +11,62 @@
  * contact details shown at the end of every page.
  */
 
-const LAST_UPDATED = '2026-10-10';
+const LAST_UPDATED = '2026-10-14';
 
 const privacy = {
   slug: 'privacy',
+  // Version 41 wording (October 2026): new keys so earlier edits of the old policy don't override it.
+  cmsKey: 'privacy.v41',
   title: 'Privacy Policy',
-  summary:
-    'How Healthy Living Option Inc. collects, uses and protects personal information through this website.',
+  summary: 'How we handle information collected through this website.',
   sections: [
     {
       id: 'scope',
-      heading: 'Who we are and what this policy covers',
+      heading: 'What this policy covers',
       paragraphs: [
-        'Healthy Living Option Inc. (“HLO”, “we”, “us”) provides community-based supports for adults with intellectual and developmental disabilities in Maryland. This policy explains how we handle personal information collected through this website, including our contact form and appointment request form.',
-        'This policy covers the website only. Information about people who receive HLO services is handled under our service records and privacy practices, which we provide to people we support and their representatives.',
+        'This policy explains what information Healthy Living Option Inc. (“HLO Inc.”, “we”, “us”) collects through this website, how we use it, and the choices you have. It covers this website only. It does not describe how we handle records of individuals who receive our services. Please ask us about those practices.',
       ],
     },
     {
-      id: 'collect',
-      heading: 'Information we collect',
-      paragraphs: ['We collect only what we need to respond to you:'],
+      id: 'give',
+      heading: 'Information you give us',
+      paragraphs: ['When you use a form on this site, we receive what you type into it. Depending on the form, that can include:'],
       list: [
-        'Contact form: your name, email address, phone number (optional), the person or team you chose to contact, and your message.',
-        'Appointment requests: your name, email address, phone number (optional), how you prefer to be contacted, the type of appointment, your preferred date and time of day, and any notes you choose to add.',
-        'Requests for services: your name, phone number, email address, how and when you prefer to be contacted, your relationship to the person who needs support, and, if you choose to share them, their first name, county, DDA eligibility status, Person-Centered Plan status, DDA funding priority category, the services of interest and any message.',
-        'Referrals: the referrer’s name, phone number, email address, role and agency (optional); and the referred person’s first name or initials, county and, if known, their living situation, DDA eligibility status, Person-Centered Plan status, DDA funding priority category, the services needed and how soon. We ask referrers to confirm they are authorized to share this information.',
-        'Technical information: your IP address is stored with form submissions to help us prevent spam and abuse. Our hosting provider also keeps standard server logs (such as IP address, browser type and pages requested) for security and reliability.',
-        'Cookies: we use one essential cookie. See our Cookie Policy for details.',
+        'your name, phone number and email address, and how you prefer to be contacted;',
+        'your relationship to the individual who needs help, and the individual’s first name or initials, county, and answers about DDA eligibility, funding priority category, Person-Centered Plan status and services of interest;',
+        'for referrals, the referrer’s role and agency, and what you choose to tell us about the individual’s situation and the services needed;',
+        'for job applications, your contact details, the position you want, your resume and your message.',
       ],
     },
     {
-      id: 'spam',
-      heading: 'Keeping our forms free of spam',
+      id: 'sensitive',
+      heading: 'Please do not send sensitive documents',
       paragraphs: [
-        'To stop automated spam, our forms use hidden checks, record when a form was opened, and store your IP address with your submission. For up to 24 hours we also keep a one-way scrambled (hashed) version of the email address used, to limit repeated submissions. This information is used only to protect our forms.',
+        'Please do not send Social Security numbers, medical records or other sensitive documents through the forms or by ordinary email. We will arrange a secure way to collect anything we need.',
       ],
+    },
+    {
+      id: 'automatic',
+      heading: 'Information collected automatically',
+      paragraphs: [
+        'Like most websites, the servers that deliver this site receive your IP address, browser type and the pages you request. We use this only to operate and protect the site.',
+        'To stop automated spam, our forms use hidden checks, record when a form was opened, and store your IP address with your submission. For up to 24 hours we also keep a one-way scrambled (hashed) version of the email address used, to limit repeated submissions.',
+      ],
+    },
+    {
+      id: 'cookies',
+      heading: 'Cookies and your browser',
+      paragraphs: [
+        'This site uses one strictly necessary cookie, described below. It does not set advertising or tracking cookies, and we do not use analytics.',
+        'Your browser also remembers your light or dark theme choice, and that you closed our cookie notice. These stay on your device and are never sent to us.',
+      ],
+      table: {
+        caption: 'Cookies set by this website',
+        head: ['Name', 'Purpose', 'Type', 'How long it lasts'],
+        rows: [
+          ['hlo.sid', 'Keeps forms secure (prevents forged submissions and spam) and keeps staff signed in to the staff portal.', 'Strictly necessary', 'Expires after a period of inactivity'],
+        ],
+      },
     },
     {
       id: 'turnstile',
@@ -56,84 +77,157 @@ const privacy = {
       ],
     },
     {
-      id: 'health',
-      heading: 'Please do not send health information',
-      paragraphs: [
-        'Our forms are not designed for medical or clinical information. Please do not include diagnoses, medication details or other health records in a form or message. If you need to share this kind of information, our team will arrange a secure way to do so.',
-      ],
+      id: 'third-party',
+      heading: 'Third-party services',
+      // HTML for the bold labels.
+      html:
+        '<ul><li><strong>Maps.</strong> The map on the Home and Contact pages is provided by Google Maps. When it loads, Google receives your IP address and browser details, and its privacy policy applies.</li>' +
+        '<li><strong>Email.</strong> Messages from our forms are delivered by our email provider, which may use them only to deliver them to us.</li>' +
+        '<li><strong>Resumes.</strong> Every resume sent with a job application is checked for viruses by an automated scanning service, which scans it in memory and does not keep a copy.</li>' +
+        '<li><strong>External links.</strong> Links on the Resources page go to other organizations’ websites. We do not control them and are not responsible for their privacy practices.</li></ul>',
     },
     {
       id: 'use',
-      heading: 'How we use your information',
+      heading: 'How we use information',
       list: [
-        'To reply to your message and route it to the right member of our team.',
-        'To follow up on referrals with the referrer and the person being referred.',
-        'To review, arrange and confirm appointment requests, and to send you related emails.',
-        'To keep the website secure, prevent spam and investigate misuse.',
-        'To meet our legal and regulatory obligations.',
+        'to respond to your questions, requests for services and referrals;',
+        'to consider job applications;',
+        'to keep the website secure and working properly.',
       ],
-      paragraphs: ['We do not use your information for advertising, and we do not sell or rent personal information.'],
     },
     {
       id: 'share',
       heading: 'When we share information',
-      paragraphs: ['We share personal information only when necessary:'],
-      list: [
-        'With service providers who help us run the website and deliver email (for example, our web host and email provider). They may use the information only to provide their services to us.',
-        'When required by law, regulation, court order or a government agency, or to protect the safety of any person.',
-        'With your permission.',
+      paragraphs: [
+        'We share information only as needed to respond to your request, with service providers who help us run this site and receive form submissions, and when the law requires it. We do not sell your information.',
       ],
     },
     {
       id: 'careers',
       heading: 'Job applications',
       paragraphs: [
-        'When you apply for a job on our careers page, we collect your name, email address, phone number, your resume and anything you choose to tell us. We use them only to consider you for that role and similar roles at HLO.',
-        'Every resume is checked for viruses by an automated security scanning service, which scans it in memory and does not keep a copy, and is then stored encrypted. It is never sent by email, and only HLO staff responsible for hiring can open it. You can ask us to delete your application at any time by contacting us.',
-      ],
-    },
-    {
-      id: 'links',
-      heading: 'Links to other websites',
-      paragraphs: [
-        'Our Resources page links to independent organizations. We are not responsible for their content or privacy practices, and we encourage you to read their policies.',
+        'We use what you send with a job application only to consider you for that role and similar roles at HLO Inc. Resumes are stored encrypted, are never sent by email, and only HLO Inc. staff responsible for hiring can open them. Resumes are deleted automatically three months after an application arrives; the rest of the application is kept with our hiring records.',
       ],
     },
     {
       id: 'retention',
       heading: 'How long we keep information',
-      // CONFIRM — client question 8: state the agreed retention periods here.
       paragraphs: [
-        'We keep website messages and appointment requests only as long as needed for the purpose they were sent and to meet our legal and record-keeping obligations. After that, we delete them or make them anonymous.',
+        'We keep website messages and requests only as long as needed for the purpose they were sent and to meet our legal and record-keeping obligations. After that, we delete them or make them anonymous.',
       ],
     },
     {
       id: 'security',
       heading: 'How we protect information',
       paragraphs: [
-        'We use technical and organizational safeguards to protect personal information. Our Data Protection page describes them in more detail. No website or system can be guaranteed completely secure, but we work to keep your information safe.',
+        'We use technical and organizational safeguards to protect personal information, including encrypted connections, limited staff access and a record of who opens what. No website or system can be guaranteed completely secure, but we work to keep your information safe.',
       ],
     },
     {
       id: 'choices',
-      heading: 'Your choices and requests',
+      heading: 'Your choices',
       paragraphs: [
-        'You can ask us to tell you what personal information we hold about you from this website, to correct it, or to delete it, subject to any legal requirement for us to keep it. To make a request, contact us using the details below. We may need to verify your identity before acting on a request.',
+        'You can ask us what information you have sent us through this site, or ask us to correct or delete it, by contacting us below. The law may require us to keep some information. We may need to confirm who you are before acting on a request.',
       ],
     },
     {
       id: 'children',
       heading: 'Children',
-      paragraphs: [
-        'This website is intended for adults. We do not knowingly collect personal information from children under 13 through this website.',
-      ],
+      paragraphs: ['This site is written for adults and for the families and professionals who care for them. It is not directed to children under 13.'],
     },
     {
       id: 'changes',
       heading: 'Changes to this policy',
+      paragraphs: ['If we change this policy, we will post the new version here and update the date above.'],
+    },
+  ],
+};
+
+/** Accessibility statement (HLO's design, version 41). */
+const accessibility = {
+  slug: 'accessibility',
+  title: 'Accessibility',
+  summary: 'Our commitment to a website everyone can use.',
+  updatedLabel: 'Last reviewed:',
+  sections: [
+    {
+      id: 'commitment',
+      heading: 'Our commitment',
       paragraphs: [
-        'We may update this policy from time to time. The date at the top of the page shows when it was last changed.',
+        'Healthy Living Option Inc. wants everyone, including people with disabilities, to be able to use this website. We aim to meet the Web Content Accessibility Guidelines (WCAG) 2.1 at Level AA.',
       ],
+    },
+    {
+      id: 'done',
+      heading: 'What we have done',
+      list: [
+        'Every page can be used with a keyboard, and a “Skip to main content” link is the first thing on each page.',
+        'Text and controls meet the minimum contrast ratios, and keyboard focus is clearly visible.',
+        'Text sizes follow your browser’s text-size setting, and pages reflow when you zoom in.',
+        'Form fields have labels. Errors are listed at the top of the form and next to each field.',
+        'Images that carry meaning have text descriptions. Animations are reduced if your device is set to reduce motion.',
+        'You can switch between a light and a dark theme.',
+      ],
+    },
+    {
+      id: 'limitations',
+      heading: 'Known limitations',
+      list: [
+        'The map is provided by Google. If you cannot use it, our address and a “Get directions” link are given as text.',
+        'Third-party websites linked from the Resources page are outside our control.',
+      ],
+    },
+    {
+      id: 'problem',
+      heading: 'Tell us about a problem',
+      html:
+        '<p>If you have trouble using any part of this site, or you need information in another format such as large print or an accessible electronic document, please tell us using the contact details below. We will work with you to provide it.</p>' +
+        '<p>See also our <a href="/nondiscrimination">nondiscrimination and language help</a> notice.</p>',
+    },
+  ],
+};
+
+/** Nondiscrimination notice and free language help (HLO's design, version 41). */
+const nondiscrimination = {
+  slug: 'nondiscrimination',
+  title: 'Nondiscrimination and Language Help',
+  summary: 'Free help communicating with us, and how to raise a concern.',
+  sections: [
+    {
+      id: 'notice',
+      heading: 'Notice of nondiscrimination',
+      paragraphs: [
+        'Healthy Living Option Inc. complies with applicable Federal civil rights laws and does not discriminate on the basis of race, color, national origin, age, disability, or sex. We do not exclude people or treat them differently because of race, color, national origin, age, disability, or sex.',
+      ],
+    },
+    {
+      id: 'help',
+      heading: 'Free help communicating with us',
+      paragraphs: ['We provide free aids and services to people with disabilities so they can communicate effectively with us, such as:'],
+      list: [
+        'qualified sign language interpreters;',
+        'written information in other formats, such as large print, audio and accessible electronic formats.',
+      ],
+    },
+    {
+      id: 'language',
+      heading: 'Free language services',
+      paragraphs: [
+        'We provide free language services to people whose primary language is not English, such as qualified interpreters and information written in other languages.',
+        'If you need these services, call or email us using the contact details below.',
+      ],
+    },
+    {
+      id: 'grievance',
+      heading: 'If you believe we have not followed this notice',
+      // HTML so the complaint addresses are links.
+      html:
+        '<p>If you believe we have failed to provide these services or have discriminated in another way, you can file a grievance with us. You can file in person, by mail, by phone or by email, using the contact details below. If you need help filing a grievance, we will help you.</p>' +
+        '<p>You can also file a civil rights complaint with the U.S. Department of Health and Human Services, Office for Civil Rights:</p>' +
+        '<ul><li>Online, through the <a href="https://ocrportal.hhs.gov/ocr/portal/lobby.jsf">Office for Civil Rights Complaint Portal</a></li>' +
+        '<li>By phone: 1-800-368-1019 (TDD 800-537-7697)</li>' +
+        '<li>By mail: U.S. Department of Health and Human Services, 200 Independence Avenue SW, Room 509F, HHH Building, Washington, DC 20201</li></ul>' +
+        '<p>Complaint forms are available at <a href="https://www.hhs.gov/ocr/complaints/index.html">hhs.gov/ocr/complaints</a>.</p>',
     },
   ],
 };
@@ -375,7 +469,10 @@ const cookies = {
   ],
 };
 
-const pages = { privacy, terms, 'data-protection': dataProtection, cookies };
+const pages = { privacy, accessibility, nondiscrimination, terms, 'data-protection': dataProtection, cookies };
+/** Linked from the footer and between legal pages. Terms, Data Protection and Cookie Policy are hidden (October 2026). */
+const LISTED = ['privacy', 'accessibility', 'nondiscrimination'];
 for (const page of Object.values(pages)) page.lastUpdated = LAST_UPDATED;
 
 module.exports = pages;
+Object.defineProperty(module.exports, 'LISTED', { value: LISTED });

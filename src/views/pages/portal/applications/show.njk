@@ -12,7 +12,7 @@
         <h2 id="who-h" class="text-lg font-bold">Applicant</h2>
         <dl class="mt-4 grid gap-x-6 gap-y-4 text-[15px] sm:grid-cols-2">
           <div><dt class="text-sm text-muted">Name</dt><dd class="font-semibold text-ink">{{ a.first_name }} {{ a.last_name }}</dd></div>
-          <div><dt class="text-sm text-muted">Position</dt><dd class="font-semibold text-ink">{% if a.job_id %}<a href="/portal/jobs/{{ a.job_id }}" class="link">{{ a.job_title }}</a>{% else %}{{ a.job_title }} <span class="font-normal text-muted">(job deleted)</span>{% endif %}</dd></div>
+          <div><dt class="text-sm text-muted">Position</dt><dd class="font-semibold text-ink">{% if a.job_id %}<a href="/portal/jobs/{{ a.job_id }}" class="link">{{ a.job_title }}</a>{% elif a.job_title == 'General application' %}{{ a.job_title }} <span class="font-normal text-muted">(no specific role)</span>{% else %}{{ a.job_title }} <span class="font-normal text-muted">(job deleted)</span>{% endif %}</dd></div>
           <div><dt class="text-sm text-muted">Email</dt><dd><a href="mailto:{{ a.email }}" class="font-semibold text-brand-700 hover:underline">{{ a.email }}</a></dd></div>
           <div><dt class="text-sm text-muted">Phone</dt><dd><a href="{{ a.phone | telHref }}" class="font-semibold text-brand-700 hover:underline">{{ a.phone }}</a></dd></div>
           {% if a.cell %}<div><dt class="text-sm text-muted">Cell</dt><dd><a href="{{ a.cell | telHref }}" class="font-semibold text-brand-700 hover:underline">{{ a.cell }}</a></dd></div>{% endif %}

@@ -1,10 +1,9 @@
-{# Site header (HLO's design, version 20). Menu items, phone line and button are editable in Site content. #}
+{# Site header (HLO's design, version 41). Menu items, phone line and button are editable in Site content. #}
 {% set menuItems = cms.list('site.menu', design.menu) %}
 {% set hdrCta = cms.link('site.hdr.cta', 'Ask about services', '/request-services') %}
 <header class="d-site-header ds">
   <div class="d-wrap d-hdr">
-    {# HLO's logo (October 2026); the dark theme uses a copy with light lettering. #}
-    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home"><img class="d-logo" src="/img/logo-wide.webp" width="800" height="200" alt=""><img class="d-logo d-logo-dark" src="/img/logo-wide-dark.webp" width="800" height="200" alt=""></a>
+    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home">{% include "partials/ds-brand.njk" %}<span class="d-wm" aria-hidden="true"><span>Healthy Living</span><span>Option Inc.</span></span></a>
     <nav class="d-nav" id="site-nav" aria-label="Main">
       <ul class="d-nav-links">
         {% for item in menuItems %}
@@ -25,8 +24,8 @@
       <div class="d-nav-cta"><a class="d-btn d-btn-primary d-btn-sm" href="{{ hdrCta.href }}">{{ hdrCta.label }}</a></div>
     </nav>
     <div class="d-hdr-tools">
-      <a class="d-top-call" href="{{ site.phone | telHref }}"><span><small>{{ cms.text('site.hdr.callLine', 'Feel free to talk to us') }}</small><b>{{ site.phone }}</b></span></a>
-      <button class="d-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg class="d-i-moon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+      <a class="d-top-call" href="{{ site.phone | telHref }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span><small>{{ cms.text('site.hdr.call', 'Call us') }}</small><b>{{ site.phone }}</b></span></a>
+      <button class="d-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg class="d-i-moon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg><svg class="d-i-sun" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></button>
       <a class="d-btn d-btn-primary d-btn-sm d-hdr-cta" href="{{ hdrCta.href }}" {{ hdrCta.attrs }}>{{ hdrCta.label }}</a>
       <button class="d-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="d-burger" aria-hidden="true"><i></i><i></i><i></i></span><span class="d-mt-label">Menu</span></button>
     </div>

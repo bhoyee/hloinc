@@ -85,6 +85,22 @@ describe('applying for a job', () => {
     expect(await db('notifications').where({ user_id: admin.id, type: 'application' })).toHaveLength(1);
   });
 
+  it('takes a general application (no specific role), with or without a message', async () => {
+    const page = (await request(app).get('/careers')).text;
+    expect(page).toContain('<option value="general"');
+    // Open positions come first, then benefits, then the form (HLO's design, version 41).
+    expect(page.indexOf('id="openings"')).toBeLessThan(page.indexOf('id="benefits"'));
+    expect(page.indexOf('id="benefits"')).toBeLessThan(page.indexOf('id="apply"'));
+    expect(page).toContain('Employee referral incentives');
+
+    const res = await apply({ fields: { job: 'general', cover_note: '' } });
+    expect(res.status).toBe(303);
+    const [a] = await db('job_applications');
+    expect(a).toMatchObject({ job_id: null, job_title: 'General application', cover_note: null });
+    expect(outbox.find((m) => m.to === 'jordan@example.com').subject).toBe('We received your application');
+    expect(outbox.find((m) => m.subject.startsWith('New application')).text).toContain('general application');
+  });
+
   it('accepts a Word .docx', async () => {
     expect((await apply({ file: DOCX, filename: 'cv.docx' })).status).toBe(303);
     expect((await db('job_applications').first()).resume_type).toBe('docx');

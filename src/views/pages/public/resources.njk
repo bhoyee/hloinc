@@ -11,23 +11,25 @@
   </div>
 {% endmacro %}
 
+{# Resources page (HLO's design, version 41, October 2026). Keys for text that changed in this version are new. #}
 {% block content %}
-  {{ ds.pageHead('Resources', cms.text('resources.head.title', 'Resources'), cms.text('resources.head.intro', 'Plain-language explanations of common terms, plus Maryland DDA and IDD materials for individuals and families.')) }}
+  {{ ds.pageHead('Resources', cms.text('resources.head.title', 'Resources'), cms.text('resources.head.lede', 'Plain-language explanations of common terms, plus Maryland DDA and IDD materials for individuals with disabilities and their families.')) }}
   {{ ds.pagenav([
     { id: 'glossary', label: cms.text('resources.nav.glossary', 'Terms explained') },
     { id: 'dda-basics', label: cms.text('resources.nav.dda', 'Maryland DDA') },
-    { id: 'family-support', label: cms.text('resources.nav.family', 'Family support') },
+    { id: 'family-support', label: cms.text('resources.nav.peers', 'Families and peers') },
+    { id: 'crisis', label: cms.text('resources.nav.crisis', 'Help now') },
     { id: 'links', label: cms.text('resources.nav.links', 'More links') }
   ]) }}
 
-  {% for sec in cms.sections('resources', { glossary: 'Terms explained', dda: 'Maryland DDA', family: 'Family support', links: 'More helpful links', cta: 'Need help? band' }) %}
+  {% for sec in cms.sections('resources', { glossary: 'Terms explained', dda: 'Maryland DDA', family: 'Families and peers', crisis: 'Help now', links: 'More helpful links', cta: 'Need help? band' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'glossary' %}
     <section id="glossary"><div class="d-wrap">
       <div class="d-section-head"><h2>{{ cms.text('resources.glossary.title', 'Words you may hear along the way') }}</h2>
         <p>{{ cms.text('resources.glossary.intro', 'Disability services come with a lot of acronyms. Here is what the common ones mean, in plain language.') }}</p></div>
       <div class="d-gloss-grid">
-        {% for g in cms.list('resources.glossary.terms', design.glossary) %}
+        {% for g in cms.list('resources.glossary.items', design.glossary) %}
           <div class="d-gloss" {{ g.attrs }}><span class="d-tag">{{ g.text('tag') }}</span><h3>{{ g.text('title') }}</h3><p>{{ g.text('text') }}</p></div>
         {% endfor %}
       </div>
@@ -37,30 +39,45 @@
     <section class="d-alt" id="dda-basics"><div class="d-wrap">
       <div class="d-section-head"><h2>{{ cms.text('resources.dda.title', 'Start here: getting DDA services') }}</h2>
         <p>{{ cms.text('resources.dda.intro', 'Official Maryland pages that explain how to apply, who helps you plan, and how to find a provider.') }}</p></div>
-      {{ links('resources.dda.links', design.resources.dda) }}
+      {{ links('resources.dda.items', design.resources.dda) }}
       <h3 class="d-res-sub">{{ cms.text('resources.guides.title', 'Guides to read at your own pace') }}</h3>
-      {{ links('resources.guides.links', design.resources.guides) }}
+      {{ links('resources.guides.items', design.resources.guides) }}
     </div></section>
 
   {% elif sec.key == 'family' %}
     <section id="family-support"><div class="d-wrap">
-      <div class="d-section-head"><h2>{{ cms.text('resources.family.title', 'Support for individuals and families') }}</h2>
-        <p>{{ cms.text('resources.family.intro', 'Organizations that offer peer support, education and advocacy across Maryland.') }}</p></div>
-      {{ links('resources.family.links', design.resources.family) }}
+      <div class="d-section-head"><h2>{{ cms.text('resources.peers.title', 'Families, peers and advocates') }}</h2>
+        <p>{{ cms.text('resources.peers.intro', 'Organizations that offer friendship, education and advocacy across Maryland.') }}</p></div>
+      {{ links('resources.peers.items', design.resources.family) }}
+    </div></section>
+
+  {% elif sec.key == 'crisis' %}
+    <section class="d-alt" id="crisis"><div class="d-wrap">
+      <div class="d-section-head"><h2>{{ cms.text('resources.crisis.title', 'If you or someone you love needs help now') }}</h2>
+        <p>{{ cms.text('resources.crisis.intro', 'HLO Inc.’s office is open Monday to Friday, 9am to 5pm. These services are available at any hour.') }}</p></div>
+      <div class="d-crisis-grid">
+        {% for c in cms.list('resources.crisis.items', [
+          { title: 'Emergency', number: '911', text: '<p>For a life-threatening emergency.</p>' },
+          { title: '988 Suicide & Crisis Lifeline', number: '988', text: '<p>Call or text 988 for free, confidential support in a mental health crisis. <a href="https://988lifeline.org/">988lifeline.org</a></p>' },
+          { title: 'Maryland 211', number: '211', text: '<p>Free information and referral to local services such as food, housing and utilities. <a href="https://211md.org/">211md.org</a></p>' }
+        ]) %}
+          <div class="d-crisis" {{ c.attrs }}><h3>{{ c.text('title') }}</h3><p class="d-big"><a href="tel:{{ c.number }}">{{ c.text('number') }}</a></p>{{ c.rich('text') }}</div>
+        {% endfor %}
+      </div>
     </div></section>
 
   {% elif sec.key == 'links' %}
-    <section class="d-alt" id="links"><div class="d-wrap">
+    <section id="links"><div class="d-wrap">
       <div class="d-section-head"><h2>{{ cms.text('resources.more.title', 'More helpful links') }}</h2></div>
       {{ links('resources.more.links', design.resources.more) }}
-      <p class="d-res-note">{{ cms.text('resources.more.note', 'These links go to outside websites that we do not control. HLO does not determine eligibility; the Maryland DDA does.') }}</p>
+      <p class="d-res-note">{{ cms.text('resources.more.notice', 'These links go to outside websites that we do not control, and we are not responsible for their content. HLO Inc. does not determine eligibility; Maryland’s DDA does.') }}</p>
     </div></section>
 
   {% elif sec.key == 'cta' %}
     {% set ask = cms.link('resources.cta.ask', 'Ask about services', '/request-services') %}
-    {% set refer = cms.link('resources.cta.refer', 'Refer someone', '/referrals') %}
-    <section class="d-cta-band"><div class="d-wrap">
-      <div><h2>{{ cms.text('resources.cta.title', 'Need help finding the right support?') }}</h2><p>{{ cms.text('resources.cta.text', 'Our team can point you in the right direction, even if you are not sure we are the right fit.') }}</p></div>
+    {% set refer = cms.link('resources.cta.referCta', 'Make a referral', '/referrals') %}
+    <section class="d-cta-band" aria-labelledby="cta-h"><div class="d-wrap">
+      <div><h2 id="cta-h">{{ cms.text('resources.cta.heading', 'Need help finding the right fit?') }}</h2><p>{{ cms.text('resources.cta.text', 'Our team can point you in the right direction, even if you are not sure we are the right fit.') }}</p></div>
       <div class="d-acts">
         <a class="d-btn d-btn-primary" href="{{ ask.href }}" {{ ask.attrs }}>{{ ask.label }}</a>
         <a class="d-btn d-btn-outline-light" href="{{ refer.href }}" {{ refer.attrs }}>{{ refer.label }}</a>

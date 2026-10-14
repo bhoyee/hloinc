@@ -106,6 +106,9 @@ const removeStored = (name) => (/^[a-f0-9]{32}$/.test(String(name)) ? fs.rm(path
 
 // --- Submitting --------------------------------------------------------------------------------
 
+/** "General application (no specific role)" on the Careers form: saved without a job. */
+const GENERAL = Object.freeze({ id: null, slug: 'general', title: 'General application' });
+
 /**
  * Check, scan and save an application. Throws a 422 error (with `field`) for a
  * file we won't accept, including one the virus scan flags. Returns the new row.
@@ -114,7 +117,7 @@ async function submit(job, data, file, { ip }) {
   const type = checkFile(file);
   const result = await virusScan.scan(file.buffer);
   if (result.status === 'infected') {
-    console.warn(`[applications] refused an infected upload for job ${job.id} (${result.detail})`);
+    console.warn(`[applications] refused an infected upload for ${job.id ? `job ${job.id}` : 'a general application'} (${result.detail})`);
     throw Object.assign(problem(String(result.detail).startsWith('Unsafe content')
       ? 'Our security scan found content a resume shouldn’t have (such as macros, scripts or password protection), so it was not accepted. Please save it again as a plain PDF or .docx and attach that.'
       : 'Our virus scan flagged that file, so it was not accepted. Please check your device, then attach a clean copy of your resume.'), { infected: result });
@@ -153,13 +156,16 @@ async function tellPeople(a, job) {
   const { notify } = require('./notify');
   const business = await content.getBusiness();
   const name = `${a.first_name} ${a.last_name}`;
+  const general = !a.job_id && a.job_title === GENERAL.title;
   const [team, applicant] = await Promise.all([
     notify({
       to: await content.getRecipientEmail('careers'),
       replyTo: a.email,
       subject: `New application ${a.reference}: ${a.job_title}`,
       text: [
-        `${name} applied for ${a.job_title} on the HLO website (reference ${a.reference}).`,
+        general
+          ? `${name} sent a general application (no specific role) on the HLO website (reference ${a.reference}).`
+          : `${name} applied for ${a.job_title} on the HLO website (reference ${a.reference}).`,
         '',
         'Their details and resume are in the staff portal. For privacy, the resume is never sent by email.',
       ].join('\n'),
@@ -169,7 +175,7 @@ async function tellPeople(a, job) {
     notify({
       to: a.email,
       replyTo: await content.getRecipientEmail('careers'),
-      subject: `We received your application for ${a.job_title}`,
+      subject: general ? 'We received your application' : `We received your application for ${a.job_title}`,
       text: [
         `Hello ${a.first_name},`,
         '',
@@ -337,6 +343,7 @@ async function remove(a) {
 }
 
 module.exports = {
+  GENERAL,
   STATUS_LABELS, TABS, TYPES, MAX_BYTES, MAX_LABEL,
   checkFile, tidyName, submit, rescanPending, purgeOldResumes, resumeExpiresAt, startRescans,
   tabCounts, list, jobsWithApplications, get, newCount, countsByJob, setStatus, resume, remove,

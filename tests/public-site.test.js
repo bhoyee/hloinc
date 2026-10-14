@@ -8,12 +8,14 @@ afterAll(() => db.destroy());
 
 describe('public pages', () => {
   it.each([
-    ['/', 'Serving adult individuals with intellectual and developmental disabilities'],
+    ['/', 'Supporting Individuals with Developmental Disabilities'],
     ['/about', 'Mission statement'],
     ['/services', 'Personal Supports'],
     ['/request-services', 'Ask about services'],
     ['/referrals', 'Send a referral'],
     ['/resources', 'Words you may hear along the way'],
+    ['/resources', 'If you or someone you love needs help now'],
+    ['/contact', 'In an emergency'],
     ['/careers', 'Come work with us'],
     ['/contact', 'Send us a message'],
   ])('%s renders', async (path, text) => {
@@ -38,7 +40,7 @@ describe('public pages', () => {
 
   it('lists the six services of the design, including Transportation (not Employment or nursing)', async () => {
     const res = await request(app).get('/services');
-    const anchors = [...res.text.matchAll(/<div class="d-svc" id="(svc-[a-z]+)"/g)].map((m) => m[1]);
+    const anchors = [...res.text.matchAll(/<div class="d-svc(?: d-svc-tr)?" id="(svc-[a-z]+)"/g)].map((m) => m[1]);
     expect(anchors).toEqual(['svc-residential', 'svc-supported', 'svc-personal', 'svc-cds', 'svc-respite', 'svc-transport']);
     expect(res.text).toContain('Transportation Services');
     expect(res.text).not.toContain('Employment Services');
@@ -49,7 +51,7 @@ describe('public pages', () => {
     const res = await request(app).get('/contact');
     expect(res.text).toContain('4 E Rolling Crossroads, Suites 301–303');
     expect(res.text).toContain('MD 21228');
-    expect(res.text).toContain('Saturday – Sunday');
+    expect(res.text).toContain('Saturday and Sunday');
   });
 
   it('shows the ten counties', async () => {
@@ -279,7 +281,7 @@ describe('careers', () => {
     expect(Array.isArray(data)).toBe(true);
     expect(data[0]['@type']).toBe('JobPosting');
     // One entry per job listed on the page.
-    expect(data).toHaveLength((res.text.match(/<li id="job-/g) || []).length);
+    expect(data).toHaveLength((res.text.match(/<article class="d-job" id="job-/g) || []).length);
   });
 
   it('hides draft jobs', async () => {
@@ -315,6 +317,9 @@ describe('announcements', () => {
 describe('legal pages', () => {
   it.each([
     ['/privacy', 'Privacy Policy', 'do not sell'],
+    ['/privacy', 'Privacy Policy', 'hlo.sid'],
+    ['/accessibility', 'Accessibility', 'WCAG'],
+    ['/nondiscrimination', 'Nondiscrimination and Language Help', 'ocrportal.hhs.gov'],
     ['/terms', 'Terms and Conditions', 'call 911'],
     ['/data-protection', 'Data Protection', 'audit log'],
     ['/cookies', 'Cookie Policy', 'hlo.sid'],
@@ -332,25 +337,27 @@ describe('legal pages', () => {
     expect(names).toEqual(['hlo.sid']);
   });
 
-  it('footer links to every legal page and credits GiddyHost', async () => {
+  // HLO's design, version 41: Terms, Data Protection and Cookie Policy are hidden (still open by address).
+  it('footer links to the privacy, accessibility and nondiscrimination pages and credits GiddyHost', async () => {
     const res = await request(app).get('/');
-    for (const path of ['/terms', '/privacy', '/data-protection', '/cookies']) {
-      expect(res.text).toContain(`href="${path}"`);
-    }
+    for (const path of ['/privacy', '/accessibility', '/nondiscrimination']) expect(res.text).toContain(`href="${path}"`);
+    for (const path of ['/terms', '/data-protection', '/cookies']) expect(res.text).not.toContain(`href="${path}"`);
+    expect(res.text).toContain('href="/privacy#cookies"'); // cookie notice
     expect(res.text).toMatch(/Powered by <a href="https:\/\/giddyhost\.com"/);
   });
 
-  it('includes legal pages in the sitemap', async () => {
+  it('includes only the listed legal pages in the sitemap', async () => {
     const res = await request(app).get('/sitemap.xml');
-    expect(res.text).toContain('/privacy</loc>');
-    expect(res.text).toContain('/cookies</loc>');
+    for (const slug of ['privacy', 'accessibility', 'nondiscrimination']) expect(res.text).toContain(`/${slug}</loc>`);
+    expect(res.text).not.toContain('/cookies</loc>');
+    expect(res.text).not.toContain('/terms</loc>');
   });
 });
 
 describe('dates', () => {
   it('shows calendar dates without a time-zone shift', async () => {
     const res = await request(app).get('/privacy');
-    expect(res.text).toContain('October 10, 2026');
+    expect(res.text).toContain('October 14, 2026');
   });
 });
 
@@ -465,15 +472,15 @@ describe('referrals', () => {
 describe('content from the current site', () => {
   it('lists every condition HLO supports on the Services page', async () => {
     const res = await request(app).get('/services');
-    for (const c of ['Cerebral Palsy', 'Muscular Dystrophy', 'Multiple Sclerosis', 'Cystic Fibrosis', 'Spinal Cord Injury',
-      'Orthopedic Impairment', 'Behavioral support needs', 'Other undetermined disabilities', 'Intellectual disabilities', 'Autism']) {
+    for (const c of ['Cerebral palsy', 'Muscular dystrophy', 'Multiple sclerosis', 'Cystic fibrosis', 'Spinal cord injury',
+      'Orthopedic impairment', 'Behavioral support needs', 'Other disabilities', 'Intellectual disabilities', 'Autism']) {
       expect(res.text).toContain(c);
     }
   });
 
   it('shows the pledge and approach on the Services page', async () => {
     const res = await request(app).get('/services');
-    expect(res.text).toContain('We pledge to support adults with intellectual disabilities');
+    expect(res.text).toContain('Our pledge is to support adults with intellectual and developmental disabilities');
     expect(res.text).toContain('self-determination');
   });
 });
@@ -683,11 +690,11 @@ describe('contact page', () => {
 
   it('shows the office hours and the four ways to reach us', async () => {
     const res = await request(app).get('/contact');
-    for (const t of ['Call us', 'Fax us', 'Write to us', 'Working hours']) expect(res.text).toContain(t);
+    for (const t of ['Call us', '>Fax<', '>Email<', 'Office hours', 'In an emergency']) expect(res.text).toContain(t);
     // The hours come from Site content → Office hours ("Monday – Friday, 9am – 5pm": days, then times).
     const { createRequire } = await import('module');
     const hours = (await createRequire(import.meta.url)('../src/services/content').getBusiness()).hours;
-    expect(res.text).toContain(`<td>${hours.split(', ')[0]}</td>`);
+    expect(res.text).toContain(`<th scope="row">${hours.split(', ')[0]}</th>`);
   });
 
   it('mentions the optional map in the Cookie Policy', async () => {

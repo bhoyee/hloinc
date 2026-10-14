@@ -1,24 +1,24 @@
-{# Site footer (HLO's design, version 20). Text and links are editable in Site content. #}
+{# Site footer (HLO's design, version 41). Text and links are editable in Site content. #}
 <footer class="d-site-footer ds"><div class="d-wrap">
   <div class="d-foot-grid">
     <div>
       <p class="d-foot-tag">{{ cms.text('site.foot.tag', 'We care, we can.') }}</p>
-      <p>{{ cms.text('site.foot.blurb', 'Healthy Living Option Inc. is a licensed Maryland DDA provider supporting adults with intellectual and developmental disabilities to live independent lives, with community inclusion as a choice.') }}</p>
+      <p>{{ cms.text('site.foot.about', 'Healthy Living Option Inc. is a licensed Maryland DDA provider serving adults with intellectual and developmental disabilities, helping them live independent, self-directed lives with a welcome place in their communities.') }}</p>
     </div>
-    <div>
-      <h3>{{ cms.text('site.foot.linksTitle', 'Quick links') }}</h3>
+    <nav aria-label="Footer">
+      <h2>{{ cms.text('site.foot.linksTitle', 'Quick links') }}</h2>
       <ul class="d-foot-links">
-        {% for l in cms.list('site.foot.links', [
+        {% for l in cms.list('site.foot.quick', [
           { label: 'Home', href: '/' }, { label: 'About Us', href: '/about' }, { label: 'Services', href: '/services' },
           { label: 'Careers', href: '/careers' }, { label: 'Resources', href: '/resources' }, { label: 'Contact Us', href: '/contact' },
-          { label: 'Ask about services', href: '/request-services' }, { label: 'Refer someone', href: '/referrals' }
+          { label: 'Ask about services', href: '/request-services' }, { label: 'Make a referral', href: '/referrals' }
         ]) %}
           <li {{ l.attrs }}><a href="{{ l.href }}" {{ l.hrefAttrs }}>{{ l.text('label') }}</a></li>
         {% endfor %}
       </ul>
-    </div>
+    </nav>
     <div>
-      <h3>{{ cms.text('site.foot.contactTitle', 'Contact details') }}</h3>
+      <h2>{{ cms.text('site.foot.contactTitle', 'Contact details') }}</h2>
       <ul>
         <li>{{ site.address.street }}<br>{{ site.address.city }}, {{ site.address.state }} {{ site.address.zip }}</li>
         <li><a href="{{ site.phone | telHref }}">{{ site.phone }}</a></li>
@@ -30,17 +30,16 @@
   </div>
   <div class="d-foot-bottom">
     <span>&copy; {{ currentYear }} {{ site.legalName }} {{ cms.text('site.foot.rights', 'All rights reserved.') }}</span>
-    <span>{{ cms.text('site.foot.emergency', 'For a life-threatening emergency, call 911.') }}</span>
-  </div>
-  <div class="d-foot-small">
-    <nav aria-label="Legal">
-      {% for l in cms.list('site.foot.legal', [
-        { label: 'Privacy Policy', href: '/privacy' }, { label: 'Terms of Use', href: '/terms' }, { label: 'Data Protection', href: '/data-protection' },
-        { label: 'Cookie Policy', href: '/cookies' }, { label: 'Staff login', href: '/portal' }
+    {# Terms, Data Protection and Cookie Policy are hidden from the footer (their pages still open by address). #}
+    <span class="d-footer-legal">
+      {% for l in cms.list('site.foot.legalLinks', [
+        { label: 'Privacy policy', href: '/privacy' }, { label: 'Accessibility', href: '/accessibility' },
+        { label: 'Nondiscrimination and language help', href: '/nondiscrimination' }, { label: 'Staff login', href: '/portal' }
       ]) %}<a href="{{ l.href }}" {{ l.hrefAttrs }} {{ l.attrs }}>{{ l.text('label') }}</a>{% endfor %}
-    </nav>
-    <span>Powered by <a href="https://giddyhost.com" target="_blank" rel="noopener">GiddyHost</a><span class="d-sr-only"> (opens in a new tab)</span></span>
+    </span>
   </div>
+  <p class="d-fine-print d-foot-note">{{ cms.text('site.foot.note', 'For a life-threatening emergency, call 911. Photographs on this site are for illustration.') }}
+    <span class="d-powered">Powered by <a href="https://giddyhost.com" target="_blank" rel="noopener">GiddyHost</a><span class="d-sr-only"> (opens in a new tab)</span></span></p>
 </div></footer>
 <button class="d-to-top ds" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
 <div class="d-mobile-bar ds"><a href="{{ site.phone | telHref }}">Call us</a><a href="/request-services">Ask about services</a></div>

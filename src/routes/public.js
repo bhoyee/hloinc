@@ -176,7 +176,7 @@ if (!OLD_CAREERS) {
 
     const parsed = careersApplicationSchema.safeParse(req.body);
     const errors = parsed.success ? {} : fieldErrors(parsed.error);
-    const job = parsed.success ? await jobs.findPublishedBySlug(parsed.data.job) : null;
+    const job = !parsed.success ? null : parsed.data.job === applications.GENERAL.slug ? applications.GENERAL : await jobs.findPublishedBySlug(parsed.data.job);
     if (parsed.success && !job) errors.job = 'That position is no longer open. Please choose another.';
     if (req.uploadError) errors.resume = req.uploadError;
     else if (!req.file) errors.resume = 'Attach your resume (PDF or Word .docx).';
@@ -202,7 +202,7 @@ if (!OLD_CAREERS) {
       }
       return renderCareers(req, res, { values: req.body, errors: { [err.field || 'resume']: err.message } });
     }
-    setFlash(req, 'success', `Thank you, ${parsed.data.first_name}. Your application for ${job.title} has been sent. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`);
+    setFlash(req, 'success', `Thank you, ${parsed.data.first_name}. Your ${job.id ? `application for ${job.title}` : 'general application'} has been sent. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`);
     res.redirect(303, '/careers#apply');
   });
 
@@ -533,17 +533,20 @@ router.post('/appointments/request', limiters.forms, async (req, res) => {
 
 // --- Legal pages ---------------------------------------------------------
 
-const legalLinks = Object.values(legal).map(({ slug, title }) => ({ slug, title }));
+// Linked between legal pages and in the sitemap. Terms, Data Protection and Cookie Policy are
+// hidden from the site (October 2026) but still open by address.
+const legalLinks = legal.LISTED.map((slug) => ({ slug, title: legal[slug].title }));
 
-router.get(['/privacy', '/terms', '/data-protection', '/cookies'], (req, res) => {
+router.get(Object.keys(legal).map((slug) => `/${slug}`), (req, res) => {
   const features = { turnstile: config.turnstile.enabled };
   const page = legal[req.path.slice(1)];
-  // Built-in sections, as editable items: paragraphs and "- " bullet lines in one text.
-  // Tables (the cookie list) stay in code; sections that depend on a feature carry `onlyIf`.
+  // Built-in sections, as editable items: paragraphs and "- " bullet lines in one text (or
+  // HTML, for sections with links). Tables (the cookie list) stay in code; sections that
+  // depend on a feature carry `onlyIf`.
   const sections = page.sections.map((s) => ({
     id: s.id,
     heading: s.heading,
-    body: [...(s.paragraphs || []), ...(s.list ? [s.list.map((l) => `- ${l}`).join('\n')] : [])].join('\n\n'),
+    body: s.html || [...(s.paragraphs || []), ...(s.list ? [s.list.map((l) => `- ${l}`).join('\n')] : [])].join('\n\n'),
     ...(s.onlyIf ? { onlyIf: s.onlyIf } : {}),
   }));
   const tables = Object.fromEntries(page.sections.filter((s) => s.table).map((s) => [s.id, s.table]));

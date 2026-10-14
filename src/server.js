@@ -59,6 +59,17 @@ function createApp() {
     if (first.length <= max) return first;
     return `${first.slice(0, max).replace(/\s+\S*$/, '').replace(/[\s.,;:!?]+$/, '')}…`;
   });
+  // The words of the first paragraph of formatted (HTML) text, e.g. a job's summary on Careers.
+  env.addFilter('firstParagraph', (html) => {
+    const s = String(html || '');
+    const first = (s.match(/<p[^>]*>([\s\S]*?)<\/p>/) || s.match(/<li[^>]*>([\s\S]*?)<\/li>/) || [null, s])[1];
+    return first
+      .replace(/<br\s*\/?>/g, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ')
+      .trim();
+  });
   // For <script type="application/ld+json">: escape "<" so text can't close the tag.
   env.addFilter('jsonld', (obj) => new nunjucks.runtime.SafeString(JSON.stringify(obj).replace(/</g, '\\u003c')));
   env.addFilter('date', (value, opts = { month: 'long', day: 'numeric', year: 'numeric' }) => {

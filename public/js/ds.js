@@ -298,26 +298,6 @@
     });
   });
 
-  // Home banner: centre "We are a licensed Maryland DDA Provider" over the heading's first line ("Serving adult individuals").
-  var hbCopy = document.querySelector('.d-hb-copy');
-  var hbLine = hbCopy && hbCopy.querySelector('.d-eyebrow-bold');
-  var hbTitle = hbCopy && hbCopy.querySelector('h1');
-  if (hbLine && hbTitle) {
-    var fitLine = function () {
-      var range = document.createRange();
-      range.selectNodeContents(hbTitle);
-      var left = hbTitle.getBoundingClientRect().left;
-      var rects = [].slice.call(range.getClientRects());
-      var firstTop = rects.length ? rects[0].top : 0;
-      var width = 0;
-      rects.forEach(function (r) { if (Math.abs(r.top - firstTop) < 4) width = Math.max(width, r.right - left); });
-      hbLine.style.width = width ? Math.ceil(width) + 'px' : '';
-    };
-    fitLine();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLine);
-    window.addEventListener('resize', fitLine);
-  }
-
   // Ask about services: "Best time to call" only when they prefer a call.
   document.querySelectorAll('[data-call-only]').forEach(function (box) {
     var form = box.closest('form');

@@ -35,12 +35,14 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 
 ### Main features
 
-**Public website** (HLO's design, version 20, October 2026)
-- Pages: Home, About, Services, Resources, Careers, Contact, Ask about services, Send a referral, legal pages.
+**Public website** (HLO's design, version 20, October 2026; Home, About, Services, Resources, Contact, Careers, header, footer and legal pages from version 41, October 14)
+- Pages: Home, About, Services, Resources, Careers, Contact, Ask about services, Send a referral, Privacy policy, Accessibility, Nondiscrimination and language help.
+  - Home: who we are and our values, the six services in three groups, how getting started works, common questions, and contact details with the map.
+  - Terms, Data Protection and Cookie Policy are hidden from the footer and sitemap but still open by address (`LISTED` in `src/content/legal.js`). The cookie list is in the Privacy policy.
   - Built from HLO's design file: deep-green headings, gold buttons, Bitter and Public Sans fonts, a sticky "On this page" bar, a Services dropdown, Previous/Next page links, and a county checker on the home page. Styles are in `public/css/site.css` (classes prefixed `d-`), behaviour in `public/js/ds.js`, shared pieces in `src/views/partials/ds*.njk`, starting text in `src/content/design.js`.
   - Ask about services and Referral are three-step forms (about you, about them, review); they still work without JavaScript.
   - Getting started, Service areas, the single service pages and Request an appointment are hidden, not deleted: old links go to the matching section (see `HIDDEN` in `src/routes/public.js` and `HIDDEN_PAGES` in `src/services/cms.js`).
-  - Careers: benefits, the open positions from Jobs (each expands to its details and pay), and one **Apply online** form (with resume upload and cell number) that sends to Applications. Old job links open that job on the page. The previous Careers design is kept: `careers-old.njk`, switched on with `OLD_CAREERS` in `src/routes/public.js`.
+  - Careers (version 41 layout): open positions first (from Jobs; each has an Apply button and "Role details" with pay), then benefits, then one **Apply online** form (resume upload, cell number, optional message) that sends to Applications. It also takes a **general application** (no specific role), which shows on an empty jobs list too. Old job links open that job on the page. The previous Careers design is kept: `careers-old.njk`, switched on with `OLD_CAREERS` in `src/routes/public.js`.
 - **Forms**:
   - Contact (to the General inquiry inbox), Ask about services, Send a referral, Job application with resume upload.
   - Each form gives a reference number (e.g. `HLO-REQ-7K3M9P`) and sends a branded confirmation email.

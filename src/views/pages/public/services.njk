@@ -3,58 +3,58 @@
 
 {% block mainClass %}ds{% endblock %}
 
+{# Services page (HLO's design, version 41, October 2026). Keys for text that changed in this version are new. #}
 {% block content %}
-  {{ ds.pageHead('Services', cms.text('services.head.title', 'Our Services'), cms.text('services.head.intro', 'We pledge to support adults with intellectual disabilities in a way that promotes their dignity, choices, and individual rights.')) }}
+  {{ ds.pageHead('Services', cms.text('services.head.title', 'Our Services'), cms.text('services.head.lede', 'We are committed to serving adults with intellectual and developmental disabilities in ways that honor their dignity, choices and rights.')) }}
   {{ ds.pagenav([
     { id: 'approach', label: cms.text('services.nav.approach', 'Our approach') },
     { id: 'approved', label: cms.text('services.nav.provide', 'What we provide') },
     { id: 'svc-homes', label: cms.text('services.nav.homes', 'Homes') },
     { id: 'svc-planning', label: cms.text('services.nav.planning', 'Getting started') },
     { id: 'eligibility', label: cms.text('services.nav.eligibility', 'Eligibility') },
-    { id: 'who-we-support', label: cms.text('services.nav.support', 'Who we support') }
+    { id: 'who-we-support', label: cms.text('services.nav.serve', 'Who we serve') }
   ]) }}
 
-  {% for sec in cms.sections('services', { approach: 'Our approach', provide: 'What we provide', homes: 'Homes', planning: 'From first call to a plan', eligibility: 'Eligibility and funding', support: 'Who we support' }) %}
+  {% for sec in cms.sections('services', { approach: 'Our approach', provide: 'What we provide', homes: 'Homes', planning: 'From first call to a plan', eligibility: 'Eligibility and funding', support: 'Who we serve' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'approach' %}
     {% set ask = cms.link('services.approach.cta1', 'Ask about services', '/request-services') %}
-    {% set refer = cms.link('services.approach.cta2', 'Refer someone', '/referrals') %}
+    {% set refer = cms.link('services.approach.referCta', 'Make a referral', '/referrals') %}
     <section class="d-intro-text" id="approach"><div class="d-wrap">
       <div class="d-prose">
         <h2>{{ cms.text('services.approach.title', 'Built on choice and self-determination') }}</h2>
-        {{ cms.rich('services.approach.text', 'Healthy Living Option Inc. has a service approach that follows evidence-based practices and is focused on maximizing choice, empowerment, and self-determination for the adults we support. In other words, we help individuals build the independent lives they want.\n\nWe work alongside the individuals we support, as partners, in an atmosphere of natural community. Every service is guided by the person’s own plans (their Person-Centered Plan and our Provider Implementation Plan) and delivered in their home and community.') }}
+        {{ cms.rich('services.approach.body', 'We believe every adult has the right to direct their own life. Our approach centers on choice, empowerment and self-determination, so the individuals we serve can build the independent lives they want. Our pledge is to support adults with intellectual and developmental disabilities in a close, community-like setting where independence is the goal.\n\nWe work alongside the individuals we serve as partners, in the everyday places that make up their lives. Every service follows the individual’s own plans (their Person-Centered Plan and our Provider Implementation Plan) and happens at home and out and about.') }}
         <p class="d-acts-inline"><a class="d-btn d-btn-primary d-btn-sm" href="{{ ask.href }}" {{ ask.attrs }}>{{ ask.label }}</a><a class="d-btn d-btn-ghost d-btn-sm" href="{{ refer.href }}" {{ refer.attrs }}>{{ refer.label }}</a></p>
       </div>
-      <aside class="d-approach-card" aria-label="Services at a glance">
-        <h3>{{ cms.text('services.glance.title', 'Services at a glance') }}</h3>
+      <div class="d-approach-card">
+        <h2>{{ cms.text('services.glance.title', 'Services at a glance') }}</h2>
         <ul>
-          {% for g in cms.list('services.glance.items', [
-            { big: '6', text: 'services, each planned around the individual' },
+          {% for g in cms.list('services.glance.rows', [
+            { big: '6', text: 'services, each shaped around the individual' },
             { big: 'PIP', text: 'every service follows the individual’s Provider Implementation Plan' },
             { big: 'DDA', text: 'decides eligibility and funding' },
             { big: '10', text: 'areas served: nine counties and Baltimore City' }
           ]) %}<li {{ g.attrs }}><b>{{ g.text('big') }}</b><span>{{ g.text('text') }}</span></li>{% endfor %}
         </ul>
         <p><a class="d-btn d-btn-primary d-btn-sm" href="{{ site.phone | telHref }}">Call {{ site.phone }}</a></p>
-      </aside>
+      </div>
     </div></section>
 
   {% elif sec.key == 'provide' %}
     <section id="approved"><div class="d-wrap">
-      <div class="d-section-head"><h2>{{ cms.text('services.provide.title', 'What we provide') }}</h2><p>{{ cms.text('services.provide.intro', 'Each service follows the individual’s own plan. Each card also explains what the service includes.') }}</p></div>
-      <p class="d-term-chips"><span>Jump to:</span>{% for s in design.services %}<a href="#{{ s.anchor }}">{{ s.short }}</a>{% endfor %}</p>
+      <div class="d-section-head"><h2>{{ cms.text('services.provide.title', 'What we provide') }}</h2><p>{{ cms.text('services.provide.lede', 'Every service is shaped by the individual’s own plan.') }}</p></div>
+      <p class="d-term-chips d-jump-chips"><span>Jump to:</span>{% for s in design.services %}<a href="#{{ s.anchor }}">{{ s.short }}</a>{% endfor %}</p>
       <div class="d-svc-list">
-        {% for s in cms.list('services.provide.items', design.services) %}
+        {% for s in cms.list('services.provide.cards', design.services) %}
           {% set photo = s.image('photo', s.alt) %}
-          <div class="d-svc" id="{{ s.anchor }}" {{ s.attrs }}>
+          <div class="d-svc{{ ' d-svc-tr' if s.anchor == 'svc-transport' }}" id="{{ s.anchor }}" {{ s.attrs }}>
             <div class="d-svc-img">{{ ds.img(photo, '(min-width: 900px) 40vw, 100vw') }}</div>
             <div class="d-svc-body">
               <h3>{{ s.text('name') }}</h3>
-              {% if s.detail %}<p class="d-svc-desc">{{ s.text('detail') }}</p>{% endif %}
               <p class="d-svc-desc">{{ s.text('summary') }}</p>
               {% if s.includes %}<p class="d-svc-day"><strong>What it includes:</strong> {{ s.text('includes') }}</p>{% endif %}
               {% if s.adl and s.adl.length %}
-                <p class="d-svc-day d-svc-adl"><strong>Activities of daily living (ADLs):</strong> {{ s.text('adlIntro') }}</p>
+                <p class="d-svc-day d-svc-adl"><strong>Daily living help:</strong> {{ s.text('adlIntro') }}</p>
                 <ul class="d-adl-list">{% for a in s.adl %}<li>{{ a }}</li>{% endfor %}</ul>
               {% endif %}
               {% if s.bullets and s.bullets.length %}<ul>{% for b in s.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
@@ -68,7 +68,7 @@
     <section class="d-alt" id="svc-homes"><div class="d-wrap">
       <div class="d-section-head">
         <h2>{{ cms.text('services.homes.title', 'A place that feels like home') }}</h2>
-        <p>{{ cms.text('services.homes.intro', 'Individuals we support live in furnished apartment homes that are comfortable, welcoming and set up for everyday life, with the right level of support close by.') }}</p></div>
+        <p>{{ cms.text('services.homes.lede', 'The individuals we serve live in comfortable, welcoming apartment homes, fully furnished and set up for everyday life, with the right level of help close by.') }}</p></div>
       <div class="d-mosaic d-m4">
         {% for t in cms.list('services.homes.photos', [
           { photo: 'd-living-room', alt: 'Bright furnished living room with a sectional sofa and large windows' },
@@ -79,11 +79,10 @@
           <figure class="d-tile" {{ t.attrs }}><div class="d-tile-img">{{ ds.img(t.image('photo', t.alt), '(min-width: 860px) 25vw, 50vw') }}</div></figure>
         {% endfor %}
       </div>
+      <p class="d-photo-note">{{ cms.text('services.homes.note', 'Photos are illustrative.') }}</p>
       <ul class="d-feat-list">
-        {% for f in cms.list('services.homes.features', [
-          { title: 'Fully furnished apartment homes', text: 'Comfortable, home-like spaces where individuals live as adults.' },
-          { title: 'Supports shaped by the individual', text: 'Daily support follows each individual’s Provider Implementation Plan (PIP).' },
-          { title: 'Part of the community', text: 'Support happens at home and out in the community, so home life and community life go together.' }
+        {% for f in cms.list('services.homes.points', [
+          { title: 'Part of the neighborhood', text: 'Help happens at home and out and about, so home life and community life go together.' }
         ]) %}<li {{ f.attrs }}>{{ ds.tick() }}<div><strong>{{ f.text('title') }}</strong><span>{{ f.text('text') }}</span></div></li>{% endfor %}
       </ul>
     </div></section>
@@ -92,13 +91,13 @@
     <section id="svc-planning"><div class="d-wrap">
       <div class="d-section-head">
         <h2>{{ cms.text('services.planning.title', 'From first call to a plan that fits') }}</h2>
-        <p>{{ cms.text('services.planning.intro', 'Every individual we support has a plan that is theirs. It starts with who they are and what they want, and it guides the services we provide.') }}</p></div>
+        <p>{{ cms.text('services.planning.lede', 'Every individual we serve has a plan that is theirs. It starts with who they are and what they want, and it guides the services we provide.') }}</p></div>
       <ol class="d-plan-steps">
-        {% for st in cms.list('services.planning.steps', [
-          { title: 'Referral and DDA eligibility', text: 'Referrals come from the individual, family or their Coordinator of Community Services (CCS). DDA determines eligibility and funding.' },
-          { title: 'Person-Centered Plan (PCP)', text: 'The plan is built around what matters to the person: goals, preferences, strengths and who they want involved.' },
+        {% for st in cms.list('services.planning.items', [
+          { title: 'Referral and DDA eligibility', text: 'Referrals come from the individual, their family or their Coordinator of Community Services (CCS). DDA determines eligibility and funding.' },
+          { title: 'Person-Centered Plan (PCP)', text: 'The plan is built around what matters to the individual: goals, preferences, strengths and who they want involved.' },
           { title: 'Provider Implementation Plan (PIP)', text: 'From the PCP, we write a PIP: the specific supports, who provides them, and measurable goals with how progress is tracked. The individual and their coordinator review it.' },
-          { title: 'Review and adjust', text: 'We review the plan regularly with the individual, family and coordinator, and update it as life and goals change.' }
+          { title: 'Review and adjust', text: 'We review the plan regularly with the individual, their family and their coordinator, and update it as life and goals change.' }
         ]) %}<li {{ st.attrs }}><span class="d-pn">{{ loop.index }}</span><h3>{{ st.text('title') }}</h3><p>{{ st.text('text') }}</p></li>{% endfor %}
       </ol>
       <p class="d-term-chips"><span>Learn the terms:</span><a href="/resources#glossary">PIP</a><a href="/resources#glossary">PCP</a><a href="/resources#glossary">HCBS</a><a href="/resources#glossary">CCS</a></p>
@@ -106,13 +105,13 @@
 
   {% elif sec.key == 'eligibility' %}
     {% set ask = cms.link('services.fund.cta1', 'Ask about services', '/request-services') %}
-    {% set refer = cms.link('services.fund.cta2', 'Refer someone', '/referrals') %}
+    {% set refer = cms.link('services.fund.referCta', 'Make a referral', '/referrals') %}
     <section id="eligibility"><div class="d-wrap">
       <div class="d-section-head"><h2>{{ cms.text('services.fund.title', 'Eligibility and funding') }}</h2>
         <p>{{ cms.text('services.fund.intro', 'Plain answers to the questions families and coordinators ask first.') }}</p></div>
       <div class="d-fund-grid">
-        {% for f in cms.list('services.fund.items', [
-          { title: 'Who can receive services', text: 'Adults with a developmental disability who are eligible through Maryland’s Developmental Disabilities Administration (DDA). DDA, not HLO, decides eligibility.\n\nNot sure whether you or your family member qualifies? Ask us. We will explain the process and what to ask your coordinator.' },
+        {% for f in cms.list('services.fund.cards', [
+          { title: 'Who can receive services', text: 'Adults with a developmental disability who are eligible through Maryland’s Developmental Disabilities Administration (DDA). DDA, not HLO Inc., decides eligibility.\n\nNot sure whether you or your family member qualifies? Ask us. We will explain the process and what to ask your coordinator.' },
           { title: 'How services are paid for', text: 'Approved services are funded through DDA’s Medicaid waiver programs.\n\nEveryday living costs such as rent, food and personal spending are usually the individual’s own responsibility, often covered by income such as SSI or SSDI. We explain what applies to each individual before services begin.' },
           { title: 'How to get started', text: 'Families and individuals can ask about services. Coordinators and agencies can send a referral. Either way, we follow up during office hours (Monday to Friday, 9am to 5pm), talk through the individual’s goals, and work with their Coordinator of Community Services on next steps.' }
         ]) %}
@@ -125,17 +124,17 @@
 
   {% elif sec.key == 'support' %}
     <section class="d-alt" id="who-we-support"><div class="d-wrap">
-      <div class="d-section-head"><h2>{{ cms.text('services.support.title', 'Who we support') }}</h2>
-        <p>{{ cms.text('services.support.intro', 'We support adults with intellectual and developmental disabilities, and we also accept under our care adults with any of the conditions listed below.') }}</p></div>
-      <div class="d-support-grid d-mb-34">
-        {% for g in cms.list('services.support.groups', [
-          { title: 'Intellectual disabilities', text: 'We support adults with intellectual disabilities to define a good life for themselves and to live it.' },
-          { title: 'Mental health support needs', text: 'We support adults who also have mental health needs, working alongside their other providers.' },
-          { title: 'Autism', text: 'We support autistic adults with the services they choose, to build independence and thrive.' }
-        ]) %}<div class="d-support" {{ g.attrs }}><h3>{{ g.text('title') }}</h3><p>{{ g.text('text') }}</p></div>{% endfor %}
+      <div class="d-section-head"><h2>{{ cms.text('services.serve.title', 'Who we serve') }}</h2>
+        <p>{{ cms.text('services.serve.intro', 'We serve adults with intellectual and developmental disabilities, including adults who also experience any of the following.') }}</p></div>
+      <div class="d-support-grid">
+        {% for g in cms.list('services.serve.groups', [
+          { title: 'Intellectual disabilities', text: 'We stand with adults with intellectual disabilities as they define a good life for themselves and live it.' },
+          { title: 'Mental health support needs', text: 'We serve adults who also have mental health needs, working alongside their other providers.' },
+          { title: 'Autism', text: 'We welcome autistic adults and offer the services they choose, to build independence and thrive.' }
+        ]) %}<div class="d-support d-plain" {{ g.attrs }}><div class="d-body"><h3>{{ g.text('title') }}</h3><p>{{ g.text('text') }}</p></div></div>{% endfor %}
       </div>
-      <ul class="d-cond-list">{% for c in cms.list('services.support.conditions', design.conditions | listOf('name')) %}<li {{ c.attrs }}>{{ c.text('name') }}</li>{% endfor %}</ul>
-      <p class="d-mt-30">{{ cms.text('services.support.more', 'For more information about our services and how we can help your loved ones, do not hesitate to') }} <a href="/contact">contact us</a>.</p>
+      <ul class="d-cond-list">{% for c in cms.list('services.serve.conditions', design.conditions | listOf('name')) %}<li {{ c.attrs }}>{{ c.text('name') }}</li>{% endfor %}</ul>
+      <p class="d-mt-m">{{ cms.text('services.serve.more', 'Not sure whether we are the right fit? We would be glad to talk it through. Please') }} <a href="/contact">contact us</a>.</p>
     </div></section>
   {% endif %}
   </div>

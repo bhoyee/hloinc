@@ -3,34 +3,35 @@
 
 {% block mainClass %}ds{% endblock %}
 
+{# About page (HLO's design, version 41, October 2026). Keys for text that changed in this version are new. #}
 {% block content %}
   {{ ds.pageHead('About', cms.text('about.head.title', 'About Us'), cms.text('about.head.intro', 'Who we are, what we believe, and where we serve.')) }}
   {{ ds.pagenav([
     { id: 'who', label: cms.text('about.nav.who', 'Who we are') },
     { id: 'leadership', label: cms.text('about.nav.leadership', 'Leadership') },
-    { id: 'apply', label: cms.text('about.nav.apply', 'How to apply') },
+    { id: 'apply', label: cms.text('about.nav.start', 'How to get started') },
     { id: 'service-area', label: cms.text('about.nav.area', 'Service area') }
   ]) }}
 
   {% for sec in cms.sections('about', { who: 'Who we are', leadership: 'Leadership', apply: 'How to get started', area: 'Where we serve' }) %}
   <div {{ sec.attrs }}>
   {% if sec.key == 'who' %}
-    {% set aboutImg = cms.image('about.who.image', 'd-team-wheelchair', 'Two smiling support staff standing behind a young man in a wheelchair') %}
+    {% set aboutImg = cms.image('about.care.image', 'd-care-wheelchair', 'A caregiver helping a young woman in a wheelchair indoors') %}
     <section id="who"><div class="d-wrap d-split d-top">
       <div>
-        <h2>{{ cms.text('about.who.title', 'Compassionate, person-centered care') }}</h2>
-        {{ cms.rich('about.who.text', 'We support each individual’s rights, choices and dignity. Our approach is person-centered: the individual leads, and our trained staff support them to reach the goals they set.\n\nOur services meet individuals’ needs today and help prepare them for independence and a full life.\n\nEach person’s supports start with a plan they help write, called a Person-Centered Plan, and are carried out through a Provider Implementation Plan (PIP) that we write. Support happens in comfortable, furnished apartment homes and out in the community.') }}
-        {% for st in cms.list('about.who.statements', [
-          { title: 'Mission statement', text: 'Healthy Living Option Inc. supports adults with intellectual and developmental disabilities to live independent, self-directed lives, with community inclusion as a choice. In everything we do, we honor each individual’s rights, respect their choices, and treat them with dignity.' },
-          { title: 'Vision statement', text: 'We envision a community where every adult we serve is seen for who they are, supported to reach their goals, and welcomed as a valued neighbor. Through person-centered care and community integration, we help individuals build the lives they want and become all they can be.' }
+        <h2>{{ cms.text('about.care.title', 'Care that begins with listening') }}</h2>
+        {{ cms.rich('about.care.text', 'We honor each individual’s rights, choices and dignity. Our approach is person-centered: the individual leads, and our trained team walks alongside them toward the goals they set.\n\nWe meet each individual where they are today and help them build toward independence and a full life. Compassion and respect go with us into every visit and every conversation, and we try to truly see the individual in front of us.\n\nEach individual’s journey starts with a plan they help write, called a Person-Centered Plan. We then write a Provider Implementation Plan (PIP) that turns those goals into day-to-day help. That help happens in comfortable, furnished apartment homes and out in the neighborhood.') }}
+        {% for st in cms.list('about.care.statements', [
+          { title: 'Mission statement', text: 'Healthy Living Option Inc. supports adults with intellectual and developmental disabilities in living independent, self-directed lives, with inclusion in the community as a choice. In everything we do, we honor each person’s rights, respect their choices, and treat them with dignity.' },
+          { title: 'Vision statement', text: 'We envision a community where every adult we support is seen for who they are, encouraged to reach their goals, and welcomed as a valued neighbor. Through person-centered support and community inclusion, we help people build the lives they want and become all they can be.' }
         ]) %}
           <div class="d-statement" {{ st.attrs }}><h3>{{ st.text('title') }}</h3><p>{{ st.text('text') }}</p></div>
         {% endfor %}
       </div>
       <div>
-        <div class="d-photo d-photo-gap">{{ ds.img(aboutImg, '(min-width: 900px) 40vw, 100vw', 'class="d-pos-45"') }}</div>
+        <div class="d-photo">{{ ds.img(aboutImg, '(min-width: 900px) 40vw, 100vw') }}</div>
         <div class="d-aside-card d-facts">
-          <h3>{{ cms.text('about.glance.title', 'HLO at a glance') }}</h3>
+          <h2>{{ cms.text('about.care.glanceTitle', 'HLO Inc. at a glance') }}</h2>
           <dl>
             {% for g in cms.list('about.glance.rows', [
               { label: 'Provider', value: 'Maryland DDA provider' },
@@ -46,38 +47,38 @@
     </div></section>
 
   {% elif sec.key == 'leadership' %}
-    <section id="leadership"><div class="d-wrap">
-      <div class="d-section-head"><h2>{{ cms.text('about.lead.title', 'Who leads HLO') }}</h2></div>
-      {% for p in cms.list('about.lead.people', [
-        { initials: 'SO', role: 'Chief Executive Officer', name: 'Dr. Sam Odedokun', text: 'Dr. Odedokun leads Healthy Living Option Inc. Questions about our approach, or about how we work with families and coordinators, are always welcome. Call (410) 874-8551.' }
+    <section id="leadership" class="d-pt-0"><div class="d-wrap">
+      <div class="d-section-head d-tight"><h2>{{ cms.text('about.leaders.title', 'Who leads HLO Inc.') }}</h2></div>
+      {% for p in cms.list('about.leaders.people', [
+        { initials: 'SO', role: 'Chief Executive Officer', name: 'Dr. Sam Odedokun', text: 'Dr. Odedokun leads Healthy Living Option Inc. Questions about our approach, or about how we work with families and coordinators, are always welcome. Call ' + site.phone + '.' }
       ]) %}
-        <div class="d-leader" {{ p.attrs }}><span class="d-mono" aria-hidden="true">{{ p.text('initials') }}</span><div><span class="d-role">{{ p.text('role') }}</span><h3>{{ p.text('name') }}</h3><p>{{ p.text('text') }}</p></div></div>
+        <div class="d-leader" {{ p.attrs }}><span class="d-mono" aria-hidden="true">{{ p.text('initials') }}</span><div><p class="d-role">{{ p.text('role') }}</p><h3>{{ p.text('name') }}</h3><p>{{ p.text('text') }}</p></div></div>
       {% endfor %}
     </div></section>
 
   {% elif sec.key == 'apply' %}
     {% set ask = cms.link('about.apply.cta1', 'Ask about services', '/request-services') %}
-    {% set refer = cms.link('about.apply.cta2', 'Refer someone', '/referrals') %}
+    {% set refer = cms.link('about.begin.cta2', 'Make a referral', '/referrals') %}
     <section class="d-alt" id="apply"><div class="d-wrap">
       <div class="d-section-head"><h2>{{ cms.text('about.apply.title', 'How to get started') }}</h2>
         <p>{{ cms.text('about.apply.intro', 'You do not need every answer ready. Contact us and we will guide you through each step.') }}</p></div>
-      <div class="d-steps">
-        {% for st in cms.list('about.apply.steps', [
-          { title: 'Contact us', text: 'Submit the request form or call (410) 874-8551. Referrals from coordinators, agencies, and families are welcome.' },
-          { title: 'Talk with our team', text: 'We learn about the individual’s goals, needs, and preferences, and explain which of our services may fit.' },
-          { title: 'Plan the next steps together', text: 'We coordinate with the individual, family, and Coordinator of Community Services to align services with the Person-Centered Plan and write the Provider Implementation Plan (PIP).' }
+      <ol class="d-steps d-light-steps">
+        {% for st in cms.list('about.begin.steps', [
+          { title: 'Say hello', text: 'Submit the request form or call ' + site.phone + '. Referrals from coordinators, agencies and families are welcome.' },
+          { title: 'Tell us about the individual', text: 'We get to know the individual: their goals, needs and preferences. Then we explain which of our services may fit.' },
+          { title: 'Plan the next steps together', text: 'We work with the individual, their family and their Coordinator of Community Services so services match the Person-Centered Plan, and we write the Provider Implementation Plan (PIP).' }
         ]) %}
-          <div class="d-step" {{ st.attrs }}><h3>{{ st.text('title') }}</h3><p>{{ st.text('text') }}</p></div>
+          <li class="d-step" {{ st.attrs }}><h3>{{ st.text('title') }}</h3><p>{{ st.text('text') }}</p></li>
         {% endfor %}
-      </div>
-      <p class="d-mt-30 d-acts-inline"><a class="d-btn d-btn-primary" href="{{ ask.href }}" {{ ask.attrs }}>{{ ask.label }}</a><a class="d-btn d-btn-ghost" href="{{ refer.href }}" {{ refer.attrs }}>{{ refer.label }}</a></p>
+      </ol>
+      <div class="d-cta-row"><a class="d-btn d-btn-primary" href="{{ ask.href }}" {{ ask.attrs }}>{{ ask.label }}</a><a class="d-btn d-btn-ghost" href="{{ refer.href }}" {{ refer.attrs }}>{{ refer.label }}</a></div>
     </div></section>
 
   {% elif sec.key == 'area' %}
     <section id="service-area"><div class="d-wrap">
       <h2>{{ cms.text('about.area.title', 'Where we serve') }}</h2>
       <dl class="d-region"><dt>{{ cms.text('about.area.regionLabel', 'DDA regions:') }}</dt><dd>{{ cms.text('about.area.regions', 'Central Maryland and Southern Region') }}</dd></dl>
-      <p class="d-mt-14">{{ cms.text('about.area.countiesLabel', 'Counties served:') }}</p>
+      <p class="d-mt-s">{{ cms.text('about.area.countiesLabel', 'Counties served:') }}</p>
       <ul class="d-counties">{% for c in cms.list('about.area.counties', design.counties | listOf('name')) %}<li {{ c.attrs }}>{{ c.text('name') }}</li>{% endfor %}</ul>
     </div></section>
   {% endif %}

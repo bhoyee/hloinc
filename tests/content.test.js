@@ -93,7 +93,7 @@ describe('page editor: access', () => {
     const e = await editor('admin');
     const edit = await e.agent.get('/?cms=edit&cms_page=home');
     expect(edit.status).toBe(200);
-    expect(edit.text).toContain('data-cms="home.hb.title"');
+    expect(edit.text).toContain('data-cms="home.top.title"');
     expect(edit.text).toContain('id="cms-registry"');
     expect(edit.text).toContain('/js/cms-frame.js');
     expect(edit.headers['content-security-policy']).toContain("frame-ancestors 'self'");
@@ -104,7 +104,7 @@ describe('page editor: access', () => {
 describe('page editor: draft, preview, publish', () => {
   it('saves to a draft that only staff see until it is published', async () => {
     const e = await editor('admin');
-    const res = await draft(e, 'home', { values: [{ key: 'home.hb.title', type: 'text', value: 'Living well, your way.' }] });
+    const res = await draft(e, 'home', { values: [{ key: 'home.top.title', type: 'text', value: 'Living well, your way.' }] });
     expect(res.status).toBe(200);
     expect((await request(app).get('/')).text).not.toContain('Living well, your way.');
     expect((await e.agent.get('/?cms=preview')).text).toContain('Living well, your way.');
@@ -119,7 +119,7 @@ describe('page editor: draft, preview, publish', () => {
 
   it('publishes shared header and footer changes with the page', async () => {
     const e = await editor('admin');
-    await draft(e, 'about', { values: [{ key: 'site.foot.blurb', type: 'text', value: 'Supporting Maryland since 2010.' }] });
+    await draft(e, 'about', { values: [{ key: 'site.foot.about', type: 'text', value: 'Supporting Maryland since 2010.' }] });
     await json(e, '/portal/content/pages/about/publish', { docs: ['about', 'site'] });
     expect((await request(app).get('/contact')).text).toContain('Supporting Maryland since 2010.');
   });
@@ -144,12 +144,12 @@ describe('page editor: draft, preview, publish', () => {
 
   it('puts a page back to its original design', async () => {
     const e = await editor('admin');
-    await draft(e, 'home', { values: [{ key: 'home.hb.title', type: 'text', value: 'Temporary' }] });
+    await draft(e, 'home', { values: [{ key: 'home.top.title', type: 'text', value: 'Temporary' }] });
     await json(e, '/portal/content/pages/home/publish', { docs: ['home'] });
     await json(e, '/portal/content/pages/home/reset', {});
     await json(e, '/portal/content/pages/home/publish', { docs: ['home'] });
     const home = (await request(app).get('/')).text;
-    expect(home).toContain('Serving adult individuals with intellectual and developmental disabilities in Central &amp; Southern Maryland');
+    expect(home).toContain('Supporting Individuals with Developmental Disabilities');
     expect(home).not.toContain('Temporary');
   });
 });
@@ -161,19 +161,19 @@ describe('page editor: lists, sections, images, links', () => {
       { title: 'We talk it through', text: 'Second becomes first.' },
       { title: 'Reach out', text: 'First becomes second.' },
     ];
-    expect((await draft(e, 'about', { lists: [{ key: 'about.apply.steps', items }] })).status).toBe(200);
+    expect((await draft(e, 'about', { lists: [{ key: 'about.begin.steps', items }] })).status).toBe(200);
     const preview = (await e.agent.get('/about?cms=preview')).text;
     expect(preview.indexOf('We talk it through')).toBeLessThan(preview.indexOf('Reach out'));
     expect(preview).not.toContain('Plan the next steps together');
-    expect((await draft(e, 'about', { lists: [{ key: 'about.apply.steps', items: [] }] })).status).toBe(422); // at least one item
+    expect((await draft(e, 'about', { lists: [{ key: 'about.begin.steps', items: [] }] })).status).toBe(422); // at least one item
   });
 
   it('hides and reorders sections', async () => {
     const e = await editor('admin');
     await draft(e, 'home', { sections: [{ doc: 'home', order: ['contact', 'hero'], hidden: ['refer'] }] });
     const preview = (await e.agent.get('/?cms=preview')).text;
-    expect(preview).not.toContain('Send Your Referrals');
-    expect(preview.indexOf('Contact Details')).toBeLessThan(preview.indexOf('Serving adult individuals with intellectual and developmental disabilities in Central &amp; Southern Maryland'));
+    expect(preview).not.toContain('Looking for the right fit?');
+    expect(preview.indexOf('We would love to hear from you')).toBeLessThan(preview.indexOf('Supporting Individuals with Developmental Disabilities'));
     // In the editor, hidden sections still show (faded) so they can be shown again.
     expect((await e.agent.get('/?cms=edit')).text).toContain('data-cms-hidden="1"');
   });
@@ -181,15 +181,15 @@ describe('page editor: lists, sections, images, links', () => {
   it('accepts only safe links and our own images', async () => {
     const e = await editor('admin');
     for (const value of ['javascript:alert(1)', '//evil.com', 'http://example.com', 'data:text/html,x']) {
-      expect((await draft(e, 'home', { values: [{ key: 'home.hb.cta1.href', type: 'href', value }] })).status).toBe(422);
+      expect((await draft(e, 'home', { values: [{ key: 'home.top.cta1.href', type: 'href', value }] })).status).toBe(422);
     }
     for (const value of ['/contact', '#compare', 'https://health.maryland.gov/dda', 'mailto:info@hloinc.com', 'tel:410-874-8551']) {
-      expect((await draft(e, 'home', { values: [{ key: 'home.hb.cta1.href', type: 'href', value }] })).status).toBe(200);
+      expect((await draft(e, 'home', { values: [{ key: 'home.top.cta1.href', type: 'href', value }] })).status).toBe(200);
     }
     const badImage = { src: 'https://evil.com/x.webp', alt: '' };
-    expect((await draft(e, 'home', { values: [{ key: 'home.hb.image', type: 'image', value: badImage }] })).status).toBe(422);
+    expect((await draft(e, 'home', { values: [{ key: 'home.top.image', type: 'image', value: badImage }] })).status).toBe(422);
     const good = { src: '/img/photos/approach.webp', srcSm: '/img/photos/approach-sm.webp', alt: 'A calm conversation', w: 960, h: 640 };
-    expect((await draft(e, 'home', { values: [{ key: 'home.hb.image', type: 'image', value: good }] })).status).toBe(200);
+    expect((await draft(e, 'home', { values: [{ key: 'home.top.image', type: 'image', value: good }] })).status).toBe(200);
     expect((await e.agent.get('/?cms=preview')).text).toContain('alt="A calm conversation"');
     // Items can't smuggle in unknown icons or bad links.
     expect((await draft(e, 'home', { lists: [{ key: 'home.paths.items', items: [{ title: 'x', text: 'y', icon: 'nope', href: '/' }] }] })).status).toBe(422);
@@ -198,7 +198,7 @@ describe('page editor: lists, sections, images, links', () => {
 
   it('escapes anything that looks like code', async () => {
     const e = await editor('admin');
-    await draft(e, 'home', { values: [{ key: 'home.hb.title', type: 'text', value: 'Hello <script>alert(1)</script>' }, { key: 'home.hb.intro', type: 'text', value: '"><img src=x onerror=alert(1)>' }] });
+    await draft(e, 'home', { values: [{ key: 'home.top.title', type: 'text', value: 'Hello <script>alert(1)</script>' }, { key: 'home.top.intro', type: 'text', value: '"><img src=x onerror=alert(1)>' }] });
     const html = (await e.agent.get('/?cms=preview')).text;
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).not.toContain('<img src=x');
@@ -213,7 +213,7 @@ describe('page editor: lists, sections, images, links', () => {
 
   it('edits legal page sections', async () => {
     const e = await editor('admin');
-    const res = await draft(e, 'privacy', { lists: [{ key: 'privacy.sections', items: [{ id: 'scope', heading: 'Who we are', body: 'First paragraph.\n\n- A bullet' }] }] });
+    const res = await draft(e, 'privacy', { lists: [{ key: 'privacy.v41.sections', items: [{ id: 'scope', heading: 'Who we are', body: 'First paragraph.\n\n- A bullet' }] }] });
     expect(res.status).toBe(200);
     const html = (await e.agent.get('/privacy?cms=preview')).text;
     expect(html).toContain('Who we are');

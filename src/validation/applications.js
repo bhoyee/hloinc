@@ -29,7 +29,8 @@ const applicationSchema = z.object({
 const careersApplicationSchema = applicationSchema.extend({
   job: z.string({ error: 'Choose the position you are applying for.' }).trim().min(1, 'Choose the position you are applying for.').max(200),
   cell: phoneField().refine((v) => v !== '', 'Enter your cell number.'),
-  cover_note: z.string({ error: 'Tell us a little about yourself.' }).trim().min(1, 'Tell us a little about yourself.').max(3000, 'Keep your message under 3,000 characters.'),
+  // Optional on the Careers page (HLO's design, version 41).
+  cover_note: z.string().trim().max(3000, 'Keep your message under 3,000 characters.').optional().default(''),
 });
 
 module.exports = { applicationSchema, careersApplicationSchema };
