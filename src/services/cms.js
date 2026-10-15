@@ -461,8 +461,10 @@ async function publish(keys, user) {
   for (const key of allowed) {
     const row = r[key];
     if (!row || !row.draft) continue;
-    await db('page_content').where({ page_key: key }).update({ published: row.draft, draft: null, published_at: new Date(), published_by: user.id });
-    await db('page_revisions').insert({ page_key: key, content: row.draft, published_by: user.id, published_by_name: user.name });
+    // MariaDB (the live server) hands JSON columns back already parsed; MySQL gives text. Store text either way.
+    const content = typeof row.draft === 'string' ? row.draft : JSON.stringify(row.draft);
+    await db('page_content').where({ page_key: key }).update({ published: content, draft: null, published_at: new Date(), published_by: user.id });
+    await db('page_revisions').insert({ page_key: key, content, published_by: user.id, published_by_name: user.name });
     done.push(key);
   }
   clearCache();
