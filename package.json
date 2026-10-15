@@ -32,6 +32,7 @@
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
     "knex": "^3.3.0",
+    "mammoth": "^1.13.0",
     "multer": "^2.4.0",
     "mysql2": "^3.24.5",
     "nodemailer": "^10.0.15",

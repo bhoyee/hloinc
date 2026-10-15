@@ -3,7 +3,7 @@
 {% import "partials/portal-badges.njk" as badges %}
 {% import "partials/rich-editor.njk" as re %}
 
-{% block scripts %}<script src="/js/rich-editor.js" defer></script>{% endblock %}
+{% block scripts %}<script src="/js/rich-editor.js?v={{ assetV }}" defer></script>{% endblock %}
 
 {% set editable = can('jobs.edit') %}
 

@@ -71,7 +71,7 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 - **Schedule**: team and personal views, shifts, and time-off requests with approval (in-app and email).
 - **Jobs & applications**:
   - Posting with a formatted editor and Maryland pay-transparency checks.
-  - Applications with status tracking and logged resume downloads. Resumes are **deleted automatically after 3 months** (the application is kept).
+  - Applications with status tracking, a **resume preview** in a pop-up (PDF in the browser's viewer; Word shown as text) and logged previews and downloads. Resumes are **deleted automatically after 3 months** (the application is kept).
 - **Announcements**: a banner across the portal. **Important** (red, stays, bell alert to all staff) or **Normal** (green, can be closed).
 - **Accounts**:
   - Invites, password and two-step resets, sign out everywhere.

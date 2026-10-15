@@ -28,6 +28,9 @@ function createApp() {
     noCache: !config.isProd,
   });
   env.addGlobal('currentYear', new Date().getFullYear());
+  // Added to script and stylesheet links (?v=…). Static files are cached for 7 days in production;
+  // this changes on every restart (each deploy restarts the app), so browsers fetch fresh copies.
+  env.addGlobal('assetV', Date.now().toString(36));
   env.addGlobal('cms', cms.helpers);
   // Starting content of the redesigned public pages (menu, services, glossary…).
   env.addGlobal('design', require('./content/design'));

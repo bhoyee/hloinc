@@ -1005,3 +1005,22 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch { /* older browsers: dashboards still refresh every few seconds */ }
   }
 });
+
+/**
+ * A document in a pop-up (e.g. a resume on the application page): a button with
+ * data-preview-open="dialog-id" opens that <dialog>; its iframe loads only then (data-src).
+ */
+document.querySelectorAll('[data-preview-open]').forEach((btn) => {
+  const dialog = document.getElementById(btn.dataset.previewOpen);
+  if (!dialog || typeof dialog.showModal !== 'function') return;
+  const frame = dialog.querySelector('iframe[data-src]');
+  btn.addEventListener('click', () => {
+    if (frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+    dialog.showModal();
+  });
+  dialog.querySelectorAll('[data-preview-close]').forEach((c) => c.addEventListener('click', () => dialog.close()));
+  // A click on the dimmed area outside closes it.
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+});

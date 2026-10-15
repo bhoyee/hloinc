@@ -11,13 +11,13 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#0b4532">
   {% block headEarly %}{% endblock %}
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/app.css?v={{ assetV }}">
   {% block styles %}{% endblock %}
-  <script src="/js/site.js" defer></script>
+  <script src="/js/site.js?v={{ assetV }}" defer></script>
   {% block scripts %}{% endblock %}
   {% if cmsMode == 'edit' %}
     <meta name="csrf-token" content="{{ csrfToken() }}">
-    <script src="/js/cms-frame.js" defer></script>
+    <script src="/js/cms-frame.js?v={{ assetV }}" defer></script>
   {% endif %}
 </head>
 <body class="{% block bodyClass %}{% endblock %}{{ ' cms-editing' if cmsMode == 'edit' }}">

@@ -183,6 +183,47 @@ describe('applications in the portal', () => {
     expect((await admin.get(`/portal/applications/${a.id}/resume`)).status).toBe(303);
   });
 
+  it('previews the resume in the portal: a PDF in the browser viewer, a Word file as cleaned text', async () => {
+    await apply();
+    const a = await db('job_applications').first();
+    const director = await signIn(app, await makeUser('program_director'));
+    expect((await director.get(`/portal/applications/${a.id}/resume/preview`)).status).toBe(403);
+
+    const admin = await signIn(app, await makeUser('admin'));
+    expect((await admin.get(`/portal/applications/${a.id}`)).text).toContain('data-src="/portal/applications/' + a.id + '/resume/preview"');
+    const pdf = await admin.get(`/portal/applications/${a.id}/resume/preview`).buffer(true).parse((res, cb) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => cb(null, Buffer.concat(chunks)));
+    });
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers['content-type']).toBe('application/pdf');
+    expect(pdf.headers['content-disposition']).toBe('inline; filename="My Resume.pdf"');
+    expect(pdf.headers['content-security-policy']).toBe("frame-ancestors 'self'");
+    expect(await db('audit_log').where({ action: 'application.resume_view' }).first()).toBeTruthy();
+
+    // A real (small) Word file: shown as text, with anything that looks like code escaped, and scripts blocked.
+    const JSZip = require('jszip');
+    const zip = new JSZip();
+    zip.file('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+    zip.file('_rels/.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+    zip.file('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Jordan Applicant, DSP</w:t></w:r></w:p><w:p><w:r><w:t>&lt;script&gt;alert(1)&lt;/script&gt;</w:t></w:r></w:p></w:body></w:document>');
+    const docx = await zip.generateAsync({ type: 'nodebuffer' });
+    await db('job_applications').del();
+    await apply({ file: docx, filename: 'cv.docx', fields: { email: 'word-file@example.com' } });
+    const b = await db('job_applications').first();
+    const html = await admin.get(`/portal/applications/${b.id}/resume/preview`);
+    expect(html.status).toBe(200);
+    expect(html.headers['content-type']).toMatch(/text\/html/);
+    expect(html.headers['content-security-policy']).toMatch(/^sandbox; default-src 'none'/);
+    expect(html.text).toContain('Jordan Applicant, DSP');
+    expect(html.text).not.toContain('<script>');
+
+    // Not before a clean scan.
+    await db('job_applications').where({ id: b.id }).update({ scan_status: 'pending' });
+    expect((await admin.get(`/portal/applications/${b.id}/resume/preview`)).status).toBe(404);
+  });
+
   it('rescans waiting resumes: clean ones unlock, infected ones are deleted', async () => {
     await apply();
     const a = await db('job_applications').first();

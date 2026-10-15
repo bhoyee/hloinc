@@ -5,7 +5,7 @@
 
 {% set editable = can('messages.edit') %}
 
-{% block scripts %}<script src="/js/rich-editor.js" defer></script>{% endblock %}
+{% block scripts %}<script src="/js/rich-editor.js?v={{ assetV }}" defer></script>{% endblock %}
 
 
 {% block actions %}

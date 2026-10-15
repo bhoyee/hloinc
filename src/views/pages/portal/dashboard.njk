@@ -1,7 +1,7 @@
 {% extends "layouts/portal.njk" %}
 {% import "partials/ui.njk" as ui %}
 
-{% block scripts %}<script src="/js/dashboard.js" defer></script>{% endblock %}
+{% block scripts %}<script src="/js/dashboard.js?v={{ assetV }}" defer></script>{% endblock %}
 
 {# Table view of a chart: every value without needing the chart or hover. Rebuilt by dashboard.js on refresh. #}
 {% macro chartTable(c) %}

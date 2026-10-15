@@ -4,8 +4,8 @@
 {% block htmlAttrs %} class="site"{% endblock %}
 
 {# Light/dark theme: set before the page is drawn (public website only). #}
-{% block headEarly %}<meta name="color-scheme" content="light dark"><script src="/js/theme.js"></script>{% endblock %}
-{% block styles %}<link rel="stylesheet" href="/css/site.css?v=9"><script src="/js/ds.js?v=9" defer></script>{% endblock %}
+{% block headEarly %}<meta name="color-scheme" content="light dark"><script src="/js/theme.js?v={{ assetV }}"></script>{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/css/site.css?v={{ assetV }}"><script src="/js/ds.js?v={{ assetV }}" defer></script>{% endblock %}
 
 {% block body %}
   {% include "partials/site-header.njk" %}

@@ -2,7 +2,7 @@
 {% import "partials/ui.njk" as ui %}
 {% import "partials/rich-editor.njk" as re %}
 
-{% block scripts %}{% if mine or mayUpdate %}<script src="/js/rich-editor.js" defer></script>{% endif %}{% endblock %}
+{% block scripts %}{% if mine or mayUpdate %}<script src="/js/rich-editor.js?v={{ assetV }}" defer></script>{% endif %}{% endblock %}
 {% from "partials/help-status.njk" import pill %}
 {% from "partials/avatar.njk" import avatar %}
 

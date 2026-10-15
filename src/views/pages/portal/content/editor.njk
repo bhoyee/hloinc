@@ -4,7 +4,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="csrf-token" content="{{ csrfToken() }}">
 {% endblock %}
-{% block scripts %}<script src="/js/cms-editor.js" defer></script>{% endblock %}
+{% block scripts %}<script src="/js/cms-editor.js?v={{ assetV }}" defer></script>{% endblock %}
 {% block bodyClass %}h-dvh overflow-hidden bg-[#e9efec]{% endblock %}
 
 {% block body %}
