@@ -42,6 +42,74 @@
     }
   }
 
+  /*
+   * A clear pop-up after Publish, Save draft and Discard (the status pill is small, and
+   * hidden on narrow screens). Success closes by itself after a few seconds; errors stay
+   * until closed. tone: 'live' | 'draft' | 'info' | 'error'.
+   */
+  const TONES = {
+    live: { ring: 'ring-brand-200', icon: 'bg-brand-600', mark: 'M5 12.5l4.5 4.5L19 7.5' },
+    draft: { ring: 'ring-amber-200', icon: 'bg-amber-500', mark: 'M6 4h9l3 3v13H6zM9 4v5h6V4' },
+    info: { ring: 'ring-line', icon: 'bg-[#93a49b]', mark: 'M12 8v.5M12 11v6' },
+    error: { ring: 'ring-accent-200', icon: 'bg-accent-600', mark: 'M12 7v6M12 16.5v.5' },
+  };
+  let toastEl = null;
+  let toastTimer = null;
+  function toast({ tone = 'live', title, text = '', link = null }) {
+    if (toastEl) toastEl.remove();
+    clearTimeout(toastTimer);
+    const t = TONES[tone] || TONES.info;
+    const el = document.createElement('div');
+    el.setAttribute('role', tone === 'error' ? 'alert' : 'status');
+    el.className = `fixed right-4 bottom-4 left-4 z-[200] mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-white p-4 shadow-lift ring-2 ${t.ring} transition duration-300 sm:left-auto sm:right-6 sm:bottom-6 translate-y-3 opacity-0`;
+    const icon = document.createElement('span');
+    icon.className = `grid size-9 shrink-0 place-items-center rounded-full text-white ${t.icon}`;
+    icon.innerHTML = `<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${t.mark}"/></svg>`;
+    const body = document.createElement('div');
+    body.className = 'min-w-0 flex-1';
+    const h = document.createElement('p');
+    h.className = 'font-bold text-ink';
+    h.textContent = title;
+    body.append(h);
+    if (text) {
+      const p = document.createElement('p');
+      p.className = 'mt-0.5 text-sm text-muted';
+      p.textContent = text;
+      body.append(p);
+    }
+    if (link) {
+      const a = document.createElement('a');
+      a.href = link.href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.className = 'mt-2 inline-block text-sm font-semibold text-brand-700 underline underline-offset-2';
+      a.textContent = link.label;
+      body.append(a);
+    }
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink';
+    close.setAttribute('aria-label', 'Close message');
+    close.innerHTML = '<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    const hide = () => {
+      el.classList.add('opacity-0', 'translate-y-3');
+      setTimeout(() => el.remove(), 300);
+    };
+    close.addEventListener('click', hide);
+    el.append(icon, body, close);
+    document.body.append(el);
+    toastEl = el;
+    requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-3'));
+    if (tone !== 'error') {
+      const start = () => { toastTimer = setTimeout(hide, 7000); };
+      el.addEventListener('mouseenter', () => clearTimeout(toastTimer));
+      el.addEventListener('mouseleave', start);
+      el.addEventListener('focusin', () => clearTimeout(toastTimer));
+      start();
+    }
+  }
+  const liveLink = root.dataset.live ? { href: root.dataset.live, label: 'View the live page' } : null;
+
   async function refreshStatus() {
     try {
       const res = await fetch(`${api('/status')}?docs=${encodeURIComponent(docs.join(','))}`, { headers: { Accept: 'application/json' } });
@@ -117,8 +185,16 @@
       setStatus('Saving draft…', 'draft');
       const ok = await flush();
       await refreshStatus();
-      if (ok) setStatus(publishBtn && !publishBtn.disabled ? 'Draft saved · continue any time, then Publish' : 'Saved · nothing new to publish', publishBtn && !publishBtn.disabled ? 'draft' : 'live');
-      else setStatus('Not saved. Please try again.', 'error');
+      const hasDraft = publishBtn && !publishBtn.disabled;
+      if (ok) {
+        setStatus(hasDraft ? 'Draft saved · continue any time, then Publish' : 'Saved · nothing new to publish', hasDraft ? 'draft' : 'live');
+        toast(hasDraft
+          ? { tone: 'draft', title: 'Draft saved', text: 'Visitors don’t see these changes yet. Click Publish when you’re ready.' }
+          : { tone: 'info', title: 'Nothing new to save', text: 'There are no changes waiting to be published.' });
+      } else {
+        setStatus('Not saved. Please try again.', 'error');
+        toast({ tone: 'error', title: 'Not saved', text: 'Your changes couldn’t be saved. Please try again.' });
+      }
       saveDraftBtn.disabled = false;
     });
   }
@@ -149,8 +225,12 @@
         const { published } = await post('/publish', { docs });
         setStatus(published.length ? 'Published · live on the website now' : 'Nothing to publish', 'live');
         if (discardBtn) discardBtn.disabled = true;
+        toast(published.length
+          ? { tone: 'live', title: 'Published', text: 'Your changes are live on the website now.', link: liveLink }
+          : { tone: 'info', title: 'Nothing to publish', text: 'There were no unpublished changes on this page.' });
       } catch (err) {
-        setStatus(err.message, 'error');
+        setStatus('Not published', 'error');
+        toast({ tone: 'error', title: 'Not published', text: `${err.message} Your changes are still saved as a draft.` });
         publishBtn.disabled = false;
       }
     });
@@ -161,8 +241,10 @@
       try {
         await post('/discard', { docs });
         frame.contentWindow.location.reload();
+        toast({ tone: 'info', title: 'Changes discarded', text: 'The page is back to what’s live on the website.' });
       } catch (err) {
         setStatus(err.message, 'error');
+        toast({ tone: 'error', title: 'Not discarded', text: err.message });
       }
     });
   }

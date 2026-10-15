@@ -8,7 +8,7 @@
 {% block bodyClass %}h-dvh overflow-hidden bg-[#e9efec]{% endblock %}
 
 {% block body %}
-<div class="flex h-dvh flex-col" data-cms-editor data-page="{{ page.key }}" data-editable="{{ 'yes' if editable else 'no' }}">
+<div class="flex h-dvh flex-col" data-cms-editor data-page="{{ page.key }}" data-live="{{ previewUrl.split('?')[0] }}" data-editable="{{ 'yes' if editable else 'no' }}">
   {# Toolbar #}
   <header class="z-10 flex shrink-0 flex-wrap items-center gap-2 border-b border-line bg-white px-3 py-2 shadow-sm sm:gap-3 sm:px-4">
     <a href="/portal/content" class="grid size-10 shrink-0 place-items-center rounded-xl text-ink hover:bg-surface" title="Back to Site content">
