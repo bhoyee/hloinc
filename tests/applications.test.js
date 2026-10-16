@@ -85,35 +85,21 @@ describe('applying for a job', () => {
     expect(await db('notifications').where({ user_id: admin.id, type: 'application' })).toHaveLength(1);
   });
 
-  it('takes a general application (no specific role), with or without a message', async () => {
+  it('lists open positions first, and takes no general applications (HLO doesn’t need them)', async () => {
     const page = (await request(app).get('/careers')).text;
-    expect(page).toContain('<option value="general"');
     // Open positions come first, then benefits, then the form (HLO's design, version 41).
     expect(page.indexOf('id="openings"')).toBeLessThan(page.indexOf('id="benefits"'));
     expect(page.indexOf('id="benefits"')).toBeLessThan(page.indexOf('id="apply"'));
-    expect(page).toContain('Employee referral incentives');
-
-    const res = await apply({ fields: { job: 'general', cover_note: '' } });
-    expect(res.status).toBe(303);
-    const [a] = await db('job_applications');
-    expect(a).toMatchObject({ job_id: null, job_title: 'General application', cover_note: null });
-    expect(outbox.find((m) => m.to === 'jordan@example.com').subject).toBe('We received your application');
-    expect(outbox.find((m) => m.subject.startsWith('New application')).text).toContain('general application');
+    expect(page).not.toContain('<option value="general"');
+    expect(page).not.toMatch(/general application/i);
+    const res = await apply({ fields: { job: 'general' } });
+    expect(res.status).toBe(422);
+    expect(await db('job_applications')).toHaveLength(0);
   });
 
-  it('lets staff switch the general application choice off', async () => {
-    await db('page_content').where({ page_key: 'careers' }).del();
-    await db('page_content').insert({ page_key: 'careers', published: JSON.stringify({ values: { 'careers.form.general': false }, lists: {}, sections: {} }) });
-    require('../src/services/cms').clearCache();
-    try {
-      expect((await request(app).get('/careers')).text).not.toContain('<option value="general"');
-      const res = await apply({ fields: { job: 'general' } });
-      expect(res.status).toBe(422);
-      expect(await db('job_applications')).toHaveLength(0);
-    } finally {
-      await db('page_content').where({ page_key: 'careers' }).del();
-      require('../src/services/cms').clearCache();
-    }
+  it('keeps the message optional', async () => {
+    expect((await apply({ fields: { cover_note: '' } })).status).toBe(303);
+    expect((await db('job_applications').first()).cover_note).toBeNull();
   });
 
   it('accepts a Word .docx', async () => {

@@ -196,6 +196,19 @@ describe('page editor: lists, sections, images, links', () => {
     expect((await draft(e, 'home', { lists: [{ key: 'home.paths.items', items: [{ title: 'x', text: 'y', icon: 'heart', href: 'javascript:x' }] }] })).status).toBe(422);
   });
 
+  it('removes Careers benefits (their own icons are allowed)', async () => {
+    const e = await editor('admin');
+    const items = [
+      { name: 'Health insurance', icon: 'heart' }, { name: 'Dental', icon: 'dental' }, { name: 'Vision', icon: 'vision' },
+      { name: 'Paid time off', icon: 'pto' }, { name: 'Sick leave', icon: 'sick' }, { name: '401(k)', icon: 'retirement' }, { name: 'Bonuses', icon: 'gift' },
+    ];
+    expect((await draft(e, 'careers', { lists: [{ key: 'careers.benefits.list', items }] })).status).toBe(200);
+    const preview = (await e.agent.get('/careers?cms=preview')).text;
+    expect(preview).toContain('Bonuses');
+    expect(preview).not.toContain('Life insurance');
+    expect(preview).not.toContain('Employee referral incentives');
+  });
+
   it('hides a button from visitors, and shows it faded in the editor', async () => {
     const e = await editor('admin');
     expect((await draft(e, 'home', { values: [{ key: 'home.top.cta2.hidden', type: 'flag', value: 'yes' }] })).status).toBe(422);

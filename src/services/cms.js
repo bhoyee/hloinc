@@ -25,7 +25,10 @@ const nunjucks = require('nunjucks');
 const db = require('../db/knex');
 const { can } = require('../auth/permissions');
 const { richText } = require('../lib/text');
-const { paths: ICONS } = require('../lib/icons');
+const { paths: ICON_PATHS } = require('../lib/icons');
+// Icon names a list item may use: the portal's icons, plus the Careers benefit icons
+// (drawn in pages/public/careers.njk, benefitIcon).
+const ICONS = Object.fromEntries([...Object.keys(ICON_PATHS), 'dental', 'vision', 'pto', 'sick', 'life', 'retirement', 'gift', 'referral', 'cash'].map((k) => [k, true]));
 const services = require('../content/services');
 
 const { SafeString } = nunjucks.runtime;

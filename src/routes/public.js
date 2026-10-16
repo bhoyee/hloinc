@@ -176,9 +176,7 @@ if (!OLD_CAREERS) {
 
     const parsed = careersApplicationSchema.safeParse(req.body);
     const errors = parsed.success ? {} : fieldErrors(parsed.error);
-    // "General application" only while it's switched on in Site content (Careers page).
-    const general = parsed.success && parsed.data.job === applications.GENERAL.slug && (await cms.loadPublished(), cms.flagValue('careers.form.general', true));
-    const job = !parsed.success ? null : general ? applications.GENERAL : await jobs.findPublishedBySlug(parsed.data.job);
+    const job = parsed.success ? await jobs.findPublishedBySlug(parsed.data.job) : null;
     if (parsed.success && !job) errors.job = 'That position is no longer open. Please choose another.';
     if (req.uploadError) errors.resume = req.uploadError;
     else if (!req.file) errors.resume = 'Attach your resume (PDF or Word .docx).';
@@ -204,7 +202,7 @@ if (!OLD_CAREERS) {
       }
       return renderCareers(req, res, { values: req.body, errors: { [err.field || 'resume']: err.message } });
     }
-    setFlash(req, 'success', `Thank you, ${parsed.data.first_name}. Your ${job.id ? `application for ${job.title}` : 'general application'} has been sent. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`);
+    setFlash(req, 'success', `Thank you, ${parsed.data.first_name}. Your application for ${job.title} has been sent. Your reference is ${result.reference}${result.acknowledged ? ', and we have emailed you a confirmation' : ''}.`);
     res.redirect(303, '/careers#apply');
   });
 
