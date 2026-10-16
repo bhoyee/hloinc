@@ -73,7 +73,7 @@
           <div class="d-job-empty">
             <h3>{{ cms.text('careers.openings.emptyTitle', 'No positions are posted right now') }}</h3>
             <p>{{ cms.text('careers.openings.emptyText', 'We are always glad to meet caring people. Send a general application below, and we will contact you when a role that fits opens up.') }}</p>
-            <a class="d-btn d-btn-primary" href="/careers?job=general#apply" data-apply-job="general">{{ cms.text('careers.openings.emptyCta', 'Send a general application') }}</a>
+            {% if cms.flag('careers.form.general', true, 'General application option').on %}<a class="d-btn d-btn-primary" href="/careers?job=general#apply" data-apply-job="general">{{ cms.text('careers.openings.emptyCta', 'Send a general application') }}</a>{% endif %}
           </div>
         {% endfor %}
       </div>
@@ -116,6 +116,8 @@
           </div>
         </div>
       {% else %}
+        {# Staff can switch the "General application" choice off in Site content. #}
+        {% set general = cms.flag('careers.form.general', true, 'General application option') %}
         <form class="d-card" method="post" action="/careers/apply#apply" enctype="multipart/form-data" novalidate data-once>
           <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
           {{ ui.honeypot() }}
@@ -129,8 +131,8 @@
               <select id="jb-job" name="job" required{{ f.invalid('job', errors) }}>
                 <option value="">Select…</option>
                 {% for j in jobs %}<option value="{{ j.slug }}"{% if values.job == j.slug %} selected{% endif %}>{{ j.title }}{% if j.location %} ({{ j.location }}){% endif %}</option>{% endfor %}
-                <option value="general"{% if values.job == 'general' %} selected{% endif %}>General application (no specific role)</option>
-              </select>{{ ds.err('job', errors) }}</div>
+                {% if general.on %}<option value="general"{% if values.job == 'general' %} selected{% endif %}>General application (no specific role)</option>{% endif %}
+              </select>{{ ds.err('job', errors) }}{{ general.control }}</div>
             <div class="d-field"><label for="jb-resume">Resume <span class="d-req">*</span></label>
               <input type="file" id="jb-resume" name="resume" required accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="d-file"{{ f.invalid('resume', errors) }}>
               <div class="d-hint">PDF or Word (.docx), up to {{ maxLabel }}. Checked for viruses before our team sees it.</div>{{ ds.err('resume', errors) }}</div>

@@ -169,6 +169,16 @@
   }
 
   document.addEventListener('click', (e) => {
+    // On/off switches (cms.flag), e.g. the "General application" choice on Careers.
+    const flagBtn = e.target.closest('[data-cms-flag]');
+    if (flagBtn) {
+      e.preventDefault();
+      const key = flagBtn.dataset.cmsFlag;
+      const on = flagBtn.getAttribute('aria-pressed') !== 'true';
+      registry[key] = { ...(registry[key] || {}), type: 'flag', value: on };
+      save({ values: [{ key, type: 'flag', value: on }] }, { reload: true });
+      return;
+    }
     const node = e.target.closest('[data-cms][data-cms-type="text"]');
     if (node) { e.preventDefault(); e.stopPropagation(); startText(node); return; }
     const rich = e.target.closest('[data-cms][data-cms-type="rich"]');
@@ -239,11 +249,25 @@
     const input = el('input', { class: 'form-control mt-4', type: 'text', inputmode: 'url', autocomplete: 'off' });
     input.value = hrefOf(a);
     const help = el('p', { class: 'form-hint', text: 'A page on this site like /contact or /services, a section like #compare, a full https:// address, mailto:name@example.com or tel:410-555-0100.' });
-    dialog('Where should this link go?', el('div', {}, [input, help]), [
+    // Buttons with their own key (not items in a list) can be hidden from visitors.
+    const hideKey = a.dataset.cmsHref && !a.dataset.cmsHrefList && a.dataset.cmsHref.endsWith('.href') ? `${a.dataset.cmsHref.slice(0, -5)}.hidden` : null;
+    const wasHidden = Boolean(hideKey && registry[hideKey] && registry[hideKey].value === true);
+    const hide = el('input', { type: 'checkbox', id: 'cms-hide-link', class: 'mt-0.5 size-4 shrink-0 accent-brand-700' });
+    hide.checked = wasHidden;
+    const hideRow = hideKey
+      ? el('label', { for: 'cms-hide-link', class: 'mt-5 flex items-start gap-3 rounded-xl bg-surface p-3 text-sm ring-1 ring-line' }, [hide, el('span', {}, [el('strong', { text: 'Hide this button on the website' }), el('span', { class: 'block text-muted', text: 'Visitors won’t see it. It stays here, faded, so you can show it again.' })])])
+      : el('span');
+    dialog('Where should this link go?', el('div', {}, [input, help, hideRow]), [
       { label: 'Cancel', run: (c) => c() },
       { label: 'Save link', primary: true, run: async (c) => {
         const href = input.value.trim();
-        if (await saveHref(a, href)) { a.setAttribute('href', href || '#'); c(); }
+        if (!(await saveHref(a, href))) return;
+        a.setAttribute('href', href || '#');
+        if (hideKey && hide.checked !== wasHidden) {
+          registry[hideKey] = { type: 'flag', value: hide.checked };
+          if (!(await save({ values: [{ key: hideKey, type: 'flag', value: hide.checked }] }, { reload: true }))) return;
+        }
+        c();
       } },
     ]);
     input.focus();
@@ -383,9 +407,12 @@
     ]);
     itemBar.dataset.for = `${key}#${i}`;
     document.body.append(itemBar);
+    // Inside the item's top-right corner: above it, the bar would sit on the item before it
+    // (in grids, the row above), and moving the mouse up to it would switch to that item.
     const r = node.getBoundingClientRect();
-    itemBar.style.left = `${r.left + window.scrollX}px`;
-    itemBar.style.top = `${Math.max(0, r.top + window.scrollY - 38)}px`;
+    const w = itemBar.offsetWidth;
+    itemBar.style.left = `${Math.max(4, r.right + window.scrollX - w - 4)}px`;
+    itemBar.style.top = `${r.top + window.scrollY + 4}px`;
   }
 
   let sectionBar = null;

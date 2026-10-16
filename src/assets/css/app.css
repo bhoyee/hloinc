@@ -296,6 +296,11 @@
 .cms-editing [data-cms-list]:hover { box-shadow: 0 0 0 2px rgb(227 36 44 / 0.35); }
 .cms-editing .reveal, .cms-editing .line-grow { opacity: 1 !important; transform: none !important; }
 .cms-editing #cookie-notice { display: none !important; }
+/* A button hidden from visitors ("Hide this button"): still here in the editor, faded, to show again. */
+.cms-editing [data-cms-link-hidden] { opacity: 0.4; outline: 2px dashed var(--color-accent-500); outline-offset: 3px; }
+/* On/off switch next to what it controls (cms.flag), only in the editor. */
+.cms-flag { display: block; margin-top: 8px; padding: 6px 10px; border-radius: 0.5rem; background: #fff7e0; color: #5c4400; font: 500 13px/1.3 var(--font-sans); text-align: left; cursor: pointer; box-shadow: inset 0 0 0 1px #e9cf7d; }
+.cms-flag:hover { background: #ffefc2; }
 
 .cms-tool { position: absolute; z-index: 60; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 0.75rem; background: var(--color-ink); color: #fff; font: 600 12px/1 var(--font-sans); box-shadow: var(--shadow-lift); }
 .cms-tool button { display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 0.5rem; color: #fff; cursor: pointer; white-space: nowrap; }

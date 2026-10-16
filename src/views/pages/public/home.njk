@@ -67,7 +67,6 @@
   {% elif sec.key == 'who' %}
     {% set whoImg = cms.image('home.who.image', 'd-care-wheelchair', 'A caregiver helping a young woman in a wheelchair indoors') %}
     {% set more = cms.link('home.who.cta', 'More about us', '/about') %}
-    {% set lead = cms.link('home.who.lead', 'Meet our leadership', '/about#leadership') %}
     <section class="d-who" id="who-we-are"><div class="d-wrap">
       <div class="d-who-grid">
         <div class="d-who-photo">{{ ds.img(whoImg, '(min-width: 900px) 45vw, 100vw') }}</div>
@@ -76,7 +75,7 @@
           <h2>{{ cms.text('home.who.title', 'A team of professionals that get to know you first and make a meaningful impact') }}</h2>
           {{ cms.rich('home.who.text', 'Healthy Living Option Inc. (HLO Inc.) is a DDA provider based in Catonsville, Maryland. We serve adults with intellectual and developmental disabilities, including autism, in Baltimore City and nine counties across Central Maryland and the Southern Region.\n\nEvery adult we serve deserves to be listened to, treated with dignity and trusted to make their own choices. Our trained team begins by learning what matters to each individual, then walks beside them toward the goals they set.') }}
           <p class="d-is-mission"><strong>{{ cms.text('home.who.missionLabel', 'Our mission') }}</strong>{{ cms.text('home.who.mission', 'to support adults with intellectual and developmental disabilities in living independent, self-directed lives, with inclusion in the community as a choice.') }}</p>
-          <div class="d-cta-row"><a class="d-btn d-btn-dark" href="{{ more.href }}" {{ more.attrs }}>{{ more.label }}</a><a class="d-link-more" href="{{ lead.href }}" {{ lead.attrs }}>{{ lead.label }}</a></div>
+          <div class="d-cta-row"><a class="d-btn d-btn-dark" href="{{ more.href }}" {{ more.attrs }}>{{ more.label }}</a></div>
         </div>
       </div>
       <ul class="d-values">

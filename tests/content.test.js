@@ -196,6 +196,15 @@ describe('page editor: lists, sections, images, links', () => {
     expect((await draft(e, 'home', { lists: [{ key: 'home.paths.items', items: [{ title: 'x', text: 'y', icon: 'heart', href: 'javascript:x' }] }] })).status).toBe(422);
   });
 
+  it('hides a button from visitors, and shows it faded in the editor', async () => {
+    const e = await editor('admin');
+    expect((await draft(e, 'home', { values: [{ key: 'home.top.cta2.hidden', type: 'flag', value: 'yes' }] })).status).toBe(422);
+    expect((await draft(e, 'home', { values: [{ key: 'home.top.cta2.hidden', type: 'flag', value: true }] })).status).toBe(200);
+    expect((await e.agent.get('/?cms=edit')).text).toMatch(/data-cms-href="home\.top\.cta2\.href" data-cms-link-hidden="1"/);
+    await json(e, '/portal/content/pages/home/publish', { docs: ['home'] });
+    expect((await request(app).get('/')).text).toMatch(/<a class="d-btn d-btn-outline-light" href="\/referrals"\s+hidden="hidden">/);
+  });
+
   it('escapes anything that looks like code', async () => {
     const e = await editor('admin');
     await draft(e, 'home', { values: [{ key: 'home.top.title', type: 'text', value: 'Hello <script>alert(1)</script>' }, { key: 'home.top.intro', type: 'text', value: '"><img src=x onerror=alert(1)>' }] });

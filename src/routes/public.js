@@ -176,7 +176,9 @@ if (!OLD_CAREERS) {
 
     const parsed = careersApplicationSchema.safeParse(req.body);
     const errors = parsed.success ? {} : fieldErrors(parsed.error);
-    const job = !parsed.success ? null : parsed.data.job === applications.GENERAL.slug ? applications.GENERAL : await jobs.findPublishedBySlug(parsed.data.job);
+    // "General application" only while it's switched on in Site content (Careers page).
+    const general = parsed.success && parsed.data.job === applications.GENERAL.slug && (await cms.loadPublished(), cms.flagValue('careers.form.general', true));
+    const job = !parsed.success ? null : general ? applications.GENERAL : await jobs.findPublishedBySlug(parsed.data.job);
     if (parsed.success && !job) errors.job = 'That position is no longer open. Please choose another.';
     if (req.uploadError) errors.resume = req.uploadError;
     else if (!req.file) errors.resume = 'Attach your resume (PDF or Word .docx).';

@@ -224,11 +224,39 @@ function rich(key, fallback = '') {
   return new SafeString(`<div data-cms="${esc(key)}" data-cms-type="rich">${html}</div>`);
 }
 
-/** A link: { label, href, attrs }. The label is edited in place; the address in a small dialog. */
+/**
+ * A link or button: { label, href, attrs, hidden }. The label is edited in place; the address
+ * (and "Hide this button") in a small dialog. A hidden one gets the `hidden` attribute for
+ * visitors, and shows faded in the editor so it can be shown again.
+ */
 function link(key, label, href) {
   const h = valueOf(`${key}.href`, href);
+  const hidden = valueOf(`${key}.hidden`, false) === true;
   register(`${key}.href`, { type: 'href', value: h });
-  return { label: text(`${key}.label`, label), href: h, attrs: editable(key) ? attrs({ 'data-cms-href': `${key}.href` }) : NO_ATTRS };
+  register(`${key}.hidden`, { type: 'flag', value: hidden });
+  let a = NO_ATTRS;
+  if (editable(key)) a = attrs({ 'data-cms-href': `${key}.href`, ...(hidden ? { 'data-cms-link-hidden': '1' } : {}) });
+  else if (hidden) a = attrs({ hidden: 'hidden' });
+  return { label: text(`${key}.label`, label), href: h, attrs: a, hidden };
+}
+
+/**
+ * An on/off setting, e.g. whether an option is offered: { on, control }. `control` is a
+ * switch shown only in the editor (put it next to what it controls).
+ */
+function flag(key, fallback, label) {
+  const on = valueOf(key, fallback) === true;
+  register(key, { type: 'flag', value: on, label });
+  const control = editable(key)
+    ? new SafeString(`<button type="button" class="cms-flag" data-cms-flag="${esc(key)}" aria-pressed="${on}">${esc(label)}: <strong>${on ? 'shown' : 'hidden'}</strong> (click to ${on ? 'hide' : 'show'})</button>`)
+    : NO_ATTRS;
+  return { on, control };
+}
+
+/** The live (published) value of an on/off setting, for checks outside a page render. */
+function flagValue(key, fallback) {
+  const doc = published[docOf(key)];
+  return doc && doc.values && Object.hasOwn(doc.values, key) ? doc.values[key] === true : fallback;
 }
 
 /** An image: { src, srcset, alt, w, h, attrs }. Click to replace in the editor. */
@@ -309,7 +337,7 @@ function registry() {
 /** ['a', 'b'] -> [{ label: 'a' }, { label: 'b' }], for list() defaults. */
 const objects = (arr, field = 'label') => (arr || []).map((v) => ({ [field]: v }));
 
-const helpers = { text, plain, rich, link, image, list, sections, registry, isEditing, objects };
+const helpers = { text, plain, rich, link, flag, image, list, sections, registry, isEditing, objects };
 
 // --- Validating changes ----------------------------------------------------------------------
 
@@ -395,6 +423,8 @@ function validate(changes, user) {
         v = cleanImage(v);
       } else if (c.type === 'href') {
         if (!validHref(v)) throw new Error('Links must be a page on this site (like /contact), https://, mailto: or tel:.');
+      } else if (c.type === 'flag') {
+        if (typeof v !== 'boolean') throw new Error('Invalid setting.');
       } else if (Object.hasOwn(LIMITS, c.type)) {
         if (typeof v !== 'string') throw new Error('Invalid text.');
         v = v.replace(/\r\n/g, '\n').replace(/ /g, ' ');
@@ -527,6 +557,7 @@ module.exports = {
   middleware,
   helpers,
   loadPublished,
+  flagValue,
   clearCache,
   validate,
   saveDraft,

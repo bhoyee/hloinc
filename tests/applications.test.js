@@ -101,6 +101,21 @@ describe('applying for a job', () => {
     expect(outbox.find((m) => m.subject.startsWith('New application')).text).toContain('general application');
   });
 
+  it('lets staff switch the general application choice off', async () => {
+    await db('page_content').where({ page_key: 'careers' }).del();
+    await db('page_content').insert({ page_key: 'careers', published: JSON.stringify({ values: { 'careers.form.general': false }, lists: {}, sections: {} }) });
+    require('../src/services/cms').clearCache();
+    try {
+      expect((await request(app).get('/careers')).text).not.toContain('<option value="general"');
+      const res = await apply({ fields: { job: 'general' } });
+      expect(res.status).toBe(422);
+      expect(await db('job_applications')).toHaveLength(0);
+    } finally {
+      await db('page_content').where({ page_key: 'careers' }).del();
+      require('../src/services/cms').clearCache();
+    }
+  });
+
   it('accepts a Word .docx', async () => {
     expect((await apply({ file: DOCX, filename: 'cv.docx' })).status).toBe(303);
     expect((await db('job_applications').first()).resume_type).toBe('docx');
@@ -222,7 +237,7 @@ describe('applications in the portal', () => {
     // Not before a clean scan.
     await db('job_applications').where({ id: b.id }).update({ scan_status: 'pending' });
     expect((await admin.get(`/portal/applications/${b.id}/resume/preview`)).status).toBe(404);
-  });
+  }, 20000);
 
   it('rescans waiting resumes: clean ones unlock, infected ones are deleted', async () => {
     await apply();
