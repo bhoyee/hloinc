@@ -106,3 +106,67 @@ describe('security settings: two-step switched off', () => {
     expect(director).toBeTruthy();
   });
 });
+
+describe('Turnstile spam protection (Security settings)', () => {
+  const turnstile = require('../src/lib/turnstile');
+  const realFetch = globalThis.fetch;
+  // Cloudflare's answers: a wrong secret is reported as "invalid-input-secret".
+  const cloudflare = (answer) => {
+    globalThis.fetch = async (url, opts) => {
+      if (!String(url).includes('challenges.cloudflare.com')) return realFetch(url, opts);
+      return { json: async () => answer(String(opts.body)) };
+    };
+  };
+  const save = (agent, { password = PASSWORD, ...body }) => post(agent, '/portal/settings/security', '/portal/settings/turnstile', { turnstile_password: password, ...body });
+
+  beforeEach(async () => {
+    await db('site_settings').where({ key: 'security.turnstile' }).del();
+    turnstile.clearCache();
+  });
+  afterAll(async () => {
+    globalThis.fetch = realFetch;
+    await db('site_settings').where({ key: 'security.turnstile' }).del();
+    turnstile.clearCache();
+  });
+
+  it('is switched on with keys by the Admin, checks the secret, and protects the forms', async () => {
+    const admin = await signIn(app, await makeUser('admin'));
+    expect((await admin.get('/portal/settings/security')).text).toContain('Spam protection on the website forms');
+
+    // Needs the keys, and the password.
+    expect((await save(admin, { turnstile: 'on' })).status).toBe(422);
+    expect((await save(admin, { turnstile: 'on', site_key: '0x4AAAAAAAtestsitekey', secret_key: '0x4AAAAAAAtestsecretkey', password: 'wrong' })).status).toBe(422);
+    // A secret Cloudflare doesn't know is refused.
+    cloudflare(() => ({ success: false, 'error-codes': ['invalid-input-secret'] }));
+    const bad = await save(admin, { turnstile: 'on', site_key: '0x4AAAAAAAtestsitekey', secret_key: '0x4AAAAAAAwrongsecret' });
+    expect(bad.status).toBe(422);
+    expect(bad.text).toContain('didn’t accept that secret key');
+
+    cloudflare(() => ({ success: false, 'error-codes': ['invalid-input-response'] }));
+    expect((await save(admin, { turnstile: 'on', site_key: '0x4AAAAAAAtestsitekey', secret_key: '0x4AAAAAAAtestsecretkey' })).status).toBe(303);
+    const row = await db('site_settings').where({ key: 'security.turnstile' }).first();
+    expect(JSON.stringify(row.value)).not.toContain('testsecretkey'); // stored encrypted
+    const log = await db('audit_log').where({ action: 'security.turnstile_on' }).first();
+    expect(log.summary).not.toContain('testsecretkey');
+
+    // The website forms now show the check, and the security headers allow Cloudflare.
+    const contact = await request(app).get('/contact');
+    expect(contact.text).toContain('data-sitekey="0x4AAAAAAAtestsitekey"');
+    expect(contact.headers['content-security-policy']).toContain('https://challenges.cloudflare.com');
+    // The settings page never shows the secret again.
+    expect((await admin.get('/portal/settings/security')).text).not.toContain('testsecretkey');
+
+    // A blank secret keeps the saved one; switching off removes the check from the forms.
+    expect((await save(admin, { turnstile: 'off', site_key: '0x4AAAAAAAtestsitekey' })).status).toBe(303);
+    turnstile.clearCache();
+    expect((await turnstile.settings()).secretKey).toBe('0x4AAAAAAAtestsecretkey');
+    const off = await request(app).get('/contact');
+    expect(off.text).not.toContain('cf-turnstile');
+    expect(off.headers['content-security-policy']).not.toContain('challenges.cloudflare.com');
+  });
+
+  it('is for the Admin only', async () => {
+    const director = await signIn(app, await makeUser('program_director'));
+    expect((await director.get('/portal/settings/security')).status).toBe(403);
+  });
+});

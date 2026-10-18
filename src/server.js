@@ -85,6 +85,13 @@ function createApp() {
   });
   app.set('view engine', 'njk');
 
+  // Turnstile on or off (Security settings): the security headers below depend on it.
+  app.use(async (req, res, next) => {
+    const t = await require('./lib/turnstile').settings();
+    res.locals.turnstileOn = t.enabled;
+    res.locals.turnstileSiteKey = t.enabled ? t.siteKey : '';
+    next();
+  });
   app.use(securityHeaders());
   // Preview site: keep every page out of search engines.
   if (config.noindex) {
@@ -112,7 +119,6 @@ function createApp() {
     res.locals.site = await content.getBusiness();
     res.locals.nav = site.nav;
     res.locals.currentPath = req.path;
-    res.locals.turnstileSiteKey = config.turnstile.enabled ? config.turnstile.siteKey : '';
     next();
   });
   app.use(require('./routes/legacy'));

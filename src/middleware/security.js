@@ -6,8 +6,9 @@ const rateLimit = require('express-rate-limit');
 const config = require('../config');
 
 function securityHeaders() {
-  // Cloudflare Turnstile needs its script, frame and API only when enabled.
-  const turnstile = config.turnstile.enabled ? ['https://challenges.cloudflare.com'] : [];
+  // Cloudflare Turnstile needs its script, frame and API only while it's switched on
+  // (Security settings in the portal), so this is decided per request (see server.js).
+  const turnstile = [(req, res) => (res.locals.turnstileOn ? 'https://challenges.cloudflare.com' : "'self'")];
   return helmet({
     contentSecurityPolicy: {
       useDefaults: false,

@@ -538,7 +538,7 @@ router.post('/appointments/request', limiters.forms, async (req, res) => {
 const legalLinks = legal.LISTED.map((slug) => ({ slug, title: legal[slug].title }));
 
 router.get(Object.keys(legal).map((slug) => `/${slug}`), (req, res) => {
-  const features = { turnstile: config.turnstile.enabled };
+  const features = { turnstile: res.locals.turnstileOn };
   const page = legal[req.path.slice(1)];
   // Built-in sections, as editable items: paragraphs and "- " bullet lines in one text (or
   // HTML, for sections with links). Tables (the cookie list) stay in code; sections that

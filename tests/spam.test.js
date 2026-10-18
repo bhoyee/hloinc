@@ -140,19 +140,25 @@ describe('cross-site posts', () => {
 
 describe('Cloudflare Turnstile (optional)', () => {
   const original = { ...config.turnstile };
+  // Turnstile is set in Security settings; with nothing saved there, the .env keys (config) are used.
+  const turnstile = require('../src/lib/turnstile');
   let turnstileApp;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await db('site_settings').where({ key: 'security.turnstile' }).del();
     Object.assign(config.turnstile, { enabled: true, siteKey: 'site-key-test', secretKey: 'secret-test' });
+    turnstile.clearCache();
     turnstileApp = createApp();
   });
   afterEach(() => {
     Object.assign(config.turnstile, original);
+    turnstile.clearCache();
     vi.unstubAllGlobals();
   });
 
   it('is off by default: no widget and a strict CSP', async () => {
     Object.assign(config.turnstile, original);
+    turnstile.clearCache();
     const res = await request(createApp()).get('/contact');
     expect(res.text).not.toContain('cf-turnstile');
     expect(res.headers['content-security-policy']).not.toContain('challenges.cloudflare.com');

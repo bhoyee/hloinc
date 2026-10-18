@@ -28,6 +28,7 @@ async function render(req, res, { errors = {}, values = {}, status = 200 } = {})
     active: Number(active.n),
     requiredRoles: (await roles.list()).filter((r) => r.require_mfa).map((r) => r.name),
     lastChange: await security.lastChange(),
+    turnstile: await require('../../lib/turnstile').settings(),
     errors,
     values,
   });
@@ -70,6 +71,64 @@ router.post('/security', limiters.login, async (req, res) => {
       : 'Two-step sign-in is off. Everyone now signs in with email and password only.'
   );
   res.redirect(303, '/portal/settings/security');
+});
+
+// --- Spam protection on the website forms (Cloudflare Turnstile) ---------------------------------
+
+const KEY_FORMAT = /^[0-9A-Za-z_-]{10,200}$/;
+
+router.post('/turnstile', limiters.login, async (req, res) => {
+  const turnstile = require('../../lib/turnstile');
+  const current = await turnstile.settings();
+  const enabled = req.body.turnstile === 'on' ? true : req.body.turnstile === 'off' ? false : null;
+  const siteKey = String(req.body.site_key || '').trim();
+  const secretKey = String(req.body.secret_key || '').trim();
+  const values = { turnstile: req.body.turnstile, site_key: siteKey };
+  const fail = (errors) => render(req, res, { errors, values, status: 422 });
+
+  const errors = {};
+  if (enabled === null) errors.turnstile = 'Choose on or off.';
+  if (siteKey && !KEY_FORMAT.test(siteKey)) errors.site_key = 'That doesn’t look like a Turnstile site key. Copy it again from Cloudflare.';
+  if (secretKey && !KEY_FORMAT.test(secretKey)) errors.secret_key = 'That doesn’t look like a Turnstile secret key. Copy it again from Cloudflare.';
+  if (enabled && !siteKey) errors.site_key = 'Enter the site key to switch it on.';
+  if (enabled && !secretKey && !current.secretKey) errors.secret_key = 'Enter the secret key to switch it on.';
+  if (Object.keys(errors).length) return fail(errors);
+
+  const changed = enabled !== current.enabled || siteKey !== current.siteKey || Boolean(secretKey);
+  if (!changed) {
+    setFlash(req, 'info', 'Nothing changed.');
+    return res.redirect(303, '/portal/settings/security#turnstile');
+  }
+  if (!(await users.checkPassword(req.user.id, req.body.turnstile_password))) return fail({ turnstile_password: 'That isn’t your current password.' });
+
+  // A wrong secret would make every form fail, so check it with Cloudflare first.
+  const secret = secretKey || current.secretKey;
+  let note = '';
+  if (enabled && secret) {
+    const check = await turnstile.checkSecret(secret);
+    if (check === 'bad') return fail({ secret_key: 'Cloudflare didn’t accept that secret key. Copy it again from your Turnstile widget.' });
+    if (check === 'unreachable') note = ' Cloudflare couldn’t be reached to check the secret key; send a test message from the Contact page to make sure the form works.';
+  }
+
+  await turnstile.save({ enabled, siteKey, secretKey }, req.user);
+  // The secret key itself is never logged.
+  await audit(req, {
+    action: enabled === current.enabled ? 'security.turnstile_keys' : enabled ? 'security.turnstile_on' : 'security.turnstile_off',
+    entityType: 'setting',
+    entityId: 'turnstile',
+    summary: `${req.user.name} ${enabled === current.enabled ? 'changed the Turnstile keys' : `switched Turnstile spam protection ${enabled ? 'ON' : 'OFF'} on the website forms`}${secretKey ? ' (new secret key)' : ''}`,
+  });
+  await notifications.notifyPermission('security.edit', {
+    type: 'security',
+    title: enabled === current.enabled ? 'Turnstile keys changed' : `Turnstile spam protection switched ${enabled ? 'on' : 'off'}`,
+    body: `By ${req.user.name}`,
+    link: '/portal/settings/security#turnstile',
+  }, { exceptId: req.user.id });
+
+  setFlash(req, 'success', (enabled
+    ? 'Turnstile is on. Visitors see a quick security check on every website form; most people won’t need to do anything.'
+    : 'Turnstile is off. The other spam checks still protect the forms.') + note);
+  res.redirect(303, '/portal/settings/security#turnstile');
 });
 
 module.exports = router;

@@ -14,6 +14,7 @@
 
 {% block content %}
   <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="space-y-6">
     <form method="post" action="/portal/settings/security" class="space-y-6" novalidate data-once>
       {{ ui.errorSummary(errors) }}
       <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
@@ -51,6 +52,64 @@
         <button type="submit" class="btn-primary mt-6">Save</button>
       </section>
     </form>
+
+    {# Spam protection on the website forms (Cloudflare Turnstile). #}
+    {% set tOn = (values.turnstile == 'on') if values.turnstile else turnstile.enabled %}
+    <form method="post" action="/portal/settings/turnstile" novalidate data-once id="turnstile">
+      <input type="hidden" name="_csrf" value="{{ csrfToken() }}">
+      <section class="rounded-3xl border border-line bg-white p-6 shadow-soft sm:p-8" aria-labelledby="ts-h">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 id="ts-h" class="text-lg font-bold">Spam protection on the website forms (Cloudflare Turnstile)</h2>
+            <p class="mt-1 max-w-2xl text-[15px] text-muted">A quick “verify you’re human” check on the Contact, Ask about services, Referral and job application forms. Most visitors just see a tick; bots are stopped. It adds to the spam checks the forms always have.</p>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 {{ 'bg-brand-50 text-brand-800 ring-brand-200' if turnstile.enabled else 'bg-surface text-muted ring-line' }}">
+            <span class="size-2 rounded-full {{ 'bg-brand-500' if turnstile.enabled else 'bg-[#93a49b]' }}" aria-hidden="true"></span>
+            Currently {{ 'on' if turnstile.enabled else 'off' }}
+          </span>
+        </div>
+
+        <fieldset class="mt-6">
+          <legend class="sr-only">Turnstile on the website forms</legend>
+          <div class="grid gap-3 md:grid-cols-2">
+            {% for v in [{ value: 'on', title: 'On (recommended)', text: 'Every website form asks Cloudflare to check the visitor first.', i: 'shield' }, { value: 'off', title: 'Off', text: 'The forms rely on the built-in spam checks only.', i: 'exclamation' }] %}
+              <label class="relative flex cursor-pointer items-start gap-4 rounded-2xl border border-line bg-white p-5 transition hover:border-brand-300 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:ring-1 has-[:checked]:ring-brand-600">
+                <input type="radio" name="turnstile" value="{{ v.value }}" class="mt-1 size-5 shrink-0 accent-brand-700" {% if (v.value == 'on') == tOn %}checked{% endif %}>
+                <span>
+                  <span class="flex items-center gap-2 font-display text-lg font-bold text-ink">{{ icon(v.i, 'size-5 ' + ('text-brand-700' if v.value == 'on' else 'text-accent-600')) }} {{ v.title }}</span>
+                  <span class="mt-1 block text-[15px] text-muted">{{ v.text }}</span>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          {{ ui.fieldError('turnstile', errors) }}
+        </fieldset>
+
+        <div class="mt-6 grid gap-5 lg:grid-cols-2">
+          {{ ui.input('site_key', 'Site key', { site_key: values.site_key if values.site_key is defined else turnstile.siteKey }, errors, required=false, autocomplete='off', attrs='spellcheck="false" maxlength="200"') }}
+          {{ ui.input('secret_key', 'Secret key', {}, errors, type='password', required=false, autocomplete='new-password', hint=('A secret key is saved. Leave this blank to keep it.' if turnstile.secretKey else 'Shown only once in Cloudflare: paste it here.'), attrs='spellcheck="false" maxlength="200"') }}
+        </div>
+        {% if turnstile.source == 'env' and turnstile.siteKey %}<p class="mt-3 text-sm text-muted">The keys shown come from the server’s .env file. Saving here takes over from it.</p>{% endif %}
+
+        <details class="mt-5 rounded-2xl bg-surface p-4 text-[15px] ring-1 ring-line">
+          <summary class="cursor-pointer font-semibold text-ink">Where do I get the keys?</summary>
+          <ol class="mt-3 list-decimal space-y-1.5 pl-5 text-muted">
+            <li>Sign in at <a class="link" href="https://dash.cloudflare.com/" target="_blank" rel="noopener">dash.cloudflare.com</a> (a free account is enough).</li>
+            <li>Open <strong class="text-ink">Turnstile</strong> → <strong class="text-ink">Add widget</strong>.</li>
+            <li>Name it (for example “HLO website”), add the website’s address (for example <code>preview.hloinc.com</code> and later <code>hloinc.com</code>), and choose <strong class="text-ink">Managed</strong>.</li>
+            <li>Copy the <strong class="text-ink">Site key</strong> and <strong class="text-ink">Secret key</strong> into the boxes above, choose On, and save.</li>
+          </ol>
+        </details>
+
+        <div class="mt-6 max-w-sm">
+          <input type="email" name="username" value="{{ user.email }}" autocomplete="username" class="sr-only" tabindex="-1" aria-hidden="true" readonly>
+          {{ ui.input('turnstile_password', 'Confirm with your password', {}, errors, type='password', autocomplete='current-password') }}
+        </div>
+        <button type="submit" class="btn-primary mt-6">Save</button>
+        {% if turnstile.source == 'portal' and turnstile.updatedBy %}<p class="mt-4 text-sm text-muted">Last changed {{ turnstile.updatedAt | dateTime }} by {{ turnstile.updatedBy }}. Every change is in the audit log.</p>{% endif %}
+      </section>
+    </form>
+    </div>
 
     <aside class="space-y-4" aria-label="Current situation">
       <section class="rounded-3xl border border-line bg-white p-6 text-[15px] shadow-soft">
