@@ -103,9 +103,14 @@ except Exception:
     mkdir -p "$HOME/backups"
     say "Old WordPress site found in $DOCROOT"
     echo "   It will be backed up to ~/backups, then moved to ~/wordpress-old-$TS (nothing is deleted)."
-    read -r -p "   Type YES to continue: " answer
+    # HLO_CONFIRM=YES answers this in advance (for running in the background with nohup).
+    if [ "${HLO_CONFIRM:-}" = "YES" ]; then answer="YES"; else read -r -p "   Type YES to continue: " answer; fi
     [ "$answer" = "YES" ] || { echo "   Stopped. Nothing was changed."; exit 1; }
-    tar -czf "$HOME/backups/wordpress-files-$TS.tar.gz" -C "$DOCROOT" . && ok "files backed up: ~/backups/wordpress-files-$TS.tar.gz"
+    rm -f "$HOME"/backups/wordpress-files-*.partial
+    echo "   Backing up $(du -sh "$DOCROOT" 2>/dev/null | cut -f1) of files. This can take several minutes; please wait."
+    # Written as .partial first, so an interrupted backup is never mistaken for a complete one.
+    tar -czf "$HOME/backups/wordpress-files-$TS.tar.gz.partial" -C "$DOCROOT" .       && mv "$HOME/backups/wordpress-files-$TS.tar.gz.partial" "$HOME/backups/wordpress-files-$TS.tar.gz"       && ok "files backed up: ~/backups/wordpress-files-$TS.tar.gz ($(du -sh "$HOME/backups/wordpress-files-$TS.tar.gz" | cut -f1))"       || { echo "   ✗ The file backup didn't finish. Nothing was moved." >&2; exit 1; }
+    echo "   Backing up the WordPress database…"
     wp() { grep -E "define\(\s*['\"]$1['\"]" "$DOCROOT/wp-config.php" | head -1 | sed -E "s/.*,\s*['\"]([^'\"]*)['\"].*/\1/"; }
     WP_DB="$(wp DB_NAME)"; WP_USER="$(wp DB_USER)"; WP_PASS="$(wp DB_PASSWORD)"; WP_HOST="$(wp DB_HOST)"
     if [ -n "$WP_DB" ] && MYSQL_PWD="$WP_PASS" mysqldump -h "${WP_HOST:-localhost}" -u "$WP_USER" --single-transaction "$WP_DB" | gzip > "$HOME/backups/wordpress-db-$TS.sql.gz"; then
