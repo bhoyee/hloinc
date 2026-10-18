@@ -42,12 +42,15 @@ async function main() {
     },
     pool: { min: 0, max: 2 },
   });
-  const text = (v) => (v == null ? v : typeof v === 'string' ? v : JSON.stringify(v));
+  // JSON columns are read as their stored text (CAST): MariaDB's driver may hand them back
+  // already decoded (e.g. a setting "x@y.com" without its quotes), which isn't valid to store.
+  const raw = (col) => preview.raw(`CAST(\`${col}\` AS CHAR) AS \`${col}\``);
+  const text = (v) => (v == null ? v : String(v));
   const counts = {};
 
   try {
     // Site content: the published version of each page (and the shared header/footer).
-    const pages = await preview('page_content').whereNotNull('published').select('page_key', 'published', 'published_at');
+    const pages = await preview('page_content').whereNotNull('published').select('page_key', raw('published'), 'published_at');
     for (const p of pages) {
       await live('page_content')
         .insert({ page_key: p.page_key, published: text(p.published), published_at: p.published_at || new Date(), published_by: null, draft: null })
@@ -56,7 +59,7 @@ async function main() {
     counts.pages = pages.length;
 
     // Business details, team email addresses, alerts and other settings.
-    const settings = (await preview('site_settings').select('key', 'value')).filter((s) => !SKIP_SETTINGS.some((re) => re.test(s.key)));
+    const settings = (await preview('site_settings').select('key', raw('value'))).filter((s) => !SKIP_SETTINGS.some((re) => re.test(s.key)));
     for (const s of settings) {
       await live('site_settings').insert({ key: s.key, value: text(s.value), updated_at: new Date(), updated_by: null }).onConflict('key').merge(['value', 'updated_at', 'updated_by']);
     }
