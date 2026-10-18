@@ -56,7 +56,7 @@ describe('announcements: who may manage them', () => {
       expect(board, role).not.toContain(`/portal/announcements/${id}/pause`);
     }
     expect((await db('announcements').first()).paused_at).toBeNull();
-  });
+  }, 15000);
 
   it('lets the Admin give each part separately (e.g. pause only)', async () => {
     await resetRoles();

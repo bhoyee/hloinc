@@ -169,6 +169,8 @@ Team mailboxes (where each form is emailed) are set in the portal under **Site c
 
 - Every push runs the **Test** job on GitHub Actions (MySQL 8.4, `npm ci`, `npm test`).
 - The server does not receive pushes. Every 5 minutes a cron job (`scripts/deploy/pull.sh`) installs the newest commit on `main` whose Test job passed. It runs `scripts/deploy/remote.sh`: install, database backup, migrations, base seeds, restart. If any step fails, it rolls back.
+- **Two sites on the server:** preview.hloinc.com (staging, from `main`) and hloinc.com (live, from `live`). Every change reaches preview first; it reaches hloinc.com when `main` is promoted: `git push origin main:live`. Both have their own database, uploads and `.env`.
+- Live set-up (once): `git clone -b live https://github.com/bhoyee/hloinc.git ~/hloinc-live && HLO_SITE=live bash ~/hloinc-live/scripts/deploy/setup-cpanel.sh`. It backs up and moves aside an old WordPress site in hloinc.com's folder (after asking), and copies the website content from preview (`scripts/deploy/copy-content.js`: pages, photos, settings, jobs; not demo data, staff or messages).
 - Setup and server details: [DEPLOY.md](DEPLOY.md).
 
 ## Project layout

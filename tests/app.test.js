@@ -81,3 +81,14 @@ describe('security', () => {
     expect(res.headers['x-robots-tag']).toBe('noindex, nofollow');
   });
 });
+
+describe('one address for the site', () => {
+  it('sends www. to the main address, keeping the page', async () => {
+    const config = require('../src/config');
+    const host = new URL(config.appUrl).host;
+    const res = await request(createApp()).get('/careers?job=x').set('Host', `www.${host}`);
+    expect(res.status).toBe(301);
+    expect(res.headers.location).toBe(`${config.appUrl}/careers?job=x`);
+    expect((await request(createApp()).get('/careers').set('Host', host)).status).toBe(200);
+  });
+});

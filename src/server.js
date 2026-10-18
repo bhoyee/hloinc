@@ -85,6 +85,9 @@ function createApp() {
   });
   app.set('view engine', 'njk');
 
+  // One address for the site: www.hloinc.com goes to hloinc.com (keeping the page asked for).
+  const canonicalHost = new URL(config.appUrl).host;
+  app.use((req, res, next) => (req.get('host') === `www.${canonicalHost}` ? res.redirect(301, `${config.appUrl}${req.originalUrl}`) : next()));
   // Turnstile on or off (Security settings): the security headers below depend on it.
   app.use(async (req, res, next) => {
     const t = await require('./lib/turnstile').settings();
