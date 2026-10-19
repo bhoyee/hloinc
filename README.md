@@ -1,11 +1,16 @@
 # HLO Inc. — Website & Staff Portal
 
-The public website and the role-based staff portal for **Healthy Living Option Inc.**, a Maryland DDA provider supporting adults with developmental disabilities. One Node.js (Express) app, server-rendered, built for shared cPanel hosting.
+The public website and the role-based staff portal for **Healthy Living Option Inc.**, a Maryland DDA provider supporting adults with intellectual and developmental disabilities. One Node.js (Express) app, server-rendered, built for shared cPanel hosting.
 
-- **Public website**: services, careers (apply online with a resume), contact, request services, referrals, appointment requests, announcements, light and dark theme.
-- **Staff portal** (`/portal`): live dashboard, messages, leads, appointments, schedule and time off, jobs and applications, announcements, site content editor, staff accounts, roles and permissions, audit log.
+| | |
+|---|---|
+| **Live site** | **https://hloinc.com** (live since October 18, 2026) |
+| **Preview / demo** | **https://preview.hloinc.com**: the staging copy, with demo data. Browse it and try the forms freely; what you send there goes to the preview's own portal, not to HLO's team. Staff-portal demo logins are given on request (their password is never in this public repository). |
 
-Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md](DEPLOY.md) · Photo credits: [docs/photo-sources.md](docs/photo-sources.md)
+- **Public website**: services, careers (apply online with a resume), contact, ask about services, referrals, announcements, accessibility and nondiscrimination notices, light and dark theme, editable by staff.
+- **Staff portal** (`/portal`): live dashboard, messages and referrals, leads, appointments, schedule and time off, jobs and applications (with resume preview), announcements, site content editor, monthly reports, get help, system health, staff accounts, roles and permissions, security settings, audit log.
+
+Scope, phases and what's next: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md](DEPLOY.md) · Photo credits: [docs/photo-sources.md](docs/photo-sources.md)
 
 ## Architecture
 
@@ -13,7 +18,7 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 
 **How a request is handled**
 
-1. **Security layer** (every request): Helmet sets a strict Content Security Policy (no inline scripts or styles). Sessions are stored in MySQL. Every form post needs a CSRF token, rate limits apply, and public forms run bot checks (honeypot, minimum fill time, optional Cloudflare Turnstile).
+1. **Security layer** (every request): Helmet sets a strict Content Security Policy (no inline scripts or styles; Cloudflare is allowed only while Turnstile is on). Sessions are stored in MySQL. Every form post needs a CSRF token, rate limits apply, and public forms run bot checks (honeypots, one-time form tokens, minimum fill time, link and repeat checks, and Cloudflare Turnstile when switched on).
 2. **Routes**: `src/routes/public.js` serves the website. `src/routes/portal/*` serves the staff portal, behind sign-in and optional two-step sign-in (TOTP). Each portal area checks the role's permissions.
 3. **Services** (`src/services/*`) hold the business rules. Routes stay thin.
 4. **Views**: Nunjucks templates styled with Tailwind CSS v4. The CSS is compiled locally and committed, so the server never builds anything. JavaScript is small and progressive: pages work without it.
@@ -49,7 +54,8 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 - **Careers**: open jobs from the portal with their details and pay, one apply form with resume upload, and a clear "no openings" message when nothing is posted.
 - **Announcements**: banners for the public site, staff or both, with start and end dates and pause/resume.
 - **Light and dark theme**: follows the visitor's device, with a sun/moon switch in the header. The staff portal always stays light.
-- **Visual page editor** for site text and photos: drafts, preview, publish and version history.
+- **Visual page editor** for site text and photos: drafts, preview, publish and version history, with a pop-up confirming each Publish, Save draft or Discard. Repeated items (benefits, cards, questions) can be added, moved and deleted, sections moved or hidden, and any button hidden from visitors ("Hide this button on the website").
+- **One address**: www.hloinc.com redirects to hloinc.com; scripts and styles carry a per-deploy version, so visitors always get the current ones.
 
 **Staff portal**
 - **Menu** grouped by job: Inbox, Scheduling, Hiring, Website, Administration.
@@ -81,11 +87,15 @@ Scope and phases: [ROADMAP.md](ROADMAP.md) · Hosting and deployment: [DEPLOY.md
 - **Monthly report** (Reports): referrals, service requests, appointments, leads, contact messages, applications and hires for any month against the month before, on screen or as a branded **PDF** (drawn with `pdfkit`, no browser needed on the server) and **CSV**. Counts only, no names, so it can go to the board.
 - **Get help** (every page): staff report a problem or ask a question, with an optional screenshot. The page, browser and any error reference are sent along. IT and Admin are told by bell and email; "Something isn't working" reports can also be emailed to a developer/support address. Replies, and Open → In progress → Fixed, in **Help requests**.
 - **System health** (IT and Admin): email delivery and recent failures, the virus scanner and Cloudmersive scans used this month, database backups (daily, plus **Back up now**), the installed version, storage and database size. Checked every 15 minutes; IT and Admin are alerted by bell and email when something breaks.
-- **Security settings** (two-step sign-in on or off for everyone), **Audit log**, global search, notifications (bell) and menu counters.
+- **Security settings**:
+  - Two-step sign-in on or off for everyone.
+  - **Cloudflare Turnstile** on the website forms: on/off, site key and secret key (stored encrypted, checked with Cloudflare before saving, never shown again). The `.env` keys are used until it's set here.
+  - Each change needs the Admin's password, is audited, and alerts the other admins.
+- **Audit log**, global search, notifications (bell) and menu counters.
 
 ## Screenshots
 
-Taken from a local copy with demo data (`npm run screens:readme`).
+Taken from a local copy with demo data (`npm run screens:readme`). The website shots show the previous design; the live design is at https://hloinc.com.
 
 | | |
 |---|---|
@@ -134,7 +144,7 @@ All settings come from `.env` (see [.env.example](.env.example)); they're checke
 | `SESSION_IDLE_MINUTES`, `SESSION_MAX_HOURS` | Staff sign-out after inactivity / after this many hours |
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | MySQL connection (tests use `<DB_NAME>_test`) |
 | `MAIL_TRANSPORT` (`smtp` or `sendmail`), `SENDMAIL_PATH`, `SMTP_*`, `MAIL_FROM` | Outgoing email |
-| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional Cloudflare Turnstile on public forms |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile on the public forms, until it's set in the portal (Security settings), which takes over |
 | `FORMS_MAX_PER_EMAIL_PER_DAY` | Submissions allowed per email address per day |
 | `RESUME_KEEP_DAYS` | Days to keep resumes before they're deleted automatically (default 90) |
 | `APPOINTMENT_REMINDERS` | `false` to stop the day-before reminder emails (default `true`) |
@@ -142,7 +152,7 @@ All settings come from `.env` (see [.env.example](.env.example)); they're checke
 | `VIRUS_SCAN`, `CLOUDMERSIVE_API_KEY`, `RESUME_MAX_MB` | Resume scanning (`auto` uses Cloudmersive when a key is set) and the size limit (2.5 on Cloudmersive's free plan) |
 | `CLAMD_SOCKET`, `CLAMD_HOST`, `CLAMD_PORT`, `CLAMSCAN_PATH`, `CLAMAV_DATABASE`, `CLAMAV_CERTS_DIR` | ClamAV, where the server can run it |
 | `DEVELOPER_EMAIL` | Optional: where "Get help" problem reports are forwarded (Admin can switch forwarding off under Help requests) |
-| `NOINDEX` | `true` on preview copies: keeps search engines out |
+| `NOINDEX` | `true` on the preview site: keeps search engines out (not set on the live site) |
 | `DEMO_DATA`, `DEMO_PASSWORD` | Demo data on a production preview (see above) |
 
 Team mailboxes (where each form is emailed) are set in the portal under **Site content → Team email addresses**, not in `.env`.
@@ -158,10 +168,11 @@ Team mailboxes (where each form is emailed) are set in the portal under **Site c
 | `npm run create-admin` | Create an Admin account from the terminal |
 | `npm run demo:remove` | Remove demo data (`-- --keep-staff` keeps demo accounts) |
 | `npm run alerts:overdue` | Run the "waiting too long" check once (the app also runs it every 15 minutes) |
-| `npm test` / `test:watch` | Vitest + Supertest (~390 tests; needs local MySQL, uses `<DB_NAME>_test`) |
+| `npm test` / `test:watch` | Vitest + Supertest (~430 tests; needs local MySQL, uses `<DB_NAME>_test`) |
 | `npm run test:a11y` | WCAG 2.1 AA scan with axe (app must be running) |
 | `npm run screens -- <outDir> <paths…>` | Desktop and mobile screenshots (app must be running) |
 | `npm run screens:readme` | Retake the README screenshots in `docs/screens/` (local app with demo data only) |
+| `node scripts/deploy/copy-content.js <preview folder>` | On the server: copy pages, photos, settings and jobs from preview to live (no demo data, staff or messages) |
 
 ## Testing and deployment
 
@@ -208,5 +219,7 @@ tests/                  Vitest + Supertest; e2e/ for accessibility and screensho
 - **Privacy in email**:
   - Referral and service-request emails to the team contain no personal details. Staff read them behind the portal sign-in.
   - Resumes are never emailed.
-- **Audit log**: sign-ins, changes, downloads and deletions are recorded.
+- **Public forms**: CSRF tokens, honeypots, one-time form tokens, minimum fill time, link-spam and repeat checks, per-email and per-IP limits, and Cloudflare Turnstile (switched on in the portal). Bots are told "sent" and their submissions are dropped.
+- **Resumes**: real file-type checks, macros and scripts refused, virus scan, AES-256-GCM encryption at rest, previewed in a locked frame, deleted after 3 months.
+- **Audit log**: sign-ins, changes, previews, downloads and deletions are recorded.
 - **Kept out of git**: `.env`, `storage/` and client documents. The repository is public.

@@ -117,20 +117,55 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Security settings (Administration): switch two-step sign-in on or off for everyone. Off = email and password only, nobody is made to set it up, linked apps are kept for when it's switched back on. Needs the admin's password; audited; other admins notified (new permission "Security settings → Change", Admin only by default)
 - Tests: 47 new (248 total); axe clean on all Phase 4 screens, desktop and phone
 
-## Phase 5 — Testing & launch
+## Phase 5 — Testing & launch ✅ live at https://hloinc.com (October 18, 2026)
 - [x] HLO content (from their site plan, Oct 2026): six services incl. Employment Services, apartment homes, how support is planned (PCP/ISP/HCBS/CR-CP), glossary, mission/vision, conditions list, roles we hire for, address + ZIP 21228, weekend hours, their chosen photos; header/footer to their structure (Request Services + Make a Referral)
 - [x] New **Request services** form (individuals and families) into the portal inbox as "Service request"; referral form updated to HLO's questions (DDA eligibility, PCP, CR/CP, living situation, timeline); Privacy Policy updated
 - [x] Preview site live at https://preview.hloinc.com (cPanel, Node 24, MySQL, AutoSSL, hidden from search engines)
 - [x] CI: tests run on GitHub for every push; the server installs each passing commit on `main` within ~5 minutes (database backup first, automatic rollback on failure). `/healthz` shows the running version
 - [x] Website email sent as noreply@notify.hloinc.com (SPF + DKIM), so HLO's Microsoft 365 setup is untouched
-- [ ] Automated tests: validation, permissions matrix, form handling
-- [ ] Accessibility audit (axe + manual keyboard/screen reader)
-- [ ] Cross-browser/device testing
-- [ ] Security review: CSP, headers, rate limits, session settings, dependency audit
-- [ ] Re-check legal pages match the final build (cookies, MFA, retention, session revocation)
-- [ ] Backups + data-retention job **(CONFIRM retention period — Q8)**
-- [ ] Production deploy on cPanel, HTTPS, SMTP credentials, DNS cutover from WordPress
-- [ ] Remove old WordPress (it currently has injected spam links — treat as compromised)
+- [x] Automated tests: validation, permissions matrix, form handling (~430 tests, run on every push)
+- [x] Backups: daily database backup and "Back up now" (System health), a backup before every deploy; resumes deleted after 3 months
+- [x] Production deploy on cPanel: hloinc.com with its own app, database and settings; HTTPS (AutoSSL); www redirects to hloinc.com
+- [x] Old WordPress removed from hloinc.com: files and database backed up to `~/backups`, files moved to `~/wordpress-old-…` (nothing deleted); its LiteSpeed page cache to be flushed
+- [x] Website content copied from preview to live (pages, photos, settings, jobs; no demo data)
+- [x] Two sites: preview.hloinc.com (staging, `main`) and hloinc.com (live, `live`, promoted with `git push origin main:live`)
+- [ ] Accessibility audit: axe is clean on every screen; manual keyboard and screen-reader pass still to do on the version 41 design
+- [ ] Cross-browser/device testing on the live site (Chrome, Edge, Safari/iPhone, Android)
+- [ ] Security review: dependency audit (`npm audit`), headers and rate limits re-checked on hloinc.com
+- [ ] HLO legal review of the Privacy policy, Accessibility and Nondiscrimination pages; retention periods for messages **(CONFIRM — Q8)**
+- [ ] Switch Cloudflare Turnstile on for hloinc.com (keys in Security settings; hostnames added in Cloudflare)
+- [ ] Invite HLO's real staff on the live portal; decide whether two-step sign-in stays on
+
+## Built after the original plan (October 9–18, 2026)
+- **Website, HLO's own designs**
+  - [x] Version 20 redesign (Oct 12): HLO's design file rebuilt page by page, every text editable; hidden pages redirect to the matching section
+  - [x] Version 41 redesign (Oct 14): Home, About, Services, Resources, Contact, Careers, header and footer; new photos; Resources "help now" (911 / 988 / 211); Contact emergency box
+  - [x] Accessibility and Nondiscrimination and language help pages; Privacy policy rewritten (cookie list moved into it); Terms, Data Protection and Cookie Policy hidden but kept
+  - [x] Light and dark theme; one logo set; www redirect; scripts and styles load fresh after each deploy
+- **Careers and hiring**
+  - [x] Apply on the website with a resume (no more ADP): file-type checks, macros/scripts refused, virus scan (Cloudmersive or ClamAV), AES-256-GCM encryption, deleted after 3 months
+  - [x] Careers layout: open positions first (scrolling list when there are many), "Role details" with pay, benefits, one apply form; cell number; optional message; no general applications
+  - [x] Applications in the portal: statuses, logged downloads, **resume preview** in a pop-up (PDF in the browser viewer, Word as cleaned text)
+- **Portal**
+  - [x] Leads, live dashboard (cards, charts, appointments widget, My work, recent activity), branded emails
+  - [x] Messages restructure: quick views, "Send to…" another team (bell + email), "Book a meeting" from a message, grouped menu; website appointment requests switched off (`src/lib/features.js`)
+  - [x] Time-off requests with approval, staff search, scrolling team grid; announcements pause/resume and staff board
+  - [x] Staff accounts: suspend, profile photos; modern confirmation dialogs
+  - [x] Get help and Help requests (with screenshots and error references); monthly report (PDF and CSV) with its own permission
+  - [x] System health: email, virus scanner, backups, storage, versions; alerts IT and Admin when something breaks
+  - [x] Appointment reminder email the day before
+  - [x] Security settings: Cloudflare Turnstile on/off and keys from the portal (secret encrypted, checked with Cloudflare)
+- **Site content editor**
+  - [x] Pop-up after Publish, Save draft and Discard; item toolbars that stay reachable in grids; "Hide this button on the website"
+  - [x] Fixes for the live server's MariaDB (publishing, settings, content copy)
+
+## Next (proposed, not started)
+- [ ] **Add a section** in Site content: ready-made blocks (text, text and photo, cards, buttons, call-to-action band, questions, photo gallery) inserted between sections, so staff can add content without code
+- [ ] **Form block**: a short contact form, then a newsletter sign-up once HLO chooses where sign-ups go (portal list + CSV, or Mailchimp / Constant Contact), with consent and confirmation
+- [ ] **New pages** (e.g. News, Events) built from the same blocks, with an optional menu link
+- [ ] Spam limits kept in the database, so repeat and per-email counts survive restarts and deploys
+- [ ] Real email for local development (Mailtrap or a Microsoft 365 mailbox), since the server sends with sendmail
+- [ ] Retake the README screenshots on the version 41 design
 
 ---
 
@@ -164,3 +199,10 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-06 | Roles and permissions became editable data (roles, role_permissions tables); MFA requirement moved from .env to each role | Client request: CEO/COO manages roles |
 | 2026-10-06 | Added IT Administrator role (accounts incl. "manage everyone except Admins", roles view, audit view; two-step required; no client data) | Client request |
 | 2026-10-07 | Phase 3 complete | — |
+| 2026-10-10 | Careers applications taken on the website (resume upload, virus scan, encryption) instead of ADP | Client request; resumes stay private |
+| 2026-10-12 | Website rebuilt to HLO's design (version 20); old pages hidden, not deleted | Client design file |
+| 2026-10-12 | Website appointment requests switched off; appointments booked by staff (from messages) | Client request |
+| 2026-10-14 | Website updated to HLO's design version 41; Accessibility and Nondiscrimination pages added; Terms, Data Protection and Cookie Policy hidden | Client design file |
+| 2026-10-16 | General applications removed from Careers | Client request |
+| 2026-10-18 | Turnstile settings moved into the portal (Security settings) | Admin can manage keys without the server |
+| 2026-10-18 | **Live at hloinc.com**; preview.hloinc.com kept as staging; old WordPress backed up and moved aside | Launch |
