@@ -4,8 +4,8 @@ The public website and the role-based staff portal for **Healthy Living Option I
 
 | | |
 |---|---|
-| **Live site** | **https://hloinc.com** (live since October 18, 2026) |
-| **Preview / demo** | **https://preview.hloinc.com**: the staging copy, with demo data. Browse it and try the forms freely; what you send there goes to the preview's own portal, not to HLO's team. Staff-portal demo logins are given on request (their password is never in this public repository). |
+| **Live site** | **https://hloinc.com** |
+| **Preview / demo** | **https://preview.hloinc.com**: the staging copy, with demo data. Browse it and try the forms freely; what you send there goes to the preview's own portal, not to HLO's team. Staff-portal demo logins (https://preview.hloinc.com/portal) are given on request. |
 
 - **Public website**: services, careers (apply online with a resume), contact, ask about services, referrals, announcements, accessibility and nondiscrimination notices, light and dark theme, editable by staff.
 - **Staff portal** (`/portal`): live dashboard, messages and referrals, leads, appointments, schedule and time off, jobs and applications (with resume preview), announcements, site content editor, monthly reports, get help, system health, staff accounts, roles and permissions, security settings, audit log.
