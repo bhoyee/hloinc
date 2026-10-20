@@ -939,3 +939,22 @@ html.site #cookie-notice{z-index:200}
 
 /* Footer: host credit after the small print. */
 .d-powered{margin-left:.6em;white-space:nowrap}
+
+/* Error pages (404, 410, 500): partials/ds-error.njk */
+.d-errpage{padding:clamp(48px,7vw,104px) 0}
+.d-err-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(32px,5vw,80px);align-items:start}
+.d-err-code{margin:0 0 .1em;font:800 clamp(5rem,3rem + 8vw,9rem)/.9 var(--font-head);letter-spacing:-.04em;color:var(--green);opacity:.9}
+.d-err-eyebrow{display:block;margin:0 0 .6rem}
+.d-errpage h1{margin:0 0 .45em;font-size:clamp(2rem,1.3rem + 2.2vw,3rem)}
+.d-errpage .d-lede{max-width:36rem;margin:0 0 1.6rem}
+.d-err-acts{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 2rem}
+.d-err-links{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding-top:1.4rem;border-top:1px solid var(--line);font-size:.95rem}
+.d-err-links span{color:var(--ink-2);font-weight:600;margin-right:4px}
+:where(.ds) .d-err-links a{display:inline-block;padding:6px 14px;border:1px solid var(--line-strong);border-radius:999px;color:var(--ink);text-decoration:none;font-weight:500}
+:where(.ds) .d-err-links a:hover{border-color:var(--green);color:var(--green)}
+.d-err-help ul{list-style:none;margin:1rem 0;padding:0}
+.d-err-help li::before{display:none}
+.d-err-help li{padding-left:0;display:grid;grid-template-columns:4.5rem 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.d-err-help li span{color:var(--ink-2);font-size:.92rem;font-weight:600}
+.d-err-help .d-fine-print{margin:0}
+@media (max-width:860px){.d-err-grid{grid-template-columns:minmax(0,1fr)}}

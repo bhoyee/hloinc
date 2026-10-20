@@ -1,0 +1,30 @@
+{#
+  Error pages on the public website (404, 410, 500): a large code, a clear message, the way back,
+  popular pages, and how to reach HLO. Shown inside the normal header and footer.
+#}
+{% macro panel(code, eyebrow, heading, text, site, extra='') %}
+  <section class="d-errpage" aria-labelledby="err-h"><div class="d-wrap d-err-grid">
+    <div>
+      <p class="d-err-code" aria-hidden="true">{{ code }}</p>
+      <p class="d-eyebrow d-err-eyebrow">{{ eyebrow }}</p>
+      <h1 id="err-h">{{ heading }}</h1>
+      <p class="d-lede">{{ text }}</p>
+      {{ extra | safe }}
+      <p class="d-err-acts"><a class="d-btn d-btn-primary" href="/">Go to the home page</a><a class="d-btn d-btn-ghost" href="/contact">Contact us</a></p>
+      <nav class="d-err-links" aria-label="Popular pages">
+        <span>Popular pages:</span>
+        <a href="/services">Our services</a><a href="/about">About us</a><a href="/careers">Careers</a><a href="/request-services">Ask about services</a><a href="/referrals">Make a referral</a><a href="/resources">Resources</a>
+      </nav>
+    </div>
+    <aside class="d-aside-card d-err-help" aria-labelledby="err-help-h">
+      <h2 id="err-help-h">Need help?</h2>
+      <p>Our team is glad to help you find what you were looking for.</p>
+      <ul>
+        <li><span>Call</span><a href="{{ site.phone | telHref }}">{{ site.phone }}</a></li>
+        <li><span>Email</span><a href="mailto:{{ site.email }}">{{ site.email }}</a></li>
+        <li><span>Hours</span>{{ site.hours }}</li>
+      </ul>
+      <p class="d-fine-print">For a life-threatening emergency, call 911.</p>
+    </aside>
+  </div></section>
+{% endmacro %}

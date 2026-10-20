@@ -47,7 +47,7 @@ router.use((req, res, next) => {
   if (redirects[path]) return res.redirect(301, redirects[path]);
 
   if (gonePrefixes.some((p) => path === p || path.startsWith(`${p}/`))) {
-    return res.status(410).render('pages/errors/404.njk', { title: 'Page removed' });
+    return res.status(410).render('pages/errors/404.njk', { title: 'Page removed', code: 410 });
   }
 
   // Old site used trailing slashes (/services/, /careers/); canonicalise them.

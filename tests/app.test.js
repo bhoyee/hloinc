@@ -18,7 +18,7 @@ describe('public site', () => {
   it('returns a 404 page for unknown routes', async () => {
     const res = await request(app).get('/no-such-page');
     expect(res.status).toBe(404);
-    expect(res.text).toContain('couldn’t find that page');
+    expect(res.text).toContain('We can’t find that page');
   });
 
   it('reports liveness', async () => {

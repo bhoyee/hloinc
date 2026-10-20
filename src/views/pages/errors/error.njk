@@ -1,12 +1,13 @@
 {% extends "layouts/public.njk" %}
-{% import "partials/ds.njk" as ds %}
+{% import "partials/ds-error.njk" as err %}
 
 {% block mainClass %}ds{% endblock %}
 
 {% block content %}
-  {{ ds.pageHead('Error ' ~ status, title, message) }}
-  <section><div class="d-wrap">
-    <p class="d-acts-inline"><a class="d-btn d-btn-primary" href="/">Go to the home page</a><a class="d-btn d-btn-ghost" href="/contact">Contact us</a></p>
-    {% if stack %}<pre class="d-stack">{{ stack }}</pre>{% endif %}
-  </div></section>
+  {% set extra %}{% if errorRef %}<p class="d-fine-print">If you contact us about this, please mention reference <strong>{{ errorRef }}</strong>.</p>{% endif %}{% if stack %}<pre class="d-stack">{{ stack }}</pre>{% endif %}{% endset %}
+  {% if status >= 500 %}
+    {{ err.panel(status, 'Something went wrong', 'Sorry, something went wrong on our side', 'Please try again in a few minutes. If it keeps happening, call or email us and we will help straight away.', site, extra) }}
+  {% else %}
+    {{ err.panel(status, title, title, message, site, extra) }}
+  {% endif %}
 {% endblock %}
