@@ -298,3 +298,46 @@ describe('business details', () => {
     expect((await post(admin, '/portal/content/recipients', '/portal/content/recipients', { intake: 'not-an-email' })).status).toBe(422);
   });
 });
+
+describe('page editor: header & footer for the whole site', () => {
+  it('has its own layout page, only inside the editor, and hides retired pages from the list', async () => {
+    expect((await request(app).get('/site-layout')).status).toBe(404);
+    const e = await editor('admin');
+    const page = await e.agent.get('/portal/content/pages/site');
+    expect(page.status).toBe(200);
+    expect(page.text).toContain('Header &amp; footer (all pages)');
+    expect(page.text).not.toContain('>Cookie Policy<');
+    const layout = await e.agent.get('/site-layout?cms=edit');
+    expect(layout.status).toBe(200);
+    expect(layout.text).toContain('data-cms-item-toggle="site.menu"');
+    expect(layout.text).toContain('data-cms="site.logo"');
+  });
+
+  it('renames a menu item once for every page, and keeps its drop-down when its address changes', async () => {
+    const e = await editor('admin');
+    const items = [
+      { label: 'Home', href: '/' }, { label: 'About Us', href: '/about' }, { label: 'Programs', href: '/programs', dropdown: true },
+      { label: 'Careers', href: '/careers' }, { label: 'Resources', href: '/resources' }, { label: 'Contact Us', href: '/contact' },
+    ];
+    expect((await draft(e, 'site', { lists: [{ key: 'site.menu', items }, { key: 'site.dropdown', items: [{ label: 'Group homes', href: '/services#svc-residential' }] }] })).status).toBe(200);
+    await json(e, '/portal/content/pages/site/publish', { docs: ['site'] });
+    for (const path of ['/', '/careers', '/contact']) {
+      const html = (await request(app).get(path)).text;
+      expect(html).toContain('<span>Programs</span>');
+      expect(html).toMatch(/<li class="d-has-dd"\s*><a href="\/programs"/);
+      expect(html).toContain('>Group homes</a>');
+    }
+  });
+
+  it('uses an uploaded logo (and a dark-theme one), and can hide the name beside it', async () => {
+    const e = await editor('admin');
+    const logo = { src: '/img/photos/approach.webp', srcSm: '/img/photos/approach-sm.webp', alt: '', w: 800, h: 200 };
+    const dark = { src: '/img/photos/contact.webp', srcSm: '/img/photos/contact-sm.webp', alt: '', w: 800, h: 200 };
+    await draft(e, 'site', { values: [{ key: 'site.logo', type: 'image', value: logo }, { key: 'site.logoDark', type: 'image', value: dark }, { key: 'site.brand.showName', type: 'flag', value: false }] });
+    await json(e, '/portal/content/pages/site/publish', { docs: ['site'] });
+    const html = (await request(app).get('/about')).text;
+    expect(html).toContain('<img class="d-brand-mark d-has-dark" src="/img/photos/approach.webp"');
+    expect(html).toContain('<img class="d-brand-mark d-brand-dark" src="/img/photos/contact.webp"');
+    expect(html).not.toContain('<span class="d-wm"');
+  });
+});

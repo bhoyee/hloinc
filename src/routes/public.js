@@ -82,6 +82,13 @@ router.get('/', async (req, res) => {
   });
 });
 
+// "Header & footer (all pages)" in Site content: only inside the editor (edit or preview);
+// anywhere else the address doesn't exist.
+router.get('/site-layout', (req, res, next) => {
+  if (!res.locals.cmsMode) return next();
+  res.render('pages/public/site-layout.njk', { title: 'Header & footer' });
+});
+
 router.get('/about', async (req, res) => {
   const page = await content.getPage('about');
   res.render('pages/public/about.njk', { ...meta('about', 'About us', 'Healthy Living Option Inc. is a Maryland DDA provider supporting adults with developmental disabilities to live independent lives, with community inclusion as a choice.'), page, areas });

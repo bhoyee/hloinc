@@ -153,14 +153,17 @@ const pageOrder = [
   { href: '/contact', label: 'Contact Us' },
 ];
 
-/** The main menu. */
+/** The drop-down under the menu item that has one (Services): editable in Site content → Header & footer. */
+const dropdown = services.map((s) => ({ label: s.menu || s.name, href: `/services#${s.anchor}` }));
+
+/** The main menu. `dropdown: true` shows the drop-down above under that item. */
 const menu = [
   { label: 'Home', href: '/' },
   { label: 'About Us', href: '/about' },
-  { label: 'Services', href: '/services' },
+  { label: 'Services', href: '/services', dropdown: true },
   { label: 'Careers', href: '/careers' },
   { label: 'Resources', href: '/resources' },
   { label: 'Contact Us', href: '/contact' },
 ];
 
-module.exports = { services, cards, homeCards, counties, conditions, glossary, resources, pageOrder, menu };
+module.exports = { services, cards, homeCards, dropdown, counties, conditions, glossary, resources, pageOrder, menu };

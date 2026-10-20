@@ -286,7 +286,8 @@
 /* ── Visual page editor (only on pages opened with ?cms=edit) ─────────────── */
 .cms-editing [data-cms] { cursor: text; border-radius: 0.25rem; outline: 2px dashed transparent; outline-offset: 3px; transition: outline-color 0.15s, background-color 0.15s; }
 .cms-editing [data-cms]:hover { outline-color: rgb(24 159 103 / 0.7); background-color: rgb(24 159 103 / 0.06); }
-.cms-editing [data-cms][contenteditable] { outline: 2px solid var(--color-brand-600); background-color: rgb(255 255 255 / 0.92); color: var(--color-ink); cursor: text; }
+/* Text being typed: always dark on white, in either theme (in the dark theme "ink" is nearly white). */
+.cms-editing [data-cms][contenteditable] { outline: 2px solid var(--color-brand-600); background-color: #fff !important; color: #0f1c16 !important; -webkit-text-fill-color: #0f1c16; caret-color: #0f1c16; text-shadow: none; cursor: text; }
 .cms-editing img[data-cms], .cms-editing [data-cms-type='rich'] { cursor: pointer; }
 .cms-editing img[data-cms]:hover { outline: 3px solid var(--color-accent-500); outline-offset: -3px; filter: brightness(0.92); }
 .cms-editing [data-cms-section] { position: relative; }

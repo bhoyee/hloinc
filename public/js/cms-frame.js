@@ -169,7 +169,20 @@
   }
 
   document.addEventListener('click', (e) => {
-    // On/off switches (cms.flag), e.g. the "General application" choice on Careers.
+    // A switch on a list item, e.g. which menu item has the drop-down (only one at a time).
+    const itemToggle = e.target.closest('[data-cms-item-toggle]');
+    if (itemToggle) {
+      e.preventDefault();
+      e.stopPropagation();
+      const key = itemToggle.dataset.cmsItemToggle;
+      const field = itemToggle.dataset.cmsField;
+      const i = Number(itemToggle.dataset.cmsIndex);
+      const on = itemToggle.getAttribute('aria-pressed') !== 'true';
+      const items = listOf(key).map((it, n) => ({ ...it, [field]: n === i ? on : false }));
+      saveList(key, items, { reload: true });
+      return;
+    }
+    // On/off switches (cms.flag), e.g. the name beside the logo.
     const flagBtn = e.target.closest('[data-cms-flag]');
     if (flagBtn) {
       e.preventDefault();

@@ -1,0 +1,71 @@
+{% extends "layouts/public.njk" %}
+{% import "partials/ds.njk" as ds %}
+
+{% block mainClass %}ds{% endblock %}
+
+{#
+  "Header & footer (all pages)" in Site content: the shared header and footer, with panels for the
+  parts that are hard to click in the header itself (logo, menu, drop-down). Only shown inside the
+  editor; every change here appears on every page once published.
+#}
+{% block content %}
+  {% set menuItems = cms.list('site.menu', design.menu) %}
+  {% set ddItems = cms.list('site.dropdown', design.dropdown) %}
+  {% set ddAll = cms.link('site.dropdown.all', 'All services', '/services') %}
+  {% set hdrCta = cms.link('site.hdr.cta', 'Ask about services', '/request-services') %}
+  {% set logo = cms.image('site.logo', { src: '/img/hlo-mark.svg', alt: '', w: 152, h: 170 }) %}
+  {% set logoDark = cms.image('site.logoDark', { src: logo.src, srcSm: logo.srcSm, alt: '', w: logo.w, h: logo.h }) %}
+  {% set showName = cms.flag('site.brand.showName', true, 'Name beside the logo') %}
+
+  <section class="d-layout-intro"><div class="d-wrap">
+    <p class="d-eyebrow">Whole site</p>
+    <h1>Header &amp; footer (all pages)</h1>
+    <p class="d-lede">The header above and the footer below appear on every page. Change them here, or on any page: it’s the same content. Click <strong>Publish</strong> and every page shows the change.</p>
+  </div></section>
+
+  <section class="d-layout"><div class="d-wrap d-layout-grid">
+    <div class="d-layout-card">
+      <h2>Logo</h2>
+      <p class="d-layout-hint">Click a logo to upload or choose a new one. A logo that already includes the name usually looks best with the name switched off.</p>
+      <div class="d-layout-logos">
+        <figure><div class="d-layout-logo"><img src="{{ logo.src }}" alt="Logo" width="{{ logo.w }}" height="{{ logo.h }}" {{ logo.attrs }}></div><figcaption>Logo</figcaption></figure>
+        <figure><div class="d-layout-logo d-dark-tile"><img src="{{ logoDark.src }}" alt="Logo for the dark theme" width="{{ logoDark.w }}" height="{{ logoDark.h }}" {{ logoDark.attrs }}></div><figcaption>For the dark theme (optional)</figcaption></figure>
+      </div>
+      <p class="d-layout-name"><span>Name beside the logo:</span> <strong>{{ cms.text('site.brand.line1', 'Healthy Living') }}</strong> <strong>{{ cms.text('site.brand.line2', 'Option Inc.') }}</strong></p>
+      {{ showName.control }}
+    </div>
+
+    <div class="d-layout-card">
+      <h2>Main menu</h2>
+      <p class="d-layout-hint">Click a name to rename it, and an address to change where it goes. Hover an item to move, copy or delete it. One item can show the drop-down.</p>
+      <ol class="d-layout-list">
+        {% for m in menuItems %}
+          {% set hasDd = m.dropdown if (m.dropdown is defined) else (m.href == '/services') %}
+          <li {{ m.attrs }}>
+            <span class="d-layout-label">{{ m.text('label') }}</span>
+            <a class="d-layout-href" href="{{ m.href }}" {{ m.hrefAttrs }}>{{ m.href }}</a>
+            <button type="button" class="cms-flag d-layout-dd" data-cms-item-toggle="site.menu" data-cms-index="{{ loop.index0 }}" data-cms-field="dropdown" aria-pressed="{{ 'true' if hasDd else 'false' }}">Drop-down: <strong>{{ 'on' if hasDd else 'off' }}</strong></button>
+          </li>
+        {% endfor %}
+      </ol>
+      <p class="d-layout-sub"><span>Header button:</span> <a class="d-btn d-btn-primary d-btn-sm" href="{{ hdrCta.href }}" {{ hdrCta.attrs }}>{{ hdrCta.label }}</a></p>
+      <p class="d-layout-sub"><span>Above the phone number:</span> <strong>{{ cms.text('site.hdr.call', 'Call us') }}</strong></p>
+    </div>
+
+    <div class="d-layout-card">
+      <h2>Drop-down</h2>
+      <p class="d-layout-hint">Shown under the menu item whose drop-down is on. Rename, re-link, add or remove items.</p>
+      <ol class="d-layout-list">
+        {% for d in ddItems %}
+          <li {{ d.attrs }}><span class="d-layout-label">{{ d.text('label') }}</span> <a class="d-layout-href" href="{{ d.href }}" {{ d.hrefAttrs }}>{{ d.href }}</a></li>
+        {% endfor %}
+      </ol>
+      <p class="d-layout-sub"><span>Last link:</span> <a href="{{ ddAll.href }}" {{ ddAll.attrs }}>{{ ddAll.label }}</a></p>
+    </div>
+
+    <div class="d-layout-card">
+      <h2>Footer</h2>
+      <p class="d-layout-hint">Edit the footer directly below: the tagline, the text about HLO, the quick links and the links at the bottom. The address, phone, email and hours come from Site content → Business details.</p>
+    </div>
+  </div></section>
+{% endblock %}

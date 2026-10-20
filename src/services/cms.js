@@ -41,6 +41,8 @@ const FULL = 'site_content.edit';
 const LIMITED = 'site_content.edit_limited';
 
 const PAGES = [
+  // The shared header and footer (logo, menu, drop-down, footer): shown on a layout page, and on every page.
+  { key: 'site', label: 'Header & footer (all pages)', path: '/site-layout', group: 'Whole site' },
   { key: 'home', label: 'Home', path: '/', group: 'Main pages' },
   { key: 'about', label: 'About', path: '/about', group: 'Main pages' },
   { key: 'services', label: 'Services', path: '/services', group: 'Main pages' },
@@ -59,7 +61,7 @@ const PAGES = [
   { key: 'cookies', label: 'Cookie Policy', path: '/cookies', group: 'Legal' },
 ];
 // Pages not in HLO's current design: kept (and their saved text), but not offered in the editor.
-const HIDDEN_PAGES = new Set(['service-areas', 'getting-started', 'appointment-request', ...services.map((s) => `service-${s.slug}`)]);
+const HIDDEN_PAGES = new Set(['service-areas', 'getting-started', 'appointment-request', 'terms', 'data-protection', 'cookies', ...services.map((s) => `service-${s.slug}`)]);
 const SITE_DOC = 'site'; // header, footer and shared sections
 const DOC_KEYS = new Set([...PAGES.map((p) => p.key), SITE_DOC]);
 

@@ -1,19 +1,31 @@
-{# Site header (HLO's design, version 41). Menu items, phone line and button are editable in Site content. #}
+{#
+  Site header (HLO's design, version 41). Everything here is shared by every page and editable in
+  Site content (most easily on "Header & footer (all pages)"): the logo (an uploaded image, or the
+  built-in mark), a separate logo for the dark theme, the name beside it, the menu (labels, links,
+  order, which item has the drop-down), the drop-down's items, and the button.
+#}
 {% set menuItems = cms.list('site.menu', design.menu) %}
+{% set ddItems = cms.list('site.dropdown', design.dropdown) %}
+{% set ddAll = cms.link('site.dropdown.all', 'All services', '/services') %}
 {% set hdrCta = cms.link('site.hdr.cta', 'Ask about services', '/request-services') %}
+{% set logo = cms.image('site.logo', { src: '/img/hlo-mark.svg', alt: '', w: 152, h: 170 }) %}
+{% set logoDark = cms.image('site.logoDark', { src: logo.src, srcSm: logo.srcSm, alt: '', w: logo.w, h: logo.h }) %}
+{% set showName = cms.flag('site.brand.showName', true, 'Name beside the logo') %}
 <header class="d-site-header ds">
   <div class="d-wrap d-hdr">
-    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home">{% include "partials/ds-brand.njk" %}<span class="d-wm" aria-hidden="true"><span>Healthy Living</span><span>Option Inc.</span></span></a>
+    <a class="d-brand" href="/" aria-label="{{ site.legalName }} home"><img class="d-brand-mark{{ ' d-has-dark' if logoDark.src != logo.src }}" src="{{ logo.src }}" alt="" width="{{ logo.w }}" height="{{ logo.h }}" {{ logo.attrs }}>{% if logoDark.src != logo.src %}<img class="d-brand-mark d-brand-dark" src="{{ logoDark.src }}" alt="" width="{{ logoDark.w }}" height="{{ logoDark.h }}">{% endif %}{% if showName.on %}<span class="d-wm" aria-hidden="true"><span>{{ cms.text('site.brand.line1', 'Healthy Living') }}</span><span>{{ cms.text('site.brand.line2', 'Option Inc.') }}</span></span>{% endif %}</a>
     <nav class="d-nav" id="site-nav" aria-label="Main">
       <ul class="d-nav-links">
         {% for item in menuItems %}
           {% set active = currentPath == item.href or (item.href != '/' and currentPath.startsWith(item.href + '/')) %}
-          {% if item.href == '/services' %}
+          {# The drop-down goes under the item switched on for it (menus saved before this switch: Services). #}
+          {% set hasDd = item.dropdown if (item.dropdown is defined) else (item.href == '/services') %}
+          {% if hasDd %}
             <li class="d-has-dd" {{ item.attrs }}><a href="{{ item.href }}" {{ item.hrefAttrs }}{% if active %} aria-current="page"{% endif %}><span>{{ item.text('label') }}</span></a>
-              <button class="d-dd-toggle" type="button" aria-expanded="false" aria-label="Show services list"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-              <ul class="d-dd-menu" aria-label="Our services">
-                {% for s in design.services %}<li><a href="/services#{{ s.anchor }}">{{ s.menu or s.name }}</a></li>{% endfor %}
-                <li class="d-dd-all"><a href="/services">All services</a></li>
+              <button class="d-dd-toggle" type="button" aria-expanded="false" aria-label="Show the {{ item.label }} list"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+              <ul class="d-dd-menu" aria-label="{{ item.label }}">
+                {% for d in ddItems %}<li><a href="{{ d.href }}">{{ d.label }}</a></li>{% endfor %}
+                <li class="d-dd-all"><a href="{{ ddAll.href }}"{% if ddAll.hidden %} hidden{% endif %}>{{ ddAll.label }}</a></li>
               </ul>
             </li>
           {% else %}

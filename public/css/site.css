@@ -958,3 +958,33 @@ html.site #cookie-notice{z-index:200}
 .d-err-help li span{color:var(--ink-2);font-size:.92rem;font-weight:600}
 .d-err-help .d-fine-print{margin:0}
 @media (max-width:860px){.d-err-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Logo: an image (built-in mark, or one uploaded in Site content); optional separate logo for the dark theme. */
+img.d-brand-mark{display:block;object-fit:contain}
+.d-brand-dark{display:none!important}
+html.site.dark .d-brand-dark{display:block!important}
+html.site.dark .d-brand-mark.d-has-dark{display:none}
+
+/* Site content → Header & footer (all pages): pages/public/site-layout.njk */
+.d-layout-intro{padding:clamp(36px,5vw,64px) 0 8px}
+.d-layout-intro h1{margin:0 0 .4em;font-size:clamp(1.9rem,1.3rem + 2vw,2.8rem)}
+.d-layout-intro .d-lede{max-width:46rem}
+.d-layout{padding:24px 0 clamp(48px,6vw,88px)}
+.d-layout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));gap:24px}
+.d-layout-card{padding:24px 26px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.d-layout-card h2{margin:0 0 .3em;font-size:1.35rem}
+.d-layout-hint{margin:0 0 16px;font-size:.93rem;color:var(--ink-2)}
+.d-layout-logos{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 0 14px}
+.d-layout-logos figure{margin:0}
+.d-layout-logo{display:grid;place-items:center;height:130px;padding:14px;border:1px dashed var(--line-strong);border-radius:10px;background:#fff}
+.d-layout-logo img{max-height:100px;max-width:100%;width:auto;height:auto}
+.d-layout-logo.d-dark-tile{background:#0d1f17}
+.d-layout-logos figcaption{margin-top:6px;font-size:.85rem;color:var(--ink-2)}
+.d-layout-name span,.d-layout-sub span{color:var(--ink-2);font-size:.92rem;margin-right:6px}
+.d-layout-name{margin:0}
+:where(.ds) .d-layout-list{list-style:none;margin:0 0 14px;padding:0;counter-reset:m}
+.d-layout-list li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.d-layout-label{font-weight:600;min-width:8rem}
+.d-layout-href{font-size:.88rem;color:var(--ink-2);word-break:break-all}
+.d-layout-dd{display:inline-block;margin:0 0 0 auto}
+.d-layout-sub{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0}
