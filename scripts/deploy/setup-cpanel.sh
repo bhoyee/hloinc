@@ -4,10 +4,10 @@
 # Preview (staging) site, preview.hloinc.com, updated from the "main" branch:
 #   git clone https://github.com/bhoyee/hloinc.git ~/hloinc-preview && bash ~/hloinc-preview/scripts/deploy/setup-cpanel.sh
 #
-# Live site, hloinc.com, updated from the "live" branch (main is promoted to live when
-# ready). Copies the website content from the preview site, and moves an old WordPress
-# site in hloinc.com's folder aside after backing it up (it asks first):
-#   git clone -b live https://github.com/bhoyee/hloinc.git ~/hloinc-live && HLO_SITE=live bash ~/hloinc-live/scripts/deploy/setup-cpanel.sh
+# Live site, hloinc.com, updated from "main" (each commit whose tests passed). Moves an old
+# WordPress site in hloinc.com's folder aside after backing it up (it asks first), and copies
+# the website content from a preview copy if one exists:
+#   git clone https://github.com/bhoyee/hloinc.git ~/hloinc-live && HLO_SITE=live bash ~/hloinc-live/scripts/deploy/setup-cpanel.sh
 #
 # To run it again later (e.g. after a fix):
 #   cd ~/hloinc-preview && git pull && bash scripts/deploy/setup-cpanel.sh
@@ -35,7 +35,7 @@ if [ "$MODE" = "live" ]; then
   SITE="$ROOT_DOMAIN"
   DB_NAME="${CP_USER}_live"
   DB_USER="${CP_USER}_live"
-  BRANCH="live"
+  BRANCH="main"
   PREVIEW_DIR="$HOME/hloinc-preview"
 elif [ "$MODE" = "preview" ]; then
   SITE_SUB="preview"
@@ -270,6 +270,6 @@ cat <<LIVE
      - Cloudflare Turnstile: add $SITE to the widget's hostnames, then set it in
        the live portal (Administration → Security settings)
      - Staff accounts: invite real staff in the live portal (demo staff aren't copied)
-     - Updates: changes reach preview first; they reach $SITE when main is promoted to live
+     - Updates: each commit on main whose tests passed is installed within 5 minutes
 LIVE
 fi

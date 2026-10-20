@@ -128,7 +128,7 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 - [x] Production deploy on cPanel: hloinc.com with its own app, database and settings; HTTPS (AutoSSL); www redirects to hloinc.com
 - [x] Old WordPress removed from hloinc.com: files and database backed up to `~/backups`, files moved to `~/wordpress-old-…` (nothing deleted); its LiteSpeed page cache to be flushed
 - [x] Website content copied from preview to live (pages, photos, settings, jobs; no demo data)
-- [x] Two sites: preview.hloinc.com (staging, `main`) and hloinc.com (live, `live`, promoted with `git push origin main:live`)
+- [x] One site: hloinc.com installs each commit on `main` whose tests passed (the preview site was retired on October 20, 2026)
 - [ ] Accessibility audit: axe is clean on every screen; manual keyboard and screen-reader pass still to do on the version 41 design
 - [ ] Cross-browser/device testing on the live site (Chrome, Edge, Safari/iPhone, Android)
 - [ ] Security review: dependency audit (`npm audit`), headers and rate limits re-checked on hloinc.com
@@ -206,3 +206,4 @@ Additions/removals agreed later go in the **Change log** at the bottom.
 | 2026-10-16 | General applications removed from Careers | Client request |
 | 2026-10-18 | Turnstile settings moved into the portal (Security settings) | Admin can manage keys without the server |
 | 2026-10-18 | **Live at hloinc.com**; preview.hloinc.com kept as staging; old WordPress backed up and moved aside | Launch |
+| 2026-10-20 | preview.hloinc.com retired; hloinc.com now installs every passing commit on `main` | Client request: one version only |

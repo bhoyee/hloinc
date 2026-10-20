@@ -5,7 +5,6 @@ The public website and the role-based staff portal for **Healthy Living Option I
 | | |
 |---|---|
 | **Live site** | **https://hloinc.com** |
-| **Preview / demo** | **https://preview.hloinc.com**: the staging copy, with demo data. Browse it and try the forms freely; what you send there goes to the preview's own portal, not to HLO's team. Staff-portal demo logins (https://preview.hloinc.com/portal) are given on request. |
 
 - **Public website**: services, careers (apply online with a resume), contact, ask about services, referrals, announcements, accessibility and nondiscrimination notices, light and dark theme, editable by staff.
 - **Staff portal** (`/portal`): live dashboard, messages and referrals, leads, appointments, schedule and time off, jobs and applications (with resume preview), announcements, site content editor, monthly reports, get help, system health, staff accounts, roles and permissions, security settings, audit log.
@@ -152,8 +151,8 @@ All settings come from `.env` (see [.env.example](.env.example)); they're checke
 | `VIRUS_SCAN`, `CLOUDMERSIVE_API_KEY`, `RESUME_MAX_MB` | Resume scanning (`auto` uses Cloudmersive when a key is set) and the size limit (2.5 on Cloudmersive's free plan) |
 | `CLAMD_SOCKET`, `CLAMD_HOST`, `CLAMD_PORT`, `CLAMSCAN_PATH`, `CLAMAV_DATABASE`, `CLAMAV_CERTS_DIR` | ClamAV, where the server can run it |
 | `DEVELOPER_EMAIL` | Optional: where "Get help" problem reports are forwarded (Admin can switch forwarding off under Help requests) |
-| `NOINDEX` | `true` on the preview site: keeps search engines out (not set on the live site) |
-| `DEMO_DATA`, `DEMO_PASSWORD` | Demo data on a production preview (see above) |
+| `NOINDEX` | `true` keeps search engines out (for a test copy; not set on the live site) |
+| `DEMO_DATA`, `DEMO_PASSWORD` | Demo data on a server copy (see above); never on hloinc.com |
 
 Team mailboxes (where each form is emailed) are set in the portal under **Site content → Team email addresses**, not in `.env`.
 
@@ -172,16 +171,14 @@ Team mailboxes (where each form is emailed) are set in the portal under **Site c
 | `npm run test:a11y` | WCAG 2.1 AA scan with axe (app must be running) |
 | `npm run screens -- <outDir> <paths…>` | Desktop and mobile screenshots (app must be running) |
 | `npm run screens:readme` | Retake the README screenshots in `docs/screens/` (local app with demo data only) |
-| `node scripts/deploy/copy-content.js <preview folder>` | On the server: copy pages, photos, settings and jobs from preview to live (no demo data, staff or messages) |
 
 ## Testing and deployment
 
 ![Deployment: a commit to main runs the "Test" job on GitHub Actions; every 5 minutes the server's cron job checks for a new commit that passed, then installs it (backup, migrations, seeds, restart), rolling back if a step fails.](docs/deployment.svg)
 
 - Every push runs the **Test** job on GitHub Actions (MySQL 8.4, `npm ci`, `npm test`).
-- The server does not receive pushes. Every 5 minutes a cron job (`scripts/deploy/pull.sh`) installs the newest commit on `main` whose Test job passed. It runs `scripts/deploy/remote.sh`: install, database backup, migrations, base seeds, restart. If any step fails, it rolls back.
-- **Two sites on the server:** preview.hloinc.com (staging, from `main`) and hloinc.com (live, from `live`). Every change reaches preview first; it reaches hloinc.com when `main` is promoted: `git push origin main:live`. Both have their own database, uploads and `.env`.
-- Live set-up (once): `git clone -b live https://github.com/bhoyee/hloinc.git ~/hloinc-live && HLO_SITE=live bash ~/hloinc-live/scripts/deploy/setup-cpanel.sh`. It backs up and moves aside an old WordPress site in hloinc.com's folder (after asking), and copies the website content from preview (`scripts/deploy/copy-content.js`: pages, photos, settings, jobs; not demo data, staff or messages).
+- The server does not receive pushes. Every 5 minutes a cron job (`scripts/deploy/pull.sh`) installs the newest commit on `main` whose Test job passed into **hloinc.com**. It runs `scripts/deploy/remote.sh`: install, database backup, migrations, base seeds, restart. If any step fails, it rolls back.
+- Set-up (once): `git clone https://github.com/bhoyee/hloinc.git ~/hloinc-live && HLO_SITE=live bash ~/hloinc-live/scripts/deploy/setup-cpanel.sh`.
 - Setup and server details: [DEPLOY.md](DEPLOY.md).
 
 ## Project layout

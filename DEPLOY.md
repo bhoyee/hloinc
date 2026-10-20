@@ -52,18 +52,20 @@ cross-site checks, and per-IP rate limits. Blocked attempts are logged as `[spam
 2. Set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in the Node.js App environment and restart.
 3. The widget, CSP allowance and Privacy/Cookie Policy wording switch on automatically.
 
-## Quick start: the preview site (preview.hloinc.com)
+## Quick start: the website (hloinc.com)
 
 In cPanel → **Terminal**, paste:
 
 ```bash
-git clone https://github.com/bhoyee/hloinc.git ~/hloinc-preview && bash ~/hloinc-preview/scripts/deploy/setup-cpanel.sh
+git clone https://github.com/bhoyee/hloinc.git ~/hloinc-live && HLO_SITE=live bash ~/hloinc-live/scripts/deploy/setup-cpanel.sh
 ```
 
-`scripts/deploy/setup-cpanel.sh` creates the subdomains, database, sending mailbox (with SPF and
-DKIM), the Node.js app and `.env` (with new random passwords that only exist in that file), installs
-everything, runs the migrations, starts the app and switches on automatic updates. Running it again is
-safe. It finishes by showing the command to create the first CEO/COO login.
+`scripts/deploy/setup-cpanel.sh` checks the domain, backs up and moves aside an old WordPress site in
+hloinc.com's folder (it asks first; add `HLO_CONFIRM=YES` to run it in the background with `nohup`),
+creates the database, the sending mailbox (with SPF and DKIM), the Node.js app and `.env` (with new
+random passwords that only exist in that file), installs everything, runs the migrations, starts the
+app and switches on automatic updates. Running it again is safe. It finishes by showing the command to
+create the first CEO/COO login.
 
 ## Automatic deployment
 
@@ -79,12 +81,12 @@ The server **pulls** new versions itself, so no SSH access from outside is neede
    seeds, and a restart. If any step fails it goes back to the previous version.
 3. A commit whose tests fail is never deployed.
 
-Log: `~/logs/hloinc-preview-deploy.log`. The deployed commit is in `tmp/deployed-commit`.
+Log: `~/logs/hloinc-live-deploy.log`. The deployed commit is in `tmp/deployed-commit`.
 
 To deploy straight away instead of waiting up to 5 minutes, run in cPanel → Terminal:
 
 ```bash
-bash ~/hloinc-preview/scripts/deploy/pull.sh ~/hloinc-preview main ~/nodevenv/hloinc-preview/20/bin/activate
+bash ~/hloinc-live/scripts/deploy/pull.sh ~/hloinc-live main ~/nodevenv/hloinc-live/24/bin/activate
 ```
 
 ### Rolling back
@@ -113,55 +115,19 @@ and replies to visitors use the HLO team address as *Reply-To*. To send from Mic
 instead later, HLO's Microsoft 365 admin creates the mailbox and sending permission, and only
 the `SMTP_*` / `MAIL_FROM` values change.
 
-## Demo data on the preview site
+## Demo data
 
-So HLO can try the dashboard charts, inbox and Leads page with realistic numbers, the
-preview site can be filled with made-up data: one staff account per role, about three
-months of appointments, referrals, service requests and messages, staff replies, leads
-and sign-ins. Everything is clearly fake (`@example.com` / `@hloinc.test` emails,
-555-01xx phone numbers) and can be removed in one step. Demo job postings are never added
-on a server, because the Careers page is public.
+Demo data (made-up staff, appointments, messages and leads) is for a developer's own computer only.
+**Never set `DEMO_DATA=true` on hloinc.com.** If it was ever added there, `npm run demo:remove`
+deletes only the demo staff and the demo visitors' records; real accounts, enquiries and settings
+are not touched.
 
-**Turn it on** (cPanel → Terminal, in the app folder):
+## History: the preview site
 
-```bash
-cd ~/preview.hloinc.com          # the app folder
-echo 'DEMO_DATA=true' >> .env
-echo 'DEMO_PASSWORD=choose-a-long-password-here' >> .env   # 12+ characters; not the one in the code
-npx knex seed:run                 # or wait for the next deploy
-```
-
-The demo staff sign in as `admin@hloinc.test`, `director@hloinc.test`,
-`coordinator@hloinc.test`, `intake@hloinc.test`, `reception@hloinc.test` and
-`it@hloinc.test`, all with the `DEMO_PASSWORD` above. Without `DEMO_PASSWORD` the demo
-records are still added, but no demo staff accounts are created.
-
-**Remove it** when HLO has finished testing:
-
-```bash
-npm run demo:remove
-sed -i 's/^DEMO_DATA=true/DEMO_DATA=false/' .env   # so the next deploy doesn't add it again
-```
-
-This deletes only the demo staff, demo visitors' records and leads that belonged only to
-them. Real accounts, real enquiries and settings are not touched.
-
-**Never set `DEMO_DATA=true` on the main site.**
-
-## Going live on www.hloinc.com (after HLO approves the preview)
-
-The live site runs as a second copy that follows a **`production`** branch, so nothing reaches
-www.hloinc.com until someone deliberately moves that branch forward.
-
-1. Take a full cPanel backup of the current WordPress site.
-2. On GitHub, create the `production` branch from the approved commit on `main`.
-3. In cPanel → Terminal, clone it into `~/hloinc` and run the setup script with the live settings
-   (`ROOT_DOMAIN`, `SITE_SUB=www`, no `NOINDEX`, branch `production`) — or copy the preview database
-   and its `APP_KEY` so staff accounts and two-step sign-in carry over.
-4. Point `hloinc.com`/`www` at the Node app (cPanel moves the old site aside) and check AutoSSL.
-5. Old WordPress links are redirected by `src/routes/legacy.js`.
-6. From then on: test on preview (`main`), then release by merging `main` into `production`.
-7. Keep preview.hloinc.com for testing future changes.
+From October 9 to 20, 2026 a test copy ran at preview.hloinc.com (from `main`, with demo data), and
+hloinc.com followed a separate `live` branch. The preview was retired on October 20, 2026: hloinc.com
+now installs every commit on `main` whose tests passed. `scripts/deploy/copy-content.js` (copy pages,
+photos, settings and jobs from one copy of the site to another) is kept for setting up another copy.
 
 ## Notes for shared hosting
 - The DB pool is capped at 5 connections (`knexfile.js`) to stay inside host limits.
